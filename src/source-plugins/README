@@ -1,0 +1,18 @@
+DEMO
+====
+demo.cpp is a wandering pixel
+
+
+VNC CLIENT
+==========
+vnc.cpp is a VNC client.
+As parameters it requires 'ip-address port-number password' (where password is optional if the VNC server is not requesting it).
+
+
+configuration example
+---------------------
+descr = "my plugin source";
+type = "plugin";
+source-plugin-file = "source-plugins/vnc.so.0.1";
+source-plugin-parameter = "192.168.1.100 5901 mypassword";
+

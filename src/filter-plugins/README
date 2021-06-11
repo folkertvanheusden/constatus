@@ -1,0 +1,31 @@
+RED INVERTER
+============
+demo is a filter in C, inverting the red channel
+
+
+SWAP RED/BLUE
+=============
+demo2 is a filter in C++, swapping the red and the blue channel
+
+
+CONTOURS
+========
+demoocv is a filter using OpenCV, it finds the contours in an image
+
+
+MQTT FEED
+=========
+mqtt reads from an mqtt source and adds the result as text in the stream
+
+
+
+Using plugins
+-------------
+
+filters = (
+		{
+			"type" : "filter-plugin",
+			"file" : "filter-plugins/demoocv.so.0.1",
+			"par" : ""
+		}
+	)

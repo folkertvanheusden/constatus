@@ -1,0 +1,292 @@
+:root {
+    --brand-color: #d6d345;
+    --fierman-green: #2c6e2c;
+    --text-color: #4b4b4b;
+    --white: white;
+    --padding: 1rem
+}
+
+* {
+    box-sizing: border-box   
+}
+
+body {
+    background: var(--fierman-green) url(https://vanheusden.com/constatus/fierman-logo.jpg) no-repeat center center;
+    background-blend-mode: overlay;
+    background-size: cover;
+    color: var(--text-color);
+    display: flex;
+    font: 18px/1.5 Open Sans, DejaVu Sans, Liberation Sans, Arial, sans-serif;
+    flex-direction: column;
+    margin: 0;
+    min-height: 100vh;
+    padding-top: 5em
+}
+
+header {
+    background: var(--brand-color);
+    position: fixed;
+    top: 0;
+    width: 100%
+}
+
+nav a:not(:first-child) {
+    font-size: smaller;
+    font-weight: normal
+}
+
+nav a:not(:last-child)::after {
+    content: " ›"
+}
+
+section {
+    display: inline-block;      /* keep content together for column-count */
+    border: 1rem solid transparent;
+    width: 100%
+}
+
+section > * {
+    background: white;
+    list-style: none;
+    margin: 0;
+    overflow: hidden;
+    padding: .5rem var(--padding) 1rem;
+    width: 100%
+}
+
+section li {
+    padding: .5rem 0
+}
+
+section li:not(:first-child) {
+    border-top: 1px solid lightgray
+}
+
+th {
+    border-bottom: 1px solid lightgray
+}
+
+section li a {
+    display: inline-block;    
+    width: 100%
+}
+
+h2 a::after, section li a::after {
+    content: "›";
+    color: gray;
+    float: right;
+    font-weight: bold
+}
+
+section figure img {
+    height: auto;
+    width: 100%
+}
+
+.controls {
+    float: right;
+    clear: right
+}
+
+.controls img, section figure figcaption img {
+    height: 16px;
+    width: 16px
+}
+
+dt {
+    clear: left;
+    float: left;
+    width: 50%
+}
+
+dd {
+    clear: right;
+    float: right;
+    font-weight: bold;
+    margin-left: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 50%
+}
+
+th, td {
+    font-size: smaller;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 10rem
+}
+
+td:first-child {
+    width: 50%
+}
+
+section figure {
+    background: white;
+    margin: 0;
+    padding: 1rem
+}
+
+section .alert {
+    animation: alert 1.5s infinite ease-in-out
+}
+
+@keyframes alert {
+    0% {
+        box-shadow: 0 0 15px red
+    }
+    50% {
+        box-shadow: none
+    }
+    100% {
+        box-shadow: 0 0 15px red
+    }
+}
+
+section figcaption, label {
+    font-size: smaller
+}
+
+section figcaption a {
+    float: right
+}
+
+
+form input {
+    background: white;
+    border: none;
+    border-bottom: 1px solid #aaa;
+    display: block;
+    font-size: 16px;
+    margin: .25rem 0 1.5rem;
+    outline: none;
+}
+
+form input:active, form input:focus {
+    border-bottom: 1px solid var(--fierman-green)
+}
+
+form button {
+    background: var(--brand-color);
+    color: var(--fierman-green);
+    border: none;
+    font-weight: bold;
+    padding: .5rem 1rem
+}
+
+label, input[type="range"] {
+    height: 1.5rem;
+    vertical-align: middle;
+    width: 3rem
+}
+
+footer {
+    color: var(--white);
+    font-size: smaller;
+    padding: 1rem;
+    text-align: center
+}
+
+h1, h2, h3 {
+    font-size: 1.25em;
+    margin: 0;
+    padding: 0 var(--padding)
+}
+
+h1 {
+    color: var(--white);
+    line-height: 2.5;
+    padding-left: 2rem
+}
+
+h2, h2 a {
+    background: none;
+    color: var(--brand-color)
+}
+
+h3, h3 a {
+    color: var(--fierman-green)
+}
+
+h3 {
+    font-size: 1rem;
+    padding-top: var(--padding)
+}
+
+a {
+    color: var(--text-color);
+    font-weight: bold;
+    text-decoration: none
+}
+
+li a {
+    font-weight: normal
+}
+
+header a, footer a {
+    color: var(--white)
+}
+
+::-webkit-scrollbar {
+    background: #8a8;
+    height: 10px;
+    width: 10px;
+}
+  
+::-webkit-scrollbar-thumb {
+    background: var(--fierman-green);
+    border-radius: 10px
+}
+
+main {
+    flex: 1 0 0
+}
+
+@media (min-width: 640px) {
+    body {
+        font-size: 16px
+    }
+
+    .columns {
+        column-count: 2
+    }
+}
+
+@media (min-width: 1280px) {
+    .columns {
+        column-count: 3;
+        margin: auto;
+        width: 1250px
+    }
+}
+
+
+@media (min-width: 1920px) {
+    .columns {
+        column-count: 4;
+        margin: auto;
+        width: 1900px
+    }
+}
+
+.fs-div {
+	position: relative;
+	left: 0;
+	top: 0;
+}
+
+.fs-big {
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+.fs-small {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 48px;
+    height: 48px;
+}

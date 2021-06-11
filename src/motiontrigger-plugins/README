@@ -1,0 +1,52 @@
+SCRIPTED / NETWORK
+==================
+"network" allows the motion-detector to be triggered via the network.
+A use-case can be when for example one constatus-instance detect motion, that all
+of them start recording (see also "exec-start").
+
+constatus configuration example:
+                trigger-plugin-file = "motiontrigger-plugins/netowkr.so.0.1";
+                trigger-plugin-parameter = "1234";
+1234 is the UDP-port it will listen on.
+If a UDP-packet is received on that port (any packet, contents does not matter),
+then the motion-detector gets triggered.
+
+
+GPIO
+====
+"gpio" waits for a pulse on a GPIO pin, parameter is the gpio pin number to check
+
+constatus configuration example:
+                trigger-plugin-file = "motiontrigger-plugins/gpio.so.0.1";
+                trigger-plugin-parameter = "13";
+13 is the example GPIO-pin to listen on
+
+This allows you for example to use e.g. a PIR (https://en.wikipedia.org/wiki/Passive_infrared_sensor )
+to trigger the motion-detector.
+
+
+TEMPLATE
+========
+"demo" is a template motion trigger in C++, always return false. 
+
+
+OPENCV
+======
+"demoocv" is a filter using OpenCV; detecting areas
+"demoocv2" is a filter using OpenCV; detecting human bodies
+
+
+OBJECT-TEST
+===========
+This plugin checks the size of the moving objects.
+
+constatus configuration example:
+                trigger-plugin-file = "motiontrigger-plugins/objects-test.so.0.1";
+		# percentage
+                trigger-plugin-parameter = "5";
+
+
+configuration example
+---------------------
+trigger-plugin-file = "motiontrigger-plugins/demo.so.0.1";
+trigger-plugin-parameter = "my parameter";
