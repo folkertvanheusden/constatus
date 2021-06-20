@@ -68,6 +68,7 @@ It is an NVR (network video recorder) with special features.
   - libcurl-dev e.g. libcurl4-openssl-dev
   - libjansson-dev
   - libssl-dev
+  - libboost-system-dev
 
 You may need libboost-system-dev, see the 'FAQ' section at the bottom.
 
