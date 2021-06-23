@@ -427,8 +427,7 @@ void source::start_watchdog(const double restart_interval)
 						th_lck.unlock();
 
 						log(id, LL_WARNING, "Restarting %s", get_id().c_str());
-						stop();
-						start();
+						restart();
 
 						mute = get_us();
 

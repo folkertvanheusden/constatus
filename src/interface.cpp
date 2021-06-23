@@ -93,7 +93,11 @@ void interface::start()
 {
 	const std::lock_guard<std::mutex> lock(th_lock);
 
+	log(id, LL_DEBUG, "interface::start: user count was %d", user_count);
+
 	if (user_count == 0) {
+		log(id, LL_DEBUG, "Initial thread start");
+
 		local_stop_flag = false;
 
 		clear_error();
@@ -103,14 +107,52 @@ void interface::start()
 			th = new std::thread(std::ref(*this));
 			running = true;
 		}
+		else {
+			log(id, LL_DEBUG, "Thread for \"%s\" was already started?", id.c_str());
+		}
 	}
 
 	user_count++;
 }
 
+void interface::restart()
+{
+	const std::lock_guard<std::mutex> lock(th_lock);
+
+	if (!th) {
+		log(id, LL_DEBUG, "interface::restart: no thread running (%d users)", user_count);
+		assert(user_count == 0);
+		return;
+	}
+
+	// stop
+
+	int old_user_count = user_count;
+	user_count = 0;
+
+	running = false;
+	local_stop_flag = true;
+	join_thread(&th, id, descr);
+
+	st->reset_cpu_tracking();
+
+	// (re-)start
+
+	local_stop_flag = false;
+
+	clear_error();
+
+	th = new std::thread(std::ref(*this));
+	running = true;
+
+	user_count = old_user_count;
+}
+
 void interface::stop()
 {
 	const std::lock_guard<std::mutex> lock(th_lock);
+
+	log(id, LL_DEBUG, "interface::stop: user count is now %d", user_count);
 
 	if (th) {
 		user_count--;
@@ -118,7 +160,7 @@ void interface::stop()
 		assert(user_count >= 0);
 
 		if (user_count == 0 && on_demand) {
-			log(id, LL_DEBUG, "user count is 0; terminating thread");
+			log(id, LL_DEBUG, "User count is 0; terminating thread");
 
 			running = false;
 
@@ -128,6 +170,9 @@ void interface::stop()
 
 			st->reset_cpu_tracking();
 		}
+	}
+	else {
+		log(id, LL_INFO, "interface::stop: \"%s\" (\"%s\") was already stopped!", descr.c_str(), id.c_str());
 	}
 }
 
@@ -156,6 +201,9 @@ void interface::join_thread(std::thread **const handle, const std::string & id, 
 		*handle = nullptr;
 
 		log(id, LL_INFO, "Thread \"%s\" stopped", descr.c_str());
+	}
+	else {
+		log(id, LL_WARNING, "Thread \"%s\" (for \"%s\") was not running? (during join_thread)", id.c_str(), descr.c_str());
 	}
 }
 

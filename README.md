@@ -228,6 +228,8 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 * fix the motion-configuration-importer
 * onvif support
 * audio
+* allow users to add comments to recorded videos
+* pipewire support
 
 
 

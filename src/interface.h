@@ -84,6 +84,7 @@ public:
 	bool is_paused() const { return paused; }
 	void unpause();
 	void announce_stop();
+	virtual void restart();
 	virtual void stop();
 	std::optional<error_state_t> get_last_error();
 	void set_on_demand(const bool v);
