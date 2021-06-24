@@ -194,7 +194,7 @@ bool myjpeg::write_JPEG_memory(const meta *const m, const int ncols, const int n
 	//// GENERATE JPEG ////
 	unsigned long int len = 0;
 	if (tjCompress2(jpegCompressor, pixels, ncols, 0, nrows, TJPF_RGB, &temp, &len, TJSAMP_444, quality, TJFLAG_FASTDCT) == -1) {
-		log(LL_ERR, "Failed compressing frame: %s", tjGetErrorStr());
+		log(LL_ERR, "Failed compressing frame: %s (%dx%d @ %d)", tjGetErrorStr(), ncols, nrows, quality);
 		return false;
 	}
 
@@ -277,7 +277,7 @@ bool myjpeg::read_JPEG_memory(unsigned char *in, int n_bytes_in, int *w, int *h,
 	return ok;
 }
 
-void myjpeg::rgb_to_i420(const uint8_t *const in, const int width, const int height, uint8_t **const out)
+void myjpeg::rgb_to_i420(tjhandle t, const uint8_t *const in, const int width, const int height, uint8_t **const out)
 {
 	*out = (uint8_t *)malloc(width * height + width * height / 2);
 
@@ -287,10 +287,10 @@ void myjpeg::rgb_to_i420(const uint8_t *const in, const int width, const int hei
         uint8_t *v_ptr = *out + pos;
 	uint8_t *dstPlanes[] = { y_ptr, u_ptr, v_ptr };
 
-	tjEncodeYUVPlanes(jpegCompressor, in, width, 0, height, TJPF_BGR, dstPlanes, nullptr, TJSAMP_420, 0);
+	tjEncodeYUVPlanes(t, in, width, 0, height, TJPF_BGR, dstPlanes, nullptr, TJSAMP_420, 0);
 }
 
-void myjpeg::i420_to_rgb(const uint8_t *const in, const int width, const int height, uint8_t **const out)
+void myjpeg::i420_to_rgb(tjhandle t, const uint8_t *const in, const int width, const int height, uint8_t **const out)
 {
         const int pos = width * height;
         const uint8_t *y_ptr = in;
@@ -300,5 +300,15 @@ void myjpeg::i420_to_rgb(const uint8_t *const in, const int width, const int hei
 
 	*out = (uint8_t *)malloc(IMS(width, height, 3));
 
-	tjDecodeYUVPlanes(jpegDecompressor, srcPlanes, nullptr, TJSAMP_420, *out, width, 0, height, TJPF_BGR, 0);
+	tjDecodeYUVPlanes(t, srcPlanes, nullptr, TJSAMP_420, *out, width, 0, height, TJPF_BGR, 0);
+}
+
+tjhandle myjpeg::allocate_transformer()
+{
+	return tjInitTransform();
+}
+
+void myjpeg::free_transformer(tjhandle h)
+{
+	tjDestroy(h);
 }

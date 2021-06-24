@@ -48,6 +48,7 @@ int connect_to(std::string hostname, int port, std::atomic_bool *abort);
 
 void * allocate_0x00(const size_t size);
 void * duplicate(const void *const org, const size_t size);
+void * duplicate(const void *const org, const size_t size, const int line_len /* bytes */, const int padding); // padding = stride - xres * Bpp
 
 void mynanosleep(struct timespec req);
 void myusleep(long int us);

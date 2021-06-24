@@ -102,13 +102,13 @@ void source::do_exec_failure()
 	}
 }
 
-void source::set_frame(const encoding_t pe, const uint8_t *const data, const size_t size)
+void source::set_frame(const encoding_t pe, const uint8_t *const data, const size_t size, const bool do_duplicate)
 {
 	uint64_t use_ts = get_us();
 
 	st->track_fps();
 
-	uint8_t *copy = (uint8_t *)duplicate(data, size);
+	uint8_t *copy = (uint8_t *)(do_duplicate ? duplicate(data, size) : data);
 
 	const std::lock_guard<std::mutex> lck(lock);
 

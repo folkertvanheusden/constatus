@@ -548,6 +548,25 @@ void * duplicate(const void *const org, const size_t size)
 	return temp;
 }
 
+void * duplicate(const void *const org, const size_t size, const int line_len, const int padding)
+{
+	uint8_t *out = (uint8_t *)malloc(size), *out_work = out, *org_work = (uint8_t *)org;
+	size_t work_size = size;
+
+	const int stride = line_len + padding;
+
+	while(work_size > 0) {
+		memcpy(out_work, org_work, line_len);
+
+		org_work += stride;
+		out_work += line_len;
+
+		work_size -= stride;
+	}
+
+	return out;
+}
+
 // NOTE: requires a path ending in / (or filename)
 void create_path(const std::string & filename)
 {

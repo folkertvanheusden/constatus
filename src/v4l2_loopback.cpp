@@ -29,6 +29,8 @@ v4l2_loopback::v4l2_loopback(const std::string & id, const std::string & descr, 
 	local_stop_flag = false;
 	ct = CT_LOOPBACK;
 
+	th = myjpeg::allocate_transformer();
+
 	if (this -> descr == "")
 		this -> descr = dev;
 }
@@ -37,6 +39,8 @@ v4l2_loopback::~v4l2_loopback()
 {
 	stop();
 	free_filters(filters);
+
+	myjpeg::free_transformer(th);
 }
 
 void v4l2_loopback::operator()()
@@ -112,7 +116,7 @@ void v4l2_loopback::operator()()
 
 			if (pixel_format == "YUV420") {
 				uint8_t *temp { nullptr };
-				my_jpeg.rgb_to_i420(std::get<0>(img), pvf->get_w(), pvf->get_h(), &temp);
+				my_jpeg.rgb_to_i420(th, std::get<0>(img), pvf->get_w(), pvf->get_h(), &temp);
 
 				if (write(v4l2sink, temp, enc_n) == -1) {
 					set_error("write to video loopback failed", true);

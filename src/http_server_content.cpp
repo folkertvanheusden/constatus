@@ -112,6 +112,7 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 			}
 			else {
 				if (resize_h != -1 || resize_w != -1) {
+					printf("%dx%d => %dx%d\n", pvf->get_w(), pvf->get_h(), resize_w, resize_h);
 					video_frame *temp = pvf->do_resize(r, resize_w, resize_h);
 					delete pvf;
 					pvf = temp;

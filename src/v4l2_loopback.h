@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "interface.h"
+#include "picio.h"
 
 class filter;
 class source;
@@ -19,6 +20,7 @@ private:
 	const std::string dev, pixel_format;
 	const std::vector<filter *> *const filters;
 	instance *const inst;
+	transformer_t th;
 
 public:
 	v4l2_loopback(const std::string & id, const std::string & descr, source *const s, const double fps, const std::string & dev, const std::string & pixel_format, const std::vector<filter *> *const filters, instance *const inst);

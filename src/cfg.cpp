@@ -30,6 +30,9 @@ using namespace libconfig;
 #include "source_gstreamer.h"
 #endif
 #include "source_pixelflood.h"
+#if HAVE_PIPEWIRE == 1
+#include "source_pipewire.h"
+#endif
 #include "source_static.h"
 #include "source_black.h"
 #include "webservices.h"
@@ -1019,6 +1022,13 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 			s = new source_http_mjpeg(id, descr, exec_failure, url, ign_cert, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
 		}
+
+#if HAVE_PIPEWIRE == 1
+		else if (s_type == "pipewire") {
+			int pw_id = cfg_int(o_source, "pw-id", "ID of device", false, PW_ID_ANY);
+			s = new source_pipewire(id, descr, pw_id, resize_w, resize_h, jpeg_quality, use_controls ? new controls_software() : nullptr);
+		}
+#endif
 
 #if HAVE_FFMPEG == 1
 		else if (s_type == "rtsp" || s_type == "mjpeg" || s_type == "stream" || s_type == "ffmpeg") {

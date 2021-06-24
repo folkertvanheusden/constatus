@@ -57,6 +57,10 @@
 #include <alsa/version.h>
 #endif
 
+#ifdef HAVE_PIPEWIRE
+#include <pipewire/pipewire.h>
+#endif
+
 #include "gen.h"
 #include "db.h"
 #include "log.h"
@@ -273,6 +277,10 @@ int main(int argc, char *argv[])
 	bool do_fork = false, verbose = false;
 	int ll = LL_INFO;
 
+#ifdef HAVE_PIPEWIRE
+	pw_init(&argc, &argv);
+#endif
+
 	configuration_t *cfg = new configuration_t;
 
 	cfg->cfg_file = "constatus.cfg";
@@ -439,6 +447,12 @@ int main(int argc, char *argv[])
 	log(LL_INFO, "With ALSA " SND_LIB_VERSION_STR);
 #else
 	log(LL_INFO, "Without ALSA");
+#endif
+
+#if HAVE_PIPEWIRE == 1
+	log(LL_INFO, "With pipewire");
+#else
+	log(LL_INFO, "Without pipewire");
 #endif
 
 	if (do_fork && daemon(0, 0) == -1)

@@ -1,12 +1,14 @@
 // (C) 2017-2020 by folkert van heusden, released under AGPL v3.0
 #pragma once
 #include "target.h"
+#include "picio.h"
 
 class target_extpipe : public target
 {
 private:
 	const int quality;
 	const std::string cmd;
+	transformer_t th;
 
 	void store_frame(video_frame *const put_f, FILE *const p_fd);
 

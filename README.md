@@ -15,6 +15,7 @@ It is an NVR (network video recorder) with special features.
    - pixelflood
    - gstreamer pipeline
    - libcamera
+   - pipewire
 
 - output:
    - AVI file(s)
@@ -93,6 +94,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - libasound2-dev              - audio trigger
   - libmagick++-dev             - for animated gif/mng overlay
   - ffmpeg: libavformat-dev / libswscale-dev / libavcodec-dev / libavutil-dev / libswresample-dev / libavresample-dev / libatomic1 - for mp4 and other file formats
+  - pipewire: libpipewire-0.3-dev / libspa-0.2-dev
 
 
 libgwavi is since version 4.3 not used anymore; you can remove it from your computer if you ony installed it for constatus.
@@ -229,7 +231,7 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 * onvif support
 * audio
 * allow users to add comments to recorded videos
-* pipewire support
+* pipewire target support
 
 
 

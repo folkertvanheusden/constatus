@@ -70,7 +70,7 @@ public:
 
 	virtual video_frame * get_frame(const bool handle_failure, const uint64_t after);
 	virtual video_frame * get_failure_frame();
-	void set_frame(const encoding_t pe, const uint8_t *const data, const size_t size);
+	void set_frame(const encoding_t pe, const uint8_t *const data, const size_t size, const bool do_duplicate = true);
 	void set_scaled_frame(const uint8_t *const in, const int sourcew, const int sourceh);
 	void set_size(const int w, const int h);
 

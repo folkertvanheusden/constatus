@@ -20,17 +20,21 @@ target_extpipe::target_extpipe(const std::string & id, const std::string & descr
 {
 	if (this -> descr == "")
 		this -> descr = store_path + "/" + prefix;
+
+	th = myjpeg::allocate_transformer();
 }
 
 target_extpipe::~target_extpipe()
 {
 	stop();
+
+	myjpeg::free_transformer(th);
 }
 
-static void put_frame(FILE *fh, const uint8_t *const in, const int w, const int h)
+static void put_frame(transformer_t th, FILE *fh, const uint8_t *const in, const int w, const int h)
 {
 	uint8_t *temp { nullptr };
-	my_jpeg.rgb_to_i420(in, w, h, &temp);
+	my_jpeg.rgb_to_i420(th, in, w, h, &temp);
 
 	size_t n = w * h + w * h / 2;
 	fwrite(temp, 1, n, fh);
@@ -40,7 +44,7 @@ static void put_frame(FILE *fh, const uint8_t *const in, const int w, const int 
 
 void target_extpipe::store_frame(video_frame *const put_f, FILE *const p_fd)
 {
-	put_frame(p_fd, put_f->get_data(E_RGB), put_f->get_w(), put_f->get_h());
+	put_frame(th, p_fd, put_f->get_data(E_RGB), put_f->get_w(), put_f->get_h());
 }
 
 void target_extpipe::operator()()

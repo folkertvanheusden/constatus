@@ -1,0 +1,43 @@
+// (c) 2017-2021 by folkert van heusden, released under agpl v3.0
+#pragma once
+
+#include <atomic>
+#include <string>
+#include <thread>
+#include <pipewire/core.h>
+#include <spa/param/video/format-utils.h>
+#include <spa/debug/types.h>
+#include <spa/param/video/type-info.h>
+#include <pipewire/pipewire.h>
+
+#include "source.h"
+#include "picio.h"
+
+struct pmi_data
+{
+        struct pw_main_loop *loop;
+        struct pw_stream *stream;
+
+        struct spa_video_info format;
+
+	source *s;
+
+	transformer_t tf;
+};
+
+class source_pipewire : public source
+{
+private:
+	const int source_id;
+
+	struct pmi_data data { 0, };
+	const struct spa_pod *params[1] { nullptr };
+	struct spa_rectangle min_dim, default_dim, max_dim;
+	struct spa_fraction min_frac, default_frac, max_frac;
+
+public:
+	source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c);
+	~source_pipewire();
+
+	void operator()() override;
+};

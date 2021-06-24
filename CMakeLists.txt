@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
 
 # set the project name
-project(constatus VERSION 4.6)
+project(constatus VERSION 5.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -27,6 +27,7 @@ add_executable(constatus
 	src/draw_text.cpp
 	src/draw_text_bitmap.cpp
 	src/draw_text_font.cpp
+	src/encoding.cpp
 	src/error.cpp
 	src/exec.cpp
 	src/icons.cpp
@@ -92,6 +93,7 @@ add_executable(constatus
 	src/source_http_jpeg.cpp
 	src/source_http_mjpeg.cpp
 	src/source_libcamera.cpp
+	src/source_pipewire.cpp
 	src/source_pixelflood.cpp
 	src/source_plugin.cpp
 	src/source_static.cpp
@@ -251,6 +253,14 @@ pkg_check_modules(IMAGICK ImageMagick++)
 target_link_libraries(constatus ${IMAGICK_LIBRARIES})
 target_include_directories(constatus PUBLIC ${IMAGICK_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${IMAGICK_CFLAGS_OTHER})
+
+
+# pipewire
+find_package(PipeWire)
+pkg_check_modules(PIPEWIRE libpipewire-0.3)
+target_link_libraries(constatus ${PIPEWIRE_LIBRARIES})
+target_include_directories(constatus PUBLIC ${PIPEWIRE_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${PIPEWIRE_CFLAGS_OTHER})
 
 find_package(websocketpp)
 

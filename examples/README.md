@@ -43,3 +43,11 @@ the network.
 
 Constatus can also start recording when it gets an external
 tigger. Here a trigger is received over the network.
+
+* pipewire.cfg
+
+How to use Constatus with PipeWire.
+
+* video4linux.cfg
+
+Just a simple video4linux video source http server configuration.
