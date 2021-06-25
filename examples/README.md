@@ -51,3 +51,8 @@ How to use Constatus with PipeWire.
 * video4linux.cfg
 
 Just a simple video4linux video source http server configuration.
+
+* pixelflood.cfg
+
+Takes a video stream (from e.g. a webcam), resizes it and sends
+the result to a pixelflood-server.

@@ -691,6 +691,10 @@ int main(int argc, char *argv[])
 
 	delete cfg;
 
+#if HAVE_PIPEWIRE == 1
+	pw_deinit();
+#endif
+
 	log(LL_INFO, "Bye bye");
 
 	return 0;

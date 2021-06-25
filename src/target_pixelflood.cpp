@@ -16,7 +16,7 @@
 #include "resize.h"
 #include "schedule.h"
 
-target_pixelflood::target_pixelflood(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const std::string & host, const int port, const int pfw, const int pfh, const int quality, const pixelflood_protocol_t pp, const int xoff, const int yoff, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", fmt, max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), quality(quality), host(host), port(port), pw(pfw), ph(pfh), pp(pp), xoff(xoff), yoff(yoff)
+target_pixelflood::target_pixelflood(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const std::string & host, const int port, const int pfw, const int pfh, const int quality, const pixelflood_protocol_t pp, const int xoff, const int yoff, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), quality(quality), host(host), port(port), pw(pfw), ph(pfh), pp(pp), xoff(xoff), yoff(yoff)
 {
 	if (this -> descr == "")
 		this -> descr = store_path + "/" + prefix;
