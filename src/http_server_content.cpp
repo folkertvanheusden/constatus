@@ -37,6 +37,8 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 	uint64_t prev = 0;
 	time_t end = time(nullptr) + time_limit;
 	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag;) {
+		uint64_t before_ts = get_us();
+
 		video_frame *pvf = s -> get_frame(handle_failure, prev);
 
 		if (pvf) {
@@ -112,7 +114,7 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 			}
 			else {
 				if (resize_h != -1 || resize_w != -1) {
-					printf("%dx%d => %dx%d\n", pvf->get_w(), pvf->get_h(), resize_w, resize_h);
+					// printf("%dx%d => %dx%d\n", pvf->get_w(), pvf->get_h(), resize_w, resize_h);
 					video_frame *temp = pvf->do_resize(r, resize_w, resize_h);
 					delete pvf;
 					pvf = temp;
@@ -154,6 +156,8 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 		}
 
 		st->track_cpu_usage();
+
+		handle_fps(&local_stop_flag, fps, before_ts);
 	}
 
 	delete prev_frame;
@@ -168,6 +172,8 @@ void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool 
 	uint64_t prev = 0;
 	time_t end = time(nullptr) + time_limit;
 	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag;) {
+		uint64_t before_ts = get_us();
+
 		video_frame *pvf = s -> get_frame(handle_failure, prev);
 
 		if (pvf) {
@@ -266,6 +272,8 @@ void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool 
 		}
 
 		st->track_cpu_usage();
+
+		handle_fps(&local_stop_flag, fps, before_ts);
 	}
 
 	delete prev_frame;

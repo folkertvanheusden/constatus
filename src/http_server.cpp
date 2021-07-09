@@ -1848,6 +1848,9 @@ void http_server::handle_http_client(http_thread_t *const ct)
 	bool auth_ok = true, is_view_proxy = false;
 	std::string cookie;
 
+	int final_w = resize_w, final_h = resize_h;
+	double final_fps = fps;
+
 	if (!motion_compatible) {
 		auto forwarded_for = find_header(*header_lines, "X-Forwarded-For");
 
@@ -1875,6 +1878,27 @@ void http_server::handle_http_client(http_thread_t *const ct)
 
 			if (auto inst_it = pars.find("inst"); inst_it != pars.end())
 				inst = find_instance_by_name(cfg, inst_it -> second);
+
+			if (auto w_it = pars.find("w"); w_it != pars.end()) {
+				final_w = atoi(w_it -> second.c_str());
+
+				if (final_w > resize_w && resize_w != -1)
+					final_w = resize_w;
+			}
+
+			if (auto h_it = pars.find("h"); h_it != pars.end()) {
+				final_h = atoi(h_it -> second.c_str());
+
+				if (final_h > resize_h && resize_h != -1)
+					final_h = resize_h;
+			}
+
+			if (auto fps_it = pars.find("fps"); fps_it != pars.end()) {
+				final_fps = atof(fps_it -> second.c_str());
+
+				if (final_fps > fps && fps > 0.0)
+					final_fps = fps;
+			}
 
 			if (!s)
 				s = find_source(inst);
@@ -1929,7 +1953,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(true, ct->peer_name);
 
-		send_mjpeg_stream(ct->hh, s, fps, quality, get_or_post, time_limit, filters, cfg->r, resize_w, resize_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_mjpeg_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
 
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);
@@ -1940,15 +1964,15 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(true, ct->peer_name);
 
-		send_mpng_stream(ct->hh, s, fps, get_or_post, time_limit, filters, cfg->r, resize_w, resize_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_mpng_stream(ct->hh, s, final_fps, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
 
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);
 	}
 	else if (path == "image.png" && s)
-		send_png_frame(ct->hh, s, get_or_post, filters, cfg->r, resize_w, resize_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_png_frame(ct->hh, s, get_or_post, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
 	else if (path == "image.jpg" && s)
-		send_jpg_frame(ct->hh, s, get_or_post, quality, filters, cfg->r, resize_w, resize_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_jpg_frame(ct->hh, s, get_or_post, quality, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
 	else if (path == "stream.html" && s)
 		send_stream_html(ct, page_header, iup, s, is_view_proxy, cookie);
 	else if (path == "index.html" || path.empty())
