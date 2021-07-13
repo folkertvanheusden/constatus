@@ -25,6 +25,7 @@ It is an NVR (network video recorder) with special features.
    - build-in VNC server
    - pixelflood
    - via plugins
+   - pipewire
 
 - motion detection
    - configurable detector
