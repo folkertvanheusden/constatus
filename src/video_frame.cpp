@@ -78,9 +78,10 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 
 		uint8_t *frame_rgb { nullptr };
 		int dw = -1, dh = -1;
+		// FIXME treat "dw != w || dh != h" really as an error?
 		if (!my_jpeg.read_JPEG_memory(it->second.first, it->second.second, &dw, &dh, &frame_rgb) || dw != w || dh != h) {
 			log(LL_ERR, "read_JPEG_memory failed");
-			free(frame_rgb); // incase dimensions differ
+			free(frame_rgb);
 			return data.end();
 		}
 
@@ -96,26 +97,39 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 
 uint8_t *video_frame::get_data(const encoding_t e)
 {
-	const std::lock_guard<std::mutex> lock(m);
+	return std::get<0>(get_data_and_len(e));
+}
 
+std::tuple<uint8_t *, size_t> video_frame::get_data_and_len_internal(const encoding_t e)
+{
 	auto it = data.find(e);
 
-	if (it == data.end())
+	if (it == data.end()) {
 		it = gen_encoding(e);
 
-	return it->second.first;
+		if (it == data.end()) {
+			// last resort
+			// this path is taken when e.g. a JPEG could not be decoded
+			log(LL_WARNING, "returning gray failure frame");
+
+			size_t n_pixels = w * h * 3;
+			uint8_t *gray = (uint8_t *)malloc(n_pixels);
+
+			memset(gray, 0x80, n_pixels);
+
+			// takes ownership of the allocated memory
+			return std::make_tuple(gray, n_pixels);
+		}
+	}
+
+	return std::make_tuple(it->second.first, it->second.second);
 }
 
 std::tuple<uint8_t *, size_t> video_frame::get_data_and_len(const encoding_t e)
 {
 	const std::lock_guard<std::mutex> lock(m);
 
-	auto it = data.find(e);
-
-	if (it == data.end())
-		it = gen_encoding(e);
-
-	return std::make_tuple(it->second.first, it->second.second);
+	return get_data_and_len_internal(e);
 }
 
 std::tuple<int, int> video_frame::get_wh() const
@@ -153,15 +167,10 @@ video_frame *video_frame::do_resize(resize *const r, const int new_w, const int 
 
 	std::unique_lock<std::mutex> lock(m);
 
-	auto it = data.find(E_RGB);
-
-	if (it == data.end())
-		it = gen_encoding(E_RGB);
-
-	uint8_t *in = it->second.first;
+	auto rc = get_data_and_len_internal(E_RGB);
 
 	uint8_t *resized { nullptr };
-	r->do_resize(w, h, in, new_w, new_h, &resized);
+	r->do_resize(w, h, std::get<0>(rc), new_w, new_h, &resized);
 
 	lock.unlock();
 
@@ -178,12 +187,10 @@ video_frame *video_frame::duplicate(const std::optional<encoding_t> e)
 	out->set_wh(w, h);
 
 	if (e.has_value()) {
-		auto it = data.find(e.value());
+		auto type = e.value();
+		auto rc = get_data_and_len_internal(type);
 
-		if (it == data.end())
-			it = gen_encoding(e.value());
-
-		out->put_data(it->second.first, it->second.second, it->first);
+		out->put_data(std::get<0>(rc), std::get<1>(rc), type);
 	}
 	else {
 		for(auto it : data)

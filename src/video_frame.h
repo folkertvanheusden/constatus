@@ -28,9 +28,11 @@ private:
 	std::map<encoding_t, std::pair<uint8_t *, size_t> > data;
 
 	std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator gen_encoding(const encoding_t new_e);
+	std::tuple<uint8_t *, size_t> get_data_and_len_internal(const encoding_t e);
+
+	video_frame(const meta *const m, const int jpeg_quality);
 
 public:
-	video_frame(const meta *const m, const int jpeg_quality);
 	video_frame(const meta *const m, const int jpeg_quality, const uint64_t ts, const int w, const int h, uint8_t *const data, const size_t len, const encoding_t e);
 	virtual ~video_frame();
 
