@@ -229,6 +229,7 @@ void motion_trigger_generic::operator()()
 
 		if (pvf->get_w() != w || pvf->get_h() != h) {
 			log(id, LL_ERR, "Camera resized! Aborting");
+			delete pvf;
 			break;
 		}
 
