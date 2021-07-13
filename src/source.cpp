@@ -406,6 +406,9 @@ void source::start_watchdog(const double restart_interval)
 		set_thread_name("wd:" + id);
 
 		log(get_id(), LL_INFO, "Watchdog for %s started with interval %fs", get_id().c_str(), restart_interval);
+
+		start(); // device must be running
+
 		// this way it'll take 'restart_interval' seconds before the watchdog will start
 		// monitoring
 		uint64_t mute = get_us();
@@ -438,6 +441,8 @@ void source::start_watchdog(const double restart_interval)
 				th_lck.unlock();
 			}
 		}
+
+		stop();
 
 		log(id, LL_INFO, "Watchdog for %s terminating", get_id().c_str());
 	});
