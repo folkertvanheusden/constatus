@@ -908,7 +908,7 @@ void handle_fps(std::atomic_bool *stop_flag, const double fps, const double fram
 	uint64_t after_ts = get_us();
 	uint64_t frame_took = after_ts - frame_start;
 	int64_t sleep_left = 1000000 / fps - frame_took;
-	log(LL_INFO, "frame took %f, sleep left %f", frame_took / 1000000.0, sleep_left / 1000000.0);
+	log(LL_DEBUG, "frame took %f, sleep left %f", frame_took / 1000000.0, sleep_left / 1000000.0);
 
 	if (sleep_left > 0)
 		mysleep(sleep_left, stop_flag, nullptr);
