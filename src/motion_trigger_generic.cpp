@@ -355,8 +355,11 @@ void motion_trigger_generic::operator()()
 					else {
 						std::vector<video_frame *> empty;
 
-						for(size_t i=0; i<targets -> size(); i++)
+						for(size_t i=0; i<targets -> size(); i++) {
+							targets -> at(i) -> set_on_demand(true);
+
 							targets -> at(i) -> start(i == 0 ? prerecord : empty, event_nr);
+						}
 					}
 
 					prerecord.clear();

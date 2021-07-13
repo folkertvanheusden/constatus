@@ -80,8 +80,11 @@ void motion_trigger_other_source::operator()()
 
 				std::vector<video_frame *> empty;
 
-				for(size_t i=0; i<targets -> size(); i++)
+				for(size_t i=0; i<targets -> size(); i++) {
+					targets -> at(i) -> set_on_demand(true);
+
 					targets -> at(i) -> start(i == 0 ? prerecord : empty, -1);
+				}
 
 				recording = true;
 
@@ -102,8 +105,11 @@ void motion_trigger_other_source::operator()()
 					log(id, LL_INFO, "starting");
 
 					std::vector<video_frame *> empty;
-					for(size_t i=0; i<targets -> size(); i++)
+					for(size_t i=0; i<targets -> size(); i++) {
+						targets -> at(i) -> set_on_demand(true);
+
 						targets -> at(i) -> start(empty, -1);
+					}
 
 					recording = true;
 				}

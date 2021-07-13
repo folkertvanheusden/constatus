@@ -152,7 +152,7 @@ void interface::stop()
 {
 	const std::lock_guard<std::mutex> lock(th_lock);
 
-	log(id, LL_DEBUG, "interface::stop: user count is now %d", user_count);
+	log(id, LL_DEBUG, "interface::stop: user count is %d", user_count);
 
 	if (th) {
 		user_count--;
