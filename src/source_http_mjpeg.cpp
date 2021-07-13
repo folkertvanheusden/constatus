@@ -364,7 +364,8 @@ void source_http_mjpeg::operator()()
 		free(wh.data);
 
 		long http_code = 0;
-		curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &http_code);
+		if (curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &http_code))
+			log(id, LL_INFO, "CURL(CURLINFO_RESPONSE_CODE) error: %s", curl_easy_strerror(rc));
 
 		if (http_code == 200) {
 			// all fine
