@@ -87,7 +87,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - libmysqlcppconn-dev		- MySQL
   - frei0r-plugins-dev		- frei0r plugins
   - libpam0g-dev	        - authentication in http
-  - libgstreamer1.0-dev		- gstreamer pipelines and AVI-files
+  - libgstreamer1.0-dev		- gstreamer pipelines and AVI-files (AVI files require the gstreamer1.0-plugins-good package as well at runtime)
   - libgstreamer-plugins-base1.0-dev
   - libwebsocketpp-dev          - refreshless http
   - libsdl2-dev                 - X11/Xorg GUI
