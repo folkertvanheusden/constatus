@@ -10,12 +10,14 @@
 
 source_gstreamer::source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : source(id, descr, exec_failure, -1.0, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality), pipeline(pipeline)
 {
+	tf = myjpeg::allocate_transformer();
 }
 
 source_gstreamer::~source_gstreamer()
 {
 	stop();
 	delete c;
+	myjpeg::free_transformer(tf);
 }
 
 void source_gstreamer::operator()()
@@ -82,7 +84,7 @@ void source_gstreamer::operator()()
 				set_frame(E_RGB, info.data, n);
 			else {
 				uint8_t *rgb { nullptr };
-				my_jpeg.i420_to_rgb(info.data, width, height, &rgb);
+				my_jpeg.i420_to_rgb(tf, info.data, width, height, &rgb);
 
 				set_frame(E_RGB, rgb, n);
 
