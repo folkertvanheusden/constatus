@@ -13,7 +13,7 @@
 #include "source.h"
 #include "picio.h"
 
-struct pmi_data
+struct pmis_data
 {
         struct pw_main_loop *loop;
         struct pw_stream *stream;
@@ -29,14 +29,15 @@ class source_pipewire : public source
 {
 private:
 	const int source_id;
+	const double interval;
 
-	struct pmi_data data { 0, };
+	struct pmis_data data { 0, };
 	const struct spa_pod *params[1] { nullptr };
 	struct spa_rectangle min_dim, default_dim, max_dim;
 	struct spa_fraction min_frac, default_frac, max_frac;
 
 public:
-	source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c);
+	source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps);
 	~source_pipewire();
 
 	void operator()() override;

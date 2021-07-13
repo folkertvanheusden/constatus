@@ -51,6 +51,9 @@ using namespace libconfig;
 #if HAVE_GSTREAMER == 1
 #include "target_gstreamer.h"
 #endif
+#if HAVE_PIPEWIRE == 1
+#include "target_pipewire.h"
+#endif
 #include "target_jpeg.h"
 #include "target_plugin.h"
 #include "target_extpipe.h"
@@ -1026,7 +1029,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 #if HAVE_PIPEWIRE == 1
 		else if (s_type == "pipewire") {
 			int pw_id = cfg_int(o_source, "pw-id", "ID of device", false, PW_ID_ANY);
-			s = new source_pipewire(id, descr, pw_id, resize_w, resize_h, jpeg_quality, use_controls ? new controls_software() : nullptr);
+			s = new source_pipewire(id, descr, pw_id, resize_w, resize_h, jpeg_quality, use_controls ? new controls_software() : nullptr, max_fps);
 		}
 #endif
 
@@ -1172,7 +1175,7 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 	std::string format = cfg_str(in, "format", "extpipe, ffmpeg (for mp4, ogg, etc), jpeg, vnc, plugin, as-a-new-source or pixelflood", false, "");
 #endif
 
-	std::string path = cfg_str(in, "path", "directory to write to", format == "as-a-new-source" || format == "gstreamer" || format == "pixelflood", "");
+	std::string path = cfg_str(in, "path", "directory to write to", format == "as-a-new-source" || format == "gstreamer" || format == "pixelflood" || format == "pipewire", "");
 	std::string prefix = cfg_str(in, "prefix", "string to begin filename with", true, "");
 	std::string fmt = cfg_str(in, "fmt", "specifies filename format", true, default_fmt);
 
@@ -1226,6 +1229,11 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		std::string const parameters = cfg_str(in, "ffmpeg-parameters", "Parameters specific for ffmpeg.", true, "");
 
 		t = new target_ffmpeg(id, descr, parameters, s, path, prefix, fmt, restart_interval, interval, type, bitrate, filters, exec_start, exec_cycle, exec_end, override_fps, cfg, false, handle_failure, sched);
+	}
+#endif
+#if HAVE_PIPEWIRE == 1
+	else if (format == "pipewire") {
+		t = new target_pipewire(id, descr, s, interval, filters, cfg, false, handle_failure, sched);
 	}
 #endif
 	else if (format == "jpeg")

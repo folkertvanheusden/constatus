@@ -22,7 +22,7 @@
 
 void on_process(void *userdata)
 {
-        struct pmi_data *data = (struct pmi_data *)userdata;
+        struct pmis_data *data = (struct pmis_data *)userdata;
         struct pw_buffer *b = nullptr;
         struct spa_buffer *buf = nullptr;
 
@@ -90,7 +90,7 @@ void on_process(void *userdata)
 
 void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param)
 {
-        struct pmi_data *data = (struct pmi_data *)userdata;
+        struct pmis_data *data = (struct pmis_data *)userdata;
 
         if (param == nullptr || id != SPA_PARAM_Format)
                 return;
@@ -133,7 +133,7 @@ static const struct pw_stream_events stream_events = {
         .process = on_process,
 };
 
-source_pipewire::source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c) : source(id, descr, "", width, height, nullptr, c, quality), source_id(source_id)
+source_pipewire::source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps) : source(id, descr, "", width, height, nullptr, c, quality), source_id(source_id), interval(1.0 / max_fps)
 {
 	uint8_t buffer[1024] { 0 };
 	struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof buffer);
@@ -143,7 +143,7 @@ source_pipewire::source_pipewire(const std::string & id, const std::string & des
 	max_dim = SPA_RECTANGLE(4096, 4096);
 
 	min_frac = SPA_FRACTION(0, 1);
-	default_frac = SPA_FRACTION(25, 1); // FIXME
+	default_frac = SPA_FRACTION(uint32_t(interval), 1);
 	max_frac = SPA_FRACTION(1000, 1);
 
 	data.s = this;
@@ -151,9 +151,10 @@ source_pipewire::source_pipewire(const std::string & id, const std::string & des
 
 	data.loop = pw_main_loop_new(nullptr);
 
+	std::string name = "Constatus " + id;
 	data.stream = pw_stream_new_simple(
 			pw_main_loop_get_loop(data.loop),
-			"video-capture",
+			name.c_str(),
 			pw_properties_new(
 				PW_KEY_MEDIA_TYPE, "Video",
 				PW_KEY_MEDIA_CATEGORY, "Capture",

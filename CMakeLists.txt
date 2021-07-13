@@ -106,6 +106,7 @@ add_executable(constatus
 	src/target_gstreamer.cpp
 	src/target_jpeg.cpp
 	src/target_new_source.cpp
+	src/target_pipewire.cpp
 	src/target_pixelflood.cpp
 	src/target_plugin.cpp
 	src/target_vnc.cpp
