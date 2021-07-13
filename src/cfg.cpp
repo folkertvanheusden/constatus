@@ -653,8 +653,8 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 
 			filters -> push_back(new filter_plugin(file, par));
 		}
-#if HAVE_FREI0R == 1
 		else if (s_type == "filter-plugin-frei0r" || s_type == "frei0r") {
+#if HAVE_FREI0R == 1
 			std::string file = cfg_str(ae, "file", "filename of frei0r filter plugin", false, "");
 			std::string pars = cfg_str(ae, "pars", "parameters for frei0r filter plugin (seperated by spaces, k=v pairs)", true, "");
 
@@ -679,8 +679,10 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 			}
 
 			filters -> push_back(new filter_plugin_frei0r(file, pars, other_sources, cfg->r));
-		}
+#else
+			error_exit(false, "'fre0ir' support was not compiled in");
 #endif
+		}
 		else if (s_type == "marker") {
 			std::string motion_source = cfg_str(ae, "motion-source", "source to monitor, leave empty for monitoring by itself (less efficient)", true, "");
 			instance *const i = motion_source.empty() ? nullptr : (instance *)find_instance_by_name(cfg, motion_source);
@@ -762,15 +764,17 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 
 			filters -> push_back(new filter_overlay(s_pic, pos));
 		}
-#if HAVE_IMAGICK == 1
 		else if (s_type == "gif-overlay") {
+#if HAVE_IMAGICK == 1
 			std::string s_pic = cfg_str(ae, "picture", "(animated) GIF/MNG to overlay", false, "");
 
 			pos_t pos = find_xy_or_pos(ae, "animated overlay");
 
 			filters -> push_back(new filter_anigif_overlay(s_pic, pos));
-		}
+#else
+			error_exit(false, "'gif-overlay' requires imagick");
 #endif
+		}
 		else if (s_type == "text") {
 			std::string s_text = cfg_str(ae, "text", "what text to show", false, "");
 			std::string s_position = cfg_str(ae, "position", "where to put it, e.g. upper-left, lower-center, center-right, etc", false, "");
@@ -966,19 +970,20 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 		catch(SettingNotFoundException & snfe) {
 		}
 
-#if HAVE_LIBV4L2 == 1
 		if (s_type == "v4l") {
+#if HAVE_LIBV4L2 == 1
 			int w = cfg_int(o_source, "width", "width of picture", false);
 			int h = cfg_int(o_source, "height", "height of picture", false);
 			std::string dev = cfg_str(o_source, "device", "linux v4l2 device", false, "/dev/video0");
 			bool prefer_jpeg = cfg_bool(o_source, "prefer-jpeg", "try to get directly JPEG from camera", true, false);
 
 			s = new source_v4l(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, use_controls);
-		}
-		else
+#else
+			error_exit(false, "'libv4l2' was not linked in");
 #endif
+		}
+		else if (s_type == "libcamera") {
 #if HAVE_LIBCAMERA == 1
-		if (s_type == "libcamera") {
 			int w = cfg_int(o_source, "width", "width of picture", false);
 			int h = cfg_int(o_source, "height", "height of picture", false);
 			std::string dev = cfg_str(o_source, "device", "device name", false, "");
@@ -1004,10 +1009,11 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			}
 
 			s = new source_libcamera(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, ctrls, use_controls ? new controls_software() : nullptr);
-		}
-		else
+#else
+			error_exit(false, "'libcamera' is required");
 #endif
-		if (s_type == "jpeg") {
+		}
+		else if (s_type == "jpeg") {
 			bool ign_cert = cfg_bool(o_source, "ignore-cert", "ignore SSL errors", true, false);
 			const std::string auth = cfg_str(o_source, "http-auth", "HTTP authentication string", true, "");
 			const std::string url = cfg_str(o_source, "url", "address of JPEG stream", false, "");
@@ -1025,22 +1031,24 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 			s = new source_http_mjpeg(id, descr, exec_failure, url, ign_cert, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
 		}
-
-#if HAVE_PIPEWIRE == 1
 		else if (s_type == "pipewire") {
+#if HAVE_PIPEWIRE == 1
 			int pw_id = cfg_int(o_source, "pw-id", "ID of device", false, PW_ID_ANY);
 			s = new source_pipewire(id, descr, pw_id, resize_w, resize_h, jpeg_quality, use_controls ? new controls_software() : nullptr, max_fps);
-		}
+#else
+			error_exit(false, "'pipewire' support not linked in");
 #endif
-
-#if HAVE_FFMPEG == 1
+		}
 		else if (s_type == "rtsp" || s_type == "mjpeg" || s_type == "stream" || s_type == "ffmpeg") {
+#if HAVE_FFMPEG == 1
 			const std::string url = cfg_str(o_source, "url", "address of video stream", false, "");
 			bool tcp = cfg_bool(o_source, "tcp", "use TCP for RTSP transport (instead of default UDP)", true, false);
 
 			s = new source_ffmpeg(id, descr, exec_failure, url, tcp, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
-		}
+#else
+			error_exit(false, "'%s' requires ffmpeg", s_type.c_str());
 #endif
+		}
 		else if (s_type == "plugin") {
 			std::string plugin_bin = cfg_str(o_source, "source-plugin-file", "filename of video data source plugin", true, "");
 			std::string plugin_arg = cfg_str(o_source, "source-plugin-parameter", "parameter for video data source plugin", true, "");
@@ -1057,13 +1065,15 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 			s = new source_delay(id, descr, exec_failure, s_s, jpeg_quality, n_frames, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr);
 		}
-#if HAVE_GSTREAMER == 1
 		else if (s_type == "gstreamer") {
+#if HAVE_GSTREAMER == 1
 			std::string pipeline = cfg_str(o_source, "pipeline", "gstreamer pipeline. Note: it should end with \" ! appsink name=constatus\"!", false, "");
 
 			s = new source_gstreamer(id, descr, exec_failure, pipeline, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
-		}
+#else
+			error_exit(false, "'gstreamer' support is not linked in");
 #endif
+		}
 		else if (s_type == "pixelflood") {
 			std::string listen_adapter = cfg_str(o_source, "listen-adapter", "network interface to listen on or 0.0.0.0 or ::1 for all", true, "0.0.0.0");
 			int listen_port = cfg_int(o_source, "listen-port", "Port to listen on", false, 5004);
@@ -1211,31 +1221,37 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 	catch(SettingNotFoundException & snfe) {
 	}
 
-#if HAVE_GSTREAMER == 1
 	if (format == "avi") {
+#if HAVE_GSTREAMER == 1
 		t = new target_avi(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, override_fps, cfg, false, handle_failure, sched);
+#else
+		error_exit(false, "'avi' requires gstreamer");
+#endif
 	}
 	else
-#endif
 	if (format == "extpipe") {
 		std::string cmd = cfg_str(in, "cmd", "Command to send the frames to", false, "");
 
 		t = new target_extpipe(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, cmd, cfg, false, handle_failure, sched);
 	}
-#if HAVE_FFMPEG == 1
 	else if (format == "ffmpeg") {
+#if HAVE_FFMPEG == 1
 		int bitrate = cfg_int(in, "bitrate", "How many bits per second to emit. For 352x288 200000 is a sane value. This value affects the quality.", true, 200000);
 		std::string type = cfg_str(in, "ffmpeg-type", "E.g. flv, mp4", true, "mp4");
 		std::string const parameters = cfg_str(in, "ffmpeg-parameters", "Parameters specific for ffmpeg.", true, "");
 
 		t = new target_ffmpeg(id, descr, parameters, s, path, prefix, fmt, restart_interval, interval, type, bitrate, filters, exec_start, exec_cycle, exec_end, override_fps, cfg, false, handle_failure, sched);
-	}
+#else
+		error_exit(false, "'ffmpeg' support is not linked in");
 #endif
-#if HAVE_PIPEWIRE == 1
+	}
 	else if (format == "pipewire") {
+#if HAVE_PIPEWIRE == 1
 		t = new target_pipewire(id, descr, s, interval, filters, cfg, false, handle_failure, sched);
-	}
+#else
+		error_exit(false, "pipewire is not compiled in");
 #endif
+	}
 	else if (format == "jpeg")
 		t = new target_jpeg(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, cfg, false, handle_failure, sched);
 	else if (format == "plugin") {
@@ -1263,13 +1279,15 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 
 		t = new target_pixelflood(id, descr, s, interval, filters, -1, cfg, host, port, pfw, pfh, quality, pp, xoff, yoff, handle_failure, sched);
 	}
-#if HAVE_GSTREAMER == 1
 	else if (format == "gstreamer") {
+#if HAVE_GSTREAMER == 1
 		std::string pipeline = cfg_str(in, "pipeline", "gstreamer pipeline. Note: it should start with \"appsrc name=constatus ! \"", false, "");
 
 		t = new target_gstreamer(id, descr, s, pipeline, interval, filters, cfg, sched);
-	}
+#else
+		error_exit(false, "gstreamer support is not compiled in");
 #endif
+	}
 	else if (format == "as-a-new-source") {
 		const std::string new_id = cfg_str(in, "new-id", "some identifier: used for selecting this module", false, "");
 		const std::string new_descr = cfg_str(in, "new-descr", "description: visible in e.g. the http server", false, "");
@@ -1557,8 +1575,8 @@ std::vector<interface *> load_guis(configuration_t *const cfg, const Setting & g
 {
 	std::vector<interface *> out;
 
-#if HAVE_LIBSDL2 == 1
 	size_t n_gl = gs.getLength();
+#if HAVE_LIBSDL2 == 1
 
 	log(LL_DEBUG, " %zu GUI(s)", n_gl);
 
@@ -1599,6 +1617,9 @@ std::vector<interface *> load_guis(configuration_t *const cfg, const Setting & g
 
 		out.push_back(h);
 	}
+#else
+	if (n_gl)
+		error_exit(false, "SDL is required for the GUI");
 #endif
 
 	return out;
@@ -1608,8 +1629,8 @@ std::vector<interface *> load_net_announcers(configuration_t *const cfg, const S
 {
 	std::vector<interface *> out;
 
-#if HAVE_RYGEL == 1
 	size_t n_announce = ann.getLength();
+#if HAVE_RYGEL == 1
 
 	log(LL_DEBUG, " %zu announcers", n_announce);
 
@@ -1634,6 +1655,9 @@ std::vector<interface *> load_net_announcers(configuration_t *const cfg, const S
 
 		out.push_back(h);
 	}
+#else
+	if (n_announce)
+		error_exit(false, "rygel is required for network announcements");
 #endif
 
 	return out;
@@ -1667,11 +1691,13 @@ std::vector<interface *> load_http_servers(configuration_t *const cfg, instance 
 			std::string auth_file = cfg_str(server, "http-auth-file", "file containing authentication data", true, "");
 			auth = new http_auth(auth_file);
 		}
-#if HAVE_LIBPAM == 1
 		else if (auth_method == "pam") {
+#if HAVE_LIBPAM == 1
 			auth = new http_auth_pam();
-		}
+#else
+			error_exit(false, "pam support is not compiled in");
 #endif
+		}
 		else if (auth_method != "none") {
 			error_exit(false, "Authentication method \"%s\" not understood", auth_method.c_str());
 		}
@@ -1922,19 +1948,23 @@ bool load_configuration(configuration_t *const cfg, const bool verbose, const in
 			log(LL_INFO, " no HTTP server");
 		}
 		//***
-#if HAVE_LIBV4L2 == 1
-		log(LL_INFO, "Configuring a video-loopback...");
 		try
 		{
 			const Setting &o_vlb = instance_root["video-loopback"];
+#if HAVE_LIBV4L2 == 1
+			log(LL_INFO, "Configuring a video-loopback...");
 
 			interface *f = load_v4l2_loopback(cfg, o_vlb, s, ci);
 			ci -> interfaces.push_back(f);
+#else
+			error_exit(false, "libv4l2 is required for the video-loopback");
+#endif
 		}
 		catch(const SettingNotFoundException &nfex) {
+#if HAVE_LIBV4L2 == 1
 			log(LL_INFO, " no video loopback");
-		}
 #endif
+		}
 		//***
 
 		log(LL_INFO, "Configuring the motion trigger(s)...");
