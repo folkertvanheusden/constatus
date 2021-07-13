@@ -213,6 +213,8 @@ void video_frame::keep_only_format(const encoding_t ek)
 	// currently there's only E_RGB and E_JPEG so this suffices
 	auto it = data.find(ek == E_RGB ? E_JPEG : E_RGB);
 
-	if (it != data.end())
+	if (it != data.end()) {
+		free(it->second.first);
 		data.erase(it);
+	}
 }
