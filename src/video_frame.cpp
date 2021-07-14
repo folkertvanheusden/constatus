@@ -117,8 +117,22 @@ std::tuple<uint8_t *, size_t> video_frame::get_data_and_len_internal(const encod
 
 			memset(gray, 0x80, n_pixels);
 
-			// takes ownership of the allocated memory
-			return std::make_tuple(gray, n_pixels);
+			if (e == E_RGB) {
+				// takes ownership of the allocated memory
+				return std::make_tuple(gray, n_pixels);
+			}
+
+
+			uint8_t *frame_jpeg { nullptr };
+			size_t frame_jpeg_len = 0;
+			if (!my_jpeg.write_JPEG_memory(m_, w, h, jpeg_quality, gray, &frame_jpeg, &frame_jpeg_len)) {
+				log(LL_ERR, "write_JPEG_memory failed");
+				return std::make_tuple(nullptr, 0); // this will probably cause a crash
+			}
+
+			free(gray);
+
+			return std::make_tuple(frame_jpeg, frame_jpeg_len);
 		}
 	}
 
