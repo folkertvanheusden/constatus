@@ -198,6 +198,7 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 
 * Web-interface looks messy
   - add a 'stylesheet = "/path/to/stylesheet.css"; under each http-server section. The important part here is to add the path.
+  - since 5.0 a default stylesheet is included
 
 * Low fps camera feed often shows "camera lost" screen
   - Increase the timeout value of that camera. E.g. put "timeout = 2.0;" in the source-section of that camera.
@@ -232,7 +233,6 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 * onvif support
 * audio
 * allow users to add comments to recorded videos
-* pipewire target support
 
 
 
