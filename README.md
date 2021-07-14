@@ -91,7 +91,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - libgstreamer-plugins-base1.0-dev
   - libwebsocketpp-dev          - refreshless http
   - libsdl2-dev                 - X11/Xorg GUI
-  - rygel / rygel-2.6-dev / libglib2.0-dev / libxml2-dev / gee-0.8-dev / libgupnp-av-1.0-dev / libupnp-dev  - announce streams via UPnP on the network
+  - rygel / rygel-2.6-dev / libglib2.0-dev / libxml2-dev / libgee-0.8-dev / libgupnp-av-1.0-dev / libupnp-dev  - announce streams via UPnP on the network
   - libasound2-dev              - audio trigger
   - libmagick++-dev             - for animated gif/mng overlay
   - ffmpeg: libavformat-dev / libswscale-dev / libavcodec-dev / libavutil-dev / libswresample-dev / libavresample-dev / libatomic1 - for mp4 and other file formats

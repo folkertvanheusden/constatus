@@ -7,6 +7,7 @@
 #include <chrono>
 #include <errno.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <jansson.h>
 #include <math.h>
 #include <netdb.h>
@@ -57,6 +58,7 @@
 #include "controls.h"
 #include "exec.h"
 #include "http_cookies.h"
+#include "default-stylesheet.h"
 
 stats_tracker http_server::global_st { "global-http", false };
 
@@ -847,7 +849,14 @@ void http_server::send_stylesheet(http_thread_t *const ct, const std::string & c
 	if (file.empty())
 		file = "stylesheet.css";
 
-	send_file(ct->hh, path, file.c_str(), false, st, cookie, false);
+	if (std::filesystem::exists(file)) {
+		send_file(ct->hh, path, file.c_str(), false, st, cookie, false);
+	}
+	else {
+		log(id, LL_WARNING, "\"%s\" not found, using built-in stylesheet", file.c_str());
+
+		WRITE_SSL(ct->hh, (const char *)sc_css, sc_css_len);
+	}
 }
 
 void http_server::send_copypaste(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & cookie)

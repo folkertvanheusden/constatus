@@ -23,6 +23,7 @@ add_executable(constatus
 	src/controls_software.cpp
 	src/controls_v4l.cpp
 	src/db.cpp
+	src/default-stylesheet.cpp
 	src/draw.cpp
 	src/draw_text.cpp
 	src/draw_text_bitmap.cpp
