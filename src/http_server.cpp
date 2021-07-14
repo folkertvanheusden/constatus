@@ -91,7 +91,7 @@ bool sort_files_name(const file_t &left, const file_t & right)
 	return left.name.compare(right.name) < 0;
 }
 
-std::string get_http_200_header_html(const std::string & cookie)
+std::string get_http_200_header(const std::string & cookie, const std::string & mime_type)
 {
 	return myformat("HTTP/1.0 200 OK\r\n"
 		"Cache-Control: no-cache\r\n"
@@ -100,50 +100,9 @@ std::string get_http_200_header_html(const std::string & cookie)
 		"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
 		"Date: %s\r\n"
 		"%s"
-		"Content-Type: text/html\r\n"
+		"Content-Type: %s\r\n"
 		"Connection: close\r\n"
-		"\r\n", date_header(0).c_str(), cookie.c_str());
-}
-
-std::string get_http_200_header_svg(const std::string & cookie)
-{
-	return myformat("HTTP/1.0 200 OK\r\n"
-		"Cache-Control: no-cache\r\n"
-		"Pragma: no-cache\r\n"
-		"Server: " NAME " " VERSION "\r\n"
-		"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
-		"Date: %s\r\n"
-		"Content-Type: image/svg+xml\r\n"
-		"%s"
-		"Connection: close\r\n"
-		"\r\n", date_header(0).c_str(), cookie.c_str());
-}
-
-std::string get_http_200_header_xml()
-{
-	return myformat("HTTP/1.0 200 OK\r\n"
-		"Cache-Control: no-cache\r\n"
-		"Pragma: no-cache\r\n"
-		"Server: " NAME " " VERSION "\r\n"
-		"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
-		"Date: %s\r\n"
-		"Content-Type: application/xml\r\n"
-		"Connection: close\r\n"
-		"\r\n", date_header(0).c_str());
-}
-
-std::string get_http_200_header_jpeg(const std::string & cookie)
-{
-	return myformat("HTTP/1.0 200 OK\r\n"
-		"Cache-Control: no-cache\r\n"
-		"Pragma: no-cache\r\n"
-		"Server: " NAME " " VERSION "\r\n"
-		"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
-		"Date: %s\r\n"
-		"Content-Type: image/jpeg\r\n"
-		"%s"
-		"Connection: close\r\n"
-		"\r\n", date_header(0).c_str(), cookie.c_str());
+		"\r\n", date_header(0).c_str(), cookie.c_str(), mime_type.c_str());
 }
 
 std::string get_http_302_header(const std::string & target, const std::string & cookie = "")
@@ -343,7 +302,7 @@ void http_server::send_404(http_thread_t *const ct, const std::string & path, co
 {
 	log(LL_INFO, "Path %s not found", path.c_str());
 
-	std::string reply = get_http_200_header_html(cookie);
+	std::string reply = get_http_200_header(cookie, "text/html");
 	reply += get_html_header(true);
 	reply += myformat("<section><ul><li><strong>Unfortunately the page \"%s\" is not known</strong></li></ul></section>", path.c_str());
 	reply += html_tail;
@@ -445,7 +404,7 @@ void http_server::send_dashboard(http_thread_t *const ct, const std::string & us
 
 	auto views = get_db()->get_dashboard_ids(username, dashboard_name);
 
-	std::string reply = get_http_200_header_html(cookie) + get_html_header(true, "<div id=\"fs\" class=\"controls\"></div>");
+	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(true, "<div id=\"fs\" class=\"controls\"></div>");
 
 	reply += full_screen_js();
 
@@ -538,7 +497,7 @@ void http_server::send_fs_db_html(http_thread_t *const ct, const std::string & u
 	int height = atoi(height_it->second.c_str());
 
 	// send html headers & page header asap
-	std::string reply = get_http_200_header_html(cookie) + get_html_header(false) + full_screen_js();
+	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(false) + full_screen_js();
 
 	reply += "<style>#page{ display: none; }\n";
 	reply += "#loading{ display: block; }</style>\n";
@@ -657,7 +616,7 @@ void http_server::send_fs_db_html(http_thread_t *const ct, const std::string & u
 
 void http_server::file_menu_db(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + get_html_header(false);
+	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(false);
 	reply += "<h2>files "+ get_id() + "</h2>\n";
 
 	/// certain file
@@ -727,7 +686,7 @@ void http_server::file_menu_db(http_thread_t *const ct, const std::map<std::stri
 
 void http_server::file_menu(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + page_header + "<section><h2>list of files in " + snapshot_dir + "</h2><table>";
+	std::string reply = get_http_200_header(cookie, "text/html") + page_header + "<section><h2>list of files in " + snapshot_dir + "</h2><table>";
 
 	auto *files = load_filelist(snapshot_dir, with_subdirs, "");
 
@@ -855,7 +814,10 @@ void http_server::send_stylesheet(http_thread_t *const ct, const std::string & c
 	else {
 		log(id, LL_WARNING, "\"%s\" not found, using built-in stylesheet", file.c_str());
 
-		WRITE_SSL(ct->hh, (const char *)sc_css, sc_css_len);
+		std::string reply = get_http_200_header(cookie, "text/css") + "\r\n";
+
+		if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0 || WRITE_SSL(ct->hh, (const char *)sc_css, sc_css_len) <= 0)
+			log(id, LL_DEBUG, "short write");
 	}
 }
 
@@ -868,7 +830,7 @@ void http_server::send_copypaste(http_thread_t *const ct, const std::map<std::st
 
 	std::pair<uint64_t, video_frame *> value;
 	if (get_meta()->get_bitmap(key, &value)) {
-		std::string headers = get_http_200_header_jpeg(cookie);
+		std::string headers = get_http_200_header(cookie, "image/jpeg");
 
 		if (WRITE_SSL(ct->hh, headers.c_str(), headers.size()) <= 0)
 			log(LL_DEBUG, "short write on response header");
@@ -982,7 +944,7 @@ void http_server::view_view(http_thread_t *const ct, const std::map<std::string,
 
 	std::string reply;
 	if (v)
-		reply = get_http_200_header_html(cookie) + v -> get_html(pars);
+		reply = get_http_200_header(cookie, "text/html") + v -> get_html(pars);
 
 	if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0)
 		log(LL_DEBUG, "short write on response");
@@ -997,7 +959,7 @@ void http_server::view_menu(http_thread_t *const ct, const std::map<std::string,
 
 	view *v = find_view(this->views, id);
 
-	std::string reply = get_http_200_header_html(cookie) + get_html_header(true);
+	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(true);
 	
 	std::string iup = myformat("?int=%s&view-proxy", id.c_str());
 
@@ -1038,7 +1000,7 @@ void http_server::view_file(http_thread_t *const ct, const std::map<std::string,
 	if (auto file_it = pars.find("file"); file_it != pars.end())
 		file = file_it -> second;
 
-	std::string reply = get_http_200_header_html(cookie) + page_header + 
+	std::string reply = get_http_200_header(cookie, "text/html") + page_header + 
 		myformat("<video controls autoplay><source src=\"send-file?file=%s\">Your browser does not support the video tag.</video>", file.c_str())
 		+ html_tail;
 
@@ -1048,7 +1010,7 @@ void http_server::view_file(http_thread_t *const ct, const std::map<std::string,
 
 void http_server::pause_module(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, instance *const inst, const std::string & path, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + "???";
+	std::string reply = get_http_200_header(cookie, "text/html") + "???";
 
 	std::string module;
 
@@ -1059,15 +1021,15 @@ void http_server::pause_module(http_thread_t *const ct, const std::map<std::stri
 
 	if (path == "pause" || path == "unpause") {
 		if (::pause(inst, module, path == "pause"))
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "pause/unpause") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "pause/unpause") + html_tail;
 		else
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_failed.c_str(), "pause/unpause") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_failed.c_str(), "pause/unpause") + html_tail;
 	}
 	else {
 		if (::toggle_pause(inst, module))
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "pause/unpause") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "pause/unpause") + html_tail;
 		else
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_failed.c_str(), "pause/unpause") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_failed.c_str(), "pause/unpause") + html_tail;
 	}
 
 	lck.unlock();
@@ -1078,7 +1040,7 @@ void http_server::pause_module(http_thread_t *const ct, const std::map<std::stri
 
 void http_server::start_stop_module(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, instance *const inst, const std::string & path, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + "???";
+	std::string reply = get_http_200_header(cookie, "text/html") + "???";
 
 	std::string module;
 
@@ -1091,13 +1053,13 @@ void http_server::start_stop_module(http_thread_t *const ct, const std::map<std:
 
 	if (path == "toggle-start-stop") {
 		::toggle_start_stop(i);
-		reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "start/stop") + html_tail;
+		reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "start/stop") + html_tail;
 	}
 	else {
 		if (::start_stop(i, path == "start"))
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "start/stop") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "start/stop") + html_tail;
 		else
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_failed.c_str(), "start/stop") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_failed.c_str(), "start/stop") + html_tail;
 	}
 
 	lck.unlock();
@@ -1108,7 +1070,7 @@ void http_server::start_stop_module(http_thread_t *const ct, const std::map<std:
 
 void http_server::restart_module(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, instance *const inst, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + "???";
+	std::string reply = get_http_200_header(cookie, "text/html") + "???";
 
 	std::string module;
 
@@ -1123,9 +1085,9 @@ void http_server::restart_module(http_thread_t *const ct, const std::map<std::st
 		reply = "???";
 	else if (start_stop(i, false)) {
 		if (start_stop(i, true))
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "restart") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "restart") + html_tail;
 		else
-			reply = get_http_200_header_html(cookie) + page_header + myformat(action_failed.c_str(), "restart") + html_tail;
+			reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_failed.c_str(), "restart") + html_tail;
 	}
 
 	lck.unlock();
@@ -1136,12 +1098,12 @@ void http_server::restart_module(http_thread_t *const ct, const std::map<std::st
 
 void http_server::take_snapshot(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, source *const s, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + "???";
+	std::string reply = get_http_200_header(cookie, "text/html") + "???";
 
 	if (take_a_picture(s, snapshot_dir, quality, handle_failure))
-		reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "snapshot image") + html_tail;
+		reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "snapshot image") + html_tail;
 	else
-		reply = get_http_200_header_html(cookie) + page_header + myformat(action_failed.c_str(), "snapshot image") + html_tail;
+		reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_failed.c_str(), "snapshot image") + html_tail;
 
 	if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0)
 		log(LL_DEBUG, "short write on response header");
@@ -1151,15 +1113,15 @@ void http_server::video_snapshot(http_thread_t *const ct, const std::map<std::st
 {
 	interface *i = start_a_video(s, snapshot_dir, quality, cfg, is_view_proxy);
 
-	std::string reply = get_http_200_header_html(cookie) + "???";
+	std::string reply = get_http_200_header(cookie, "text/html") + "???";
 	if (i) {
-		reply = get_http_200_header_html(cookie) + page_header + myformat(action_succeeded.c_str(), "snapshot video") + html_tail;
+		reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_succeeded.c_str(), "snapshot video") + html_tail;
 
 		const std::lock_guard<std::timed_mutex> lock(cfg->lock);
 		inst -> interfaces.push_back(i);
 	}
 	else {
-		reply = get_http_200_header_html(cookie) + page_header + myformat(action_failed.c_str(), "snapshot video") + html_tail;
+		reply = get_http_200_header(cookie, "text/html") + page_header + myformat(action_failed.c_str(), "snapshot video") + html_tail;
 	}
 
 	if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0)
@@ -1249,7 +1211,7 @@ void http_server::authorize(http_thread_t *const ct, const std::vector<std::stri
 
 void http_server::send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + page_header;
+	std::string reply = get_http_200_header(cookie, "text/html") + page_header;
 
 	std::string caption = s->get_descr().empty() == false ? s->get_descr() : s->get_id();
 
@@ -1483,7 +1445,7 @@ void http_server::do_auth(http_thread_t *const ct, const std::vector<std::string
 	if (cookie.empty())
 		reply = get_http_302_header("auth.html?reason=1");
 	else {
-		reply = get_http_200_header_html(cookie) + get_html_header(true);
+		reply = get_http_200_header(cookie, "text/html") + get_html_header(true);
 		reply += "<section><h2>sign in success!</h2>\n";
 
 		if (return_url.empty() || return_url.find("do-auth") != std::string::npos || return_url.find("logout") != std::string::npos)
@@ -1504,7 +1466,7 @@ void http_server::logout(http_thread_t *const ct, const std::string & username)
 
 	std::string cookie = "Set-Cookie: auth=none; expires=Thu, 01 Jan 1970 00:00:01 GMT;\r\n";
 
-	std::string reply = get_http_200_header_html(cookie) + get_html_header(true);
+	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(true);
 	reply += "<section><h2>logout success</h2>\n";
 	reply += "<p>Click <a href=\"auth.html?reason=2\">here</a> to log back in.</p>\n";
 	reply += "</section>" + html_tail;
@@ -1515,7 +1477,7 @@ void http_server::logout(http_thread_t *const ct, const std::string & username)
 
 void http_server::send_auth_html(http_thread_t *const ct, const std::string & cookie, const std::vector<std::string> & header_lines, const std::map<std::string, std::string> & pars)
 {
-	std::string reply = get_http_200_header_html(cookie) + get_html_header(true);
+	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(true);
 
 	reply += "<section><h2>please sign in</h2>\n";
 
@@ -1568,7 +1530,7 @@ void http_server::send_index_html(http_thread_t *const ct, const std::string & p
 	if (inst) {
 		std::string controls_msg = (s == nullptr || s->get_controls() == nullptr || s->get_controls()->has_controls() == false) ?  "in a window" : "with image controls";
 
-		reply = get_http_200_header_html(cookie) + page_header + "<section>"
+		reply = get_http_200_header(cookie, "text/html") + page_header + "<section>"
 			"<ul>" +
 			myformat(""
 					"<li><a href=\"stream.mjpeg%s\">MJPEG without controls</a>"
@@ -1613,7 +1575,7 @@ void http_server::send_index_html(http_thread_t *const ct, const std::string & p
 		reply += html_tail; 
 	}
 	else {
-		reply = get_http_200_header_html(cookie) + page_header;
+		reply = get_http_200_header(cookie, "text/html") + page_header;
 
 		reply += get_motd(motd_file);
 
@@ -1740,7 +1702,7 @@ void http_server::send_index_html(http_thread_t *const ct, const std::string & p
 
 void http_server::send_favicon_ico(http_thread_t *const ct, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_html(cookie) + "\r\n";
+	std::string reply = get_http_200_header(cookie, "text/html") + "\r\n";
 
 	if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0 || WRITE_SSL(ct->hh, (const char *)favicon_ico, sizeof favicon_ico) <= 0)
 		log(LL_DEBUG, "short write");
@@ -1748,7 +1710,7 @@ void http_server::send_favicon_ico(http_thread_t *const ct, const std::string & 
 
 void http_server::send_icon_jpg(http_thread_t *const ct, const std::string & cookie)
 {
-	std::string reply = get_http_200_header_jpeg(cookie);
+	std::string reply = get_http_200_header(cookie, "image/jpeg");
 
 	if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0 || WRITE_SSL(ct->hh, (const char *)fierman_icon_jpg, sizeof fierman_icon_jpg) <= 0)
 		log(LL_DEBUG, "short write");
@@ -2027,25 +1989,25 @@ void http_server::handle_http_client(http_thread_t *const ct)
 #endif
 	}
 	else if (path == "images/play.svg") {
-		std::string reply = get_http_200_header_svg(cookie);
+		std::string reply = get_http_200_header(cookie, "image/svg+xml");
 
 		if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0 || WRITE_SSL(ct->hh, (const char *)play_svg, sizeof play_svg) <= 0)
 			log(LL_DEBUG, "short write");
 	}
 	else if (path == "images/stop.svg") {
-		std::string reply = get_http_200_header_svg(cookie);
+		std::string reply = get_http_200_header(cookie, "image/svg+xml");
 
 		if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0 || WRITE_SSL(ct->hh, (const char *)stop_svg, sizeof stop_svg) <= 0)
 			log(LL_DEBUG, "short write");
 	}
 	else if (path == "images/pause.svg") {
-		std::string reply = get_http_200_header_svg(cookie);
+		std::string reply = get_http_200_header(cookie, "image/svg+xml");
 
 		if (WRITE_SSL(ct->hh, reply.c_str(), reply.size()) <= 0 || WRITE_SSL(ct->hh, (const char *)pause_svg, sizeof pause_svg) <= 0)
 			log(LL_DEBUG, "short write");
 	}
 	else if (path == "images/fullscreen.svg") {
-		std::string reply = get_http_200_header_svg(cookie);
+		std::string reply = get_http_200_header(cookie, "image/svg+xml");
 
 		std::string content = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"48\" stroke=\"#2c6e2c\" fill=\"none\"><path d=\"M 10 22 v -12 h 12   M 38 22 v -12 h -12  M 38 26 v 12 h -12  M 10 26 v 12 h 12\" stroke-linejoin=\"round\" stroke-width=\"10\"/></svg>";
 
@@ -2053,7 +2015,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 			log(LL_DEBUG, "short write");
 	}
 	else if (path == "images/trash.svg") {
-		std::string reply = get_http_200_header_svg(cookie);
+		std::string reply = get_http_200_header(cookie, "image/svg+xml");
 
 		// https://freesvg.org/trash-can-icon
 		std::string content = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"48\" width=\"42\" stroke=\"#2c6e2c\"><path d=\"M0 281.296l0 -68.355q1.953 -37.107 29.295 -62.496t64.449 -25.389l93.744 0l0 -31.248q0 -39.06 27.342 -66.402t66.402 -27.342l312.48 0q39.06 0 66.402 27.342t27.342 66.402l0 31.248l93.744 0q37.107 0 64.449 25.389t29.295 62.496l0 68.355q0 25.389 -18.553 43.943t-43.943 18.553l0 531.216q0 52.731 -36.13 88.862t-88.862 36.13l-499.968 0q-52.731 0 -88.862 -36.13t-36.13 -88.862l0 -531.216q-25.389 0 -43.943 -18.553t-18.553 -43.943zm62.496 0l749.952 0l0 -62.496q0 -13.671 -8.789 -22.46t-22.46 -8.789l-687.456 0q-13.671 0 -22.46 8.789t-8.789 22.46l0 62.496zm62.496 593.712q0 25.389 18.553 43.943t43.943 18.553l499.968 0q25.389 0 43.943 -18.553t18.553 -43.943l0 -531.216l-624.96 0l0 531.216zm62.496 -31.248l0 -406.224q0 -13.671 8.789 -22.46t22.46 -8.789l62.496 0q13.671 0 22.46 8.789t8.789 22.46l0 406.224q0 13.671 -8.789 22.46t-22.46 8.789l-62.496 0q-13.671 0 -22.46 -8.789t-8.789 -22.46zm31.248 0l62.496 0l0 -406.224l-62.496 0l0 406.224zm31.248 -718.704l374.976 0l0 -31.248q0 -13.671 -8.789 -22.46t-22.46 -8.789l-312.48 0q-13.671 0 -22.46 8.789t-8.789 22.46l0 31.248zm124.992 718.704l0 -406.224q0 -13.671 8.789 -22.46t22.46 -8.789l62.496 0q13.671 0 22.46 8.789t8.789 22.46l0 406.224q0 13.671 -8.789 22.46t-22.46 8.789l-62.496 0q-13.671 0 -22.46 -8.789t-8.789 -22.46zm31.248 0l62.496 0l0 -406.224l-62.496 0l0 406.224zm156.24 0l0 -406.224q0 -13.671 8.789 -22.46t22.46 -8.789l62.496 0q13.671 0 22.46 8.789t8.789 22.46l0 406.224q0 13.671 -8.789 22.46t-22.46 8.789l-62.496 0q-13.671 0 -22.46 -8.789t-8.789 -22.46zm31.248 0l62.496 0l0 -406.224l-62.496 0l0 406.224z\"/></svg>";
