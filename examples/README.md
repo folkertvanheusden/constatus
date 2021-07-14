@@ -60,3 +60,8 @@ Just a simple video4linux video source http server configuration.
 
 Takes a video stream (from e.g. a webcam), resizes it and sends
 the result to a pixelflood-server.
+
+* motion-web.cfg
+
+Shows how to get a red border around a video stream when motion
+is detected.
