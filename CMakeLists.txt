@@ -93,7 +93,6 @@ add_executable(constatus
 	src/source_gstreamer.cpp
 	src/source_http_jpeg.cpp
 	src/source_http_mjpeg.cpp
-	src/source_libcamera.cpp
 	src/source_pipewire.cpp
 	src/source_pixelflood.cpp
 	src/source_plugin.cpp
@@ -220,11 +219,6 @@ pkg_check_modules(OPENSSL openssl)
 target_link_libraries(constatus ${OPENSSL_LIBRARIES})
 target_include_directories(constatus PUBLIC ${OPENSSL_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${OPENSSL_CFLAGS_OTHER})
-
-pkg_check_modules(LIBCAMERA camera)
-target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
-target_include_directories(constatus PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
-target_compile_options(constatus PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
 
 pkg_check_modules(LIBSDL2 sdl2)
 target_link_libraries(constatus ${LIBSDL2_LIBRARIES})
