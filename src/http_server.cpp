@@ -1980,7 +1980,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		view_menu(ct, pars, cookie, username);
 	else if ((path == "view-snapshots/view-file" || path == "view-file") && (archive_acces || allow_admin))
 		view_file(ct, pars, page_header, cookie);
-	else if (path == "view-snapshots" && (archive_acces || allow_admin)) {
+	else if ((path == "view-snapshots" || path == "view-snapshots/") && (archive_acces || allow_admin)) {
 #if HAVE_MYSQL == 1
 		if (get_db()->using_db())
 			file_menu_db(ct, pars, cookie);
