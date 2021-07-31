@@ -128,8 +128,8 @@ const std::string get_html_header(const bool columns, const std::string & contro
 	"<head>\n"
 	" <meta charset=\"utf-8\">\n"
 	" <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, minimum-scale=1, shrink-to-fit=no\">\n"
-	" <link rel=\"stylesheet\" href=\"stylesheet.css\">\n"
-	" <link rel=\"shortcut icon\" href=\"favicon.ico\">\n"
+	" <link rel=\"stylesheet\" href=\"/stylesheet.css\">\n"
+	" <link rel=\"shortcut icon\" href=\"/favicon.ico\">\n"
 	"<title>" NAME "</title>\n"
 	"</head>\n"
 	"\n"
@@ -805,10 +805,12 @@ void http_server::send_stylesheet(http_thread_t *const ct, const std::string & c
 	std::string path = last_slash == std::string::npos ? cfg->search_path: stylesheet.substr(0, last_slash);
 	std::string file = last_slash == std::string::npos ? stylesheet.c_str() : stylesheet.substr(last_slash + 1);
 
+	log(id, LL_DEBUG, "Send stylesheet \"%s\"", stylesheet.c_str());
+
 	if (file.empty())
 		file = "stylesheet.css";
 
-	if (std::filesystem::exists(file)) {
+	if (std::filesystem::exists(path + file)) {
 		send_file(ct->hh, path, file.c_str(), false, st, cookie, false);
 	}
 	else {
