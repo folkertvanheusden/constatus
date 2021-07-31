@@ -65,3 +65,8 @@ the result to a pixelflood-server.
 
 Shows how to get a red border around a video stream when motion
 is detected.
+
+* timelapse.cfg
+
+Shows how to generate a timelapse and give access to it via a
+webserver.
