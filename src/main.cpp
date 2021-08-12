@@ -57,7 +57,7 @@
 #include <alsa/version.h>
 #endif
 
-#ifdef HAVE_PIPEWIRE
+#ifdef HAVE_PIPEWIRE == 1
 #include <pipewire/pipewire.h>
 #endif
 
