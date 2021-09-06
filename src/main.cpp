@@ -57,7 +57,7 @@
 #include <alsa/version.h>
 #endif
 
-#ifdef HAVE_PIPEWIRE
+#if HAVE_PIPEWIRE == 1
 #include <pipewire/pipewire.h>
 #endif
 
@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
 	bool do_fork = false, verbose = false;
 	int ll = LL_INFO;
 
-#ifdef HAVE_PIPEWIRE
+#if HAVE_PIPEWIRE == 1
 	pw_init(&argc, &argv);
 #endif
 

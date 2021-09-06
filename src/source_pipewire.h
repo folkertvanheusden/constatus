@@ -1,9 +1,11 @@
 // (c) 2017-2021 by folkert van heusden, released under agpl v3.0
 #pragma once
 
+#include "config.h"
 #include <atomic>
 #include <string>
 #include <thread>
+#if HAVE_PIPEWIRE == 1
 #include <pipewire/core.h>
 #include <spa/param/video/format-utils.h>
 #include <spa/debug/types.h>
@@ -42,3 +44,4 @@ public:
 
 	void operator()() override;
 };
+#endif

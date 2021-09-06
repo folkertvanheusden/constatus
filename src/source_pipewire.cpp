@@ -3,6 +3,7 @@
 // Based on example code from https://docs.pipewire.org/page_tutorial5.html
 
 #include "config.h"
+#if HAVE_PIPEWIRE == 1
 #include <assert.h>
 #include <stdio.h>
 #include <cstring>
@@ -220,3 +221,4 @@ void source_pipewire::operator()()
 
 	register_thread_end("source pipewire");
 }
+#endif
