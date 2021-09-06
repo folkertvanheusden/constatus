@@ -3,6 +3,7 @@
 // This code is based on:
 // https://github.com/PipeWire/pipewire/blob/master/src/examples/video-src.c
 #include "config.h"
+#if HAVE_PIPEWIRE == 1
 #include <unistd.h>
 
 #include "target_pipewire.h"
@@ -279,3 +280,4 @@ void target_pipewire::operator()()
 
 	s -> stop();
 }
+#endif
