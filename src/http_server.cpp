@@ -1906,7 +1906,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 	const std::string page_header = myformat(get_html_header(true).c_str(), inst ? (" / " + inst -> name).c_str() : "");
 	const std::string page_header_no_col = myformat(get_html_header(false).c_str(), inst ? (" / " + inst -> name).c_str() : "");
 
-	if (path == "stylesheet.css")
+	if (path.find("stylesheet.css") != std::string::npos)
 		send_stylesheet(ct, cookie);
 	else if (path == "favicon.ico")
 		send_favicon_ico(ct, cookie);
