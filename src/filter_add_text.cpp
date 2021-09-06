@@ -1552,6 +1552,27 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 
 			 work = search_replace(work, name, replace_with_what);
 		}
+		else if (name.substr(0, 6) == "$file:") {
+			std::string replace_with_what;
+
+			FILE *fh = fopen(name.substr(6, name.size() - 7), "r");
+			if (fh) {
+				char buffer[1024] = { 0 };
+				fgets(buffer, sizeof buffer, fh);
+				fclose(fh);
+
+				char *cr = strchr(buffer, '\r');
+				if (cr)
+					*cr = 0x00;
+				char *lf = strchr(buffer, '\n');
+				if (lf)
+					*lf = 0x00;
+
+				replace_with_what = buffer;
+			}
+
+			 work = search_replace(work, name, replace_with_what);
+		}
 
 		// printf("[%s] %zu %zu %s\n", work.c_str(), dollar1, dollar2, name.c_str());
 
