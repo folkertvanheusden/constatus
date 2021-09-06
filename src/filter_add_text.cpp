@@ -1555,7 +1555,9 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 		else if (name.substr(0, 6) == "$file:") {
 			std::string replace_with_what;
 
-			FILE *fh = fopen(name.substr(6, name.size() - 7), "r");
+			std::string filename = name.substr(6, name.size() - 7);
+
+			FILE *fh = fopen(filename.c_str(), "r");
 			if (fh) {
 				char buffer[1024] = { 0 };
 				fgets(buffer, sizeof buffer, fh);
@@ -1571,26 +1573,25 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 				replace_with_what = buffer;
 			}
 
-			 work = search_replace(work, name, replace_with_what);
-		}
-
-		// printf("[%s] %zu %zu %s\n", work.c_str(), dollar1, dollar2, name.c_str());
-
-		std::pair<uint64_t, int> val_int;
-		std::pair<uint64_t, double> val_double;
-		std::pair<uint64_t, std::string> val_string;
-
-		if (m && m -> get_int(name, &val_int)) {
-			work = search_replace(work, name, myformat("%d", val_int.second));
-		}
-		else if (m && m -> get_double(name, &val_double)) {
-			work = search_replace(work, name, myformat("%f", val_double.second));
-		}
-		else if (m && m -> get_string(name, &val_string)) {
-			work = search_replace(work, name, val_string.second);
+			work = search_replace(work, name, replace_with_what);
 		}
 		else {
-			dollar1 = dollar2 + 1;
+			std::pair<uint64_t, int> val_int;
+			std::pair<uint64_t, double> val_double;
+			std::pair<uint64_t, std::string> val_string;
+
+			if (m && m -> get_int(name, &val_int)) {
+				work = search_replace(work, name, myformat("%d", val_int.second));
+			}
+			else if (m && m -> get_double(name, &val_double)) {
+				work = search_replace(work, name, myformat("%f", val_double.second));
+			}
+			else if (m && m -> get_string(name, &val_string)) {
+				work = search_replace(work, name, val_string.second);
+			}
+			else {
+				dollar1 = dollar2 + 1;
+			}
 		}
 	}
 
