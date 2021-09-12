@@ -242,7 +242,7 @@ fail:
 	return nullptr;
 }
 
-void * udp_connection_thread(void *p)
+void * udp_connection_thread_bin(void *p)
 {
 	pf_s_parameter_t *pp = (pf_s_parameter_t *)p;
 
@@ -288,6 +288,58 @@ void * udp_connection_thread(void *p)
 	log(pp -> id, LL_INFO, "source pixelflood udp listen thread terminating");
 
 	delete pp;
+
+	return nullptr;
+}
+
+void * udp_connection_thread_txt(void *p)
+{
+	pf_s_parameter_t *pp = (pf_s_parameter_t *)p;
+
+	set_thread_name("src_pfCudp");
+
+	log(pp -> id, LL_INFO, "source pixelflood udp handle thread started (%d)", pp->fd);
+
+	int sfd = start_listen(pp->la);
+
+	struct pollfd fds[] { { sfd, POLLIN, 0 } };
+
+	for(;!*pp->local_stop_flag;) {
+		char pkt[9000 + 1];
+
+		if (poll(fds, 1, 250) != 1)
+			continue;
+
+		int rc = recv(sfd, pkt, sizeof pkt - 1, 0);
+		pkt[rc] = 0x00;
+
+		pp -> st -> track_bw(rc);
+
+		char *p = pkt;
+
+		for(;;) {
+			char *lf = strchr(p, '\n');
+			if (!lf)
+				break;
+
+			*lf = 0x00;
+
+			// printf("command: %s\n", pkt);
+			if (!handle_command(pp, p)) {
+				printf("invalid PX\n");
+				goto fail;
+			}
+			
+			p = lf + 1;
+		}
+	}
+
+fail:
+	close(pp->fd);
+
+	log(pp -> id, LL_INFO, "source pixelflood tcp handle thread terminating (%d)", pp -> fd);
+
+	pp->is_terminated = true;
 
 	return nullptr;
 }
@@ -408,9 +460,16 @@ void source_pixelflood::operator()()
 	}
 	else if (pp == PP_UDP_BIN) {
 		int rc = -1;
-		if ((rc = pthread_create(&th_client, NULL, udp_connection_thread, ct)) != 0) {
+		if ((rc = pthread_create(&th_client, NULL, udp_connection_thread_bin, ct)) != 0) {
 			errno = rc;
-			error_exit(true, "pthread_create failed (udp pixelflood server thread)");
+			error_exit(true, "pthread_create failed (udp pixelflood (bin) server thread)");
+		}
+	}
+	else if (pp == PP_UDP_TXT) {
+		int rc = -1;
+		if ((rc = pthread_create(&th_client, NULL, udp_connection_thread_txt, ct)) != 0) {
+			errno = rc;
+			error_exit(true, "pthread_create failed (udp pixelflood (txt) server thread)");
 		}
 	}
 	else {

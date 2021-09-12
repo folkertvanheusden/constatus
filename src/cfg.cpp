@@ -459,6 +459,8 @@ pixelflood_protocol_t cfg_convert_pp(const std::string & pp_str)
 		pp = PP_TCP_TXT;
 	else if (pp_str == "udp-bin")
 		pp = PP_UDP_BIN;
+	else if (pp_str == "udp-txt")
+		pp = PP_UDP_TXT;
 	else
 		error_exit(false, "Pixelflut format \"%s\" is unknown", pp_str.c_str());
 
@@ -1078,12 +1080,12 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			std::string listen_adapter = cfg_str(o_source, "listen-adapter", "network interface to listen on or 0.0.0.0 or ::1 for all", true, "0.0.0.0");
 			int listen_port = cfg_int(o_source, "listen-port", "Port to listen on", false, 5004);
 			int pixel_size = cfg_int(o_source, "pixel-size", "Pixel-size", true, 1);
-			std::string pp_str = cfg_str(o_source, "pp", "Pixelflut format: tcp-txt or udp-bin", false, "tcp-txt");
+			std::string pp_str = cfg_str(o_source, "pp", "Pixelflut format: tcp-txt, udp-bin or udp-txt", false, "tcp-txt");
 			int w = cfg_int(o_source, "width", "width of picture", false);
 			int h = cfg_int(o_source, "height", "height of picture", false);
 
 			pixelflood_protocol_t pp = cfg_convert_pp(pp_str);
-			bool dgram = pp == PP_UDP_BIN;
+			bool dgram = pp == PP_UDP_BIN || pp == PP_UDP_TXT;
 
 			s = new source_pixelflood(id, descr, exec_failure, { listen_adapter, listen_port, SOMAXCONN, dgram }, pixel_size, pp, max_fps, w, h, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
 		}
