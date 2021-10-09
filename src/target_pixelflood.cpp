@@ -27,7 +27,7 @@ target_pixelflood::target_pixelflood(const std::string & id, const std::string &
 		if (fd == -1)
 			error_exit(true, "Connect to %s:%d failed", host.c_str(), port);
 	}
-	else if (pp == PP_UDP_BIN) {
+	else if (pp == PP_UDP_BIN || pp == PP_UDP_TXT) {
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (fd == -1)
 			error_exit(true, "Cannot create socket");
@@ -99,6 +99,18 @@ bool target_pixelflood::send_frame(const uint8_t *const data, const int w, const
 					o = 0;
 				}
 			}
+			else if (pp == PP_UDP_TXT) {
+				o += sprintf(&buffer[o], "PX %d %d %02x%02x%02x\n", cx, cy, p[0], p[1], p[2]);
+
+				if (o >= 1400) {
+					if (sendto(fd, buffer, o, 0, (const struct sockaddr *) &servaddr, sizeof(servaddr)) == -1)
+						log(id, LL_INFO, "Cannot send pixelflood packet (%s)", strerror(errno));
+
+					st->track_bw(o);
+
+					o = 0;
+				}
+			}
 		}
 	}
 
@@ -118,6 +130,14 @@ bool target_pixelflood::send_frame(const uint8_t *const data, const int w, const
 				log(id, LL_INFO, "Cannot send pixelflood packet (%s)", strerror(errno));
 				rc = false;
 			}
+		}
+	}
+	else if (pp == PP_UDP_TXT) {
+		if (o >= 0) {
+			if (sendto(fd, buffer, o, 0, (const struct sockaddr *) &servaddr, sizeof(servaddr)) == -1)
+				log(id, LL_INFO, "Cannot send pixelflood packet (%s)", strerror(errno));
+
+			st->track_bw(o);
 		}
 	}
 
