@@ -38,15 +38,18 @@ void my_log_callback(void *ptr, int level, const char *fmt, va_list vargs)
 {
 	if (level < AV_LOG_WARNING) {
 		char *buffer = NULL;
-		vasprintf(&buffer, fmt, vargs);
+		if (vasprintf(&buffer, fmt, vargs) == -1) {
+			log(LL_DEBUG, "%s", fmt);  // last resort
+		}
+		else {
+			char *lf = strchr(buffer, '\n');
+			if (lf)
+				*lf = ' ';
 
-		char *lf = strchr(buffer, '\n');
-		if (lf)
-			*lf = ' ';
+			log(LL_DEBUG, buffer);
 
-		log(LL_DEBUG, buffer);
-
-		free(buffer);
+			free(buffer);
+		}
 	}
 }
 

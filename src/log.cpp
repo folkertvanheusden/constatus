@@ -39,7 +39,8 @@ void _log(const std::string & id, const int ll, const char *const what, va_list 
 	localtime_r(&tv_temp, &tm);
 
 	char *msg = NULL;
-	(void)vasprintf(&msg, what, args);
+	if (vasprintf(&msg, what, args) == -1)
+		error_exit(true, "vasprintf failed\n");
 
 	const char *lls = "???";
 	switch(ll) {
@@ -64,11 +65,13 @@ void _log(const std::string & id, const int ll, const char *const what, va_list 
 	}
 
 	char *temp = NULL;
-	asprintf(&temp, "%04d-%02d-%02d %02d:%02d:%02d.%06ld %5s %9s %s %s", 
+	if (asprintf(&temp, "%04d-%02d-%02d %02d:%02d:%02d.%06ld %5s %9s %s %s", 
 			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 			tm.tm_hour, tm.tm_min, tm.tm_sec, tv.tv_usec,
 			lls, get_thread_name().c_str(), id.c_str(),
-			msg);
+			msg) == -1)
+		error_exit(true, "asprintf failed\n");
+
 	free(msg);
 
 	if (logfile) {

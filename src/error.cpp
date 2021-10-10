@@ -17,7 +17,8 @@ void error_exit(const bool se, const char *format, ...)
 
 	va_start(ap, format);
 	char *temp = NULL;
-	vasprintf(&temp, format, ap);
+	if (vasprintf(&temp, format, ap) == -1)
+		puts(format);  // last resort
 	va_end(ap);
 
 	fprintf(stderr, "%s\n", temp);

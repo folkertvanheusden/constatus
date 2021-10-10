@@ -61,13 +61,20 @@ void setup_for_childproc(const int fd, const bool close_fd_0, const std::string 
 		close(0);
 	close(1);
 	close(2);
+
+	bool fail = false;
+
 	if (close_fd_0)
-		dup(fd);
-	dup(fd);
-	dup(fd);
+		fail |= dup(fd) == -1;
+	fail |= dup(fd) == -1;
+	fail |= dup(fd) == -1;
+
+	if (fail)
+		error_exit(true, "setup_for_childproc: cannot dup() filedescriptors\n");
 
 	char *dummy = nullptr;
-	asprintf(&dummy, "TERM=%s", term.c_str());
+	if (asprintf(&dummy, "TERM=%s", term.c_str()) == -1)
+		error_exit(true, "asprint failed (needed to set environment variables)\n");
 
 	if (putenv(dummy) == -1)
 		error_exit(true, "setup_for_childproc: Could not set TERM environment-variable (%s)\n", dummy);
