@@ -1,4 +1,4 @@
-// (C) 2017-2019 by folkert van heusden, released under AGPL v3.0
+// (C) 2017-2021 by folkert van heusden, released under AGPL v3.0
 #include "config.h"
 #include <math.h>
 #include <cstring>
