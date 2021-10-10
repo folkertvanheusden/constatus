@@ -14,7 +14,6 @@ It is an NVR (network video recorder) with special features.
    - plugin interface (included is a VNC client plugin)
    - pixelflood
    - gstreamer pipeline
-   - libcamera
    - pipewire
 
 - output:
@@ -81,7 +80,6 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
 
 - Not required (OPTIONAL!):
   - libv4l-dev			- USB cameras
-  - libcamera-dev               - like v4l; but also the raspberry pi camera via its native interface
   - libnetpbm10-dev		- PBM pictures loading/saving
   - libexiv2-dev		- JPEG meta data
   - libmysqlcppconn-dev		- MySQL
