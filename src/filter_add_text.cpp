@@ -1537,7 +1537,7 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 			FILE *fh = exec(name.substr(6, name.size() - 7));
 			if (fh) {
 				char buffer[1024] = { 0 };
-				fgets(buffer, sizeof buffer, fh);
+				bool fail = fgets(buffer, sizeof buffer, fh) == nullptr;
 				pclose(fh);
 
 				char *cr = strchr(buffer, '\r');
@@ -1547,7 +1547,10 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 				if (lf)
 					*lf = 0x00;
 
-				replace_with_what = buffer;
+				if (fail)
+					replace_with_what = "(?)";
+				else
+					replace_with_what = buffer;
 			}
 
 			 work = search_replace(work, name, replace_with_what);
@@ -1560,7 +1563,7 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 			FILE *fh = fopen(filename.c_str(), "r");
 			if (fh) {
 				char buffer[1024] = { 0 };
-				fgets(buffer, sizeof buffer, fh);
+				bool fail = fgets(buffer, sizeof buffer, fh) == nullptr;
 				fclose(fh);
 
 				char *cr = strchr(buffer, '\r');
@@ -1570,7 +1573,10 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 				if (lf)
 					*lf = 0x00;
 
-				replace_with_what = buffer;
+				if (fail)
+					replace_with_what = "(?)";
+				else
+					replace_with_what = buffer;
 			}
 
 			work = search_replace(work, name, replace_with_what);
