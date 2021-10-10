@@ -260,7 +260,9 @@ target_compile_options(constatus PUBLIC ${PIPEWIRE_CFLAGS_OTHER})
 
 find_package(websocketpp)
 
-if (NOT DEFINED LGTM)
+if (DEFINED LGTM)
+	message(STATUS "Skipping netpbm for LGTM")
+else()
 	CHECK_INCLUDE_FILE(pbm.h NETPBM)
 	if (NETPBM)
 		target_link_libraries(constatus netpbm)
