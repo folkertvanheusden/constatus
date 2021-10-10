@@ -221,6 +221,11 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 * You can interface Constatus to OBS ( https://obsproject.com/ ) via the 'video4linux' output.
 
 
+## CODE QUALITY
+
+[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/folkertvanheusden/constatus.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/folkertvanheusden/constatus/context:cpp)
+
+
 ## SUPPORT
 - no
 
