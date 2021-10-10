@@ -1,4 +1,4 @@
-// (C) 2017-2020 by folkert van heusden, released under AGPL v3.0
+// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
 #include "log.h"
 #include "ptz.h"
 #include "ptz_v4l.h"

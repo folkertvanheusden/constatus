@@ -1,4 +1,4 @@
-// (c) 2017-2020 by folkert van heusden, released under agpl v3.0
+// (c) 2017-2021 by folkert van heusden, released under agpl v3.0
 #pragma once
 #include "config.h"
 #if HAVE_GSTREAMER == 1

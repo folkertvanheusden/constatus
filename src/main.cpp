@@ -1,4 +1,4 @@
-// (C) 2017-2020 by folkert van heusden, released under AGPL v3.0
+// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
 #include "config.h"
 #include <atomic>
 #include <poll.h>
@@ -257,7 +257,7 @@ void write_pid_file(const char *const pid_file)
 void version()
 {
 	printf(NAME " " VERSION "\n");
-	printf("(C) 2017-2020 by Folkert van Heusden\n\n");
+	printf("(C) 2017-2021 by Folkert van Heusden\n\n");
 }
 
 void help()

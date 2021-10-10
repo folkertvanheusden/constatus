@@ -1,4 +1,4 @@
-// (C) 2020 by folkert van heusden, license: AGPL 3.0
+// (C) 2021 by folkert van heusden, license: Apache License v2.0
 #include <stack>
 #include <stdint.h>
 #include <stdio.h>
