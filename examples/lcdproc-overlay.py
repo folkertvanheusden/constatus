@@ -22,7 +22,7 @@ def main():
     screen1 = lcd.add_screen('Screen1')
 
     # a screen can have multiple widgets
-    widget1 = screen1.add_string_widget('strwidget1', text='Bitcoin rate:', x=1, y=1)
+    screen1.add_string_widget('strwidget1', text='Bitcoin rate:', x=1, y=1)  # widget1
     widget2 = screen1.add_string_widget('strwidget2', text='', x=1, y=2)
 
     while True:

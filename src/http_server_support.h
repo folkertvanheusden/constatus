@@ -1,4 +1,4 @@
-// (C) 2017-2020 by folkert van heusden, released under AGPL v3.0
+// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
 #pragma once
 std::string emit_stats_refresh_js(const std::string & id, const bool fps, const bool cpu, const bool bw, const bool cc);
 
