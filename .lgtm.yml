@@ -16,7 +16,6 @@ extraction:
         - cmake
         - pkg-config
         - libv4l-dev
-        - libnetpbm10-dev
         - libexiv2-dev
         - libmysqlcppconn-dev
         - frei0r-plugins-dev
