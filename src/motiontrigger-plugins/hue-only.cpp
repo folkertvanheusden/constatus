@@ -44,7 +44,7 @@ void rgb_to_hsv(const uint8_t r, const uint8_t g, const uint8_t b, uint8_t *cons
 
 bool detect_motion(void *arg, const uint64_t ts, const int w, const int h, const uint8_t *const pf, uint8_t *const cf, const uint8_t *const pixel_selection_bitmap, char **const meta)
 {
-	int count = 0;
+	int count = 0, idx = 0;
 
 	for(int offset=0; offset<w*h*3; offset+=3) {
 		uint8_t hc, sc, vc;
@@ -52,6 +52,9 @@ bool detect_motion(void *arg, const uint64_t ts, const int w, const int h, const
 
 		rgb_to_hsv(pf[offset + 0], pf[offset + 1], pf[offset + 2], &hp, &sp, &vp);
 		rgb_to_hsv(cf[offset + 0], cf[offset + 1], cf[offset + 2], &hc, &sc, &vc);
+
+		if (pixel_selection_bitmap && !pixel_selection_bitmap[idx++])
+			continue;
 
 		count += abs(hc - hp) > 16;
 	}
