@@ -1481,6 +1481,13 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 	std::string us_str = myformat("%06ld", ts % 1000000);
 	work = search_replace(work, "%f", us_str);
 
+	std::string iso_ts = myformat("%04d-%02d-%02d %02d:%02d:%02d.%03d",
+			ptm.tm_year + 1900, ptm.tm_mon + 1, ptm.tm_mday,
+			ptm.tm_hour, ptm.tm_min, ptm.tm_sec,
+			(ts / 1000) % 1000);
+
+	work = search_replace(work, "$isots$", iso_ts);
+
 	meta *m = nullptr;
 	source *s = specific_int ? static_cast<source *>(specific_int) : find_source(i);
 	if (s) {
