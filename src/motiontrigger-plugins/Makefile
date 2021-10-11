@@ -1,7 +1,7 @@
 # (C) 2017-2020 by folkert van heusden, this file is released in the public domain
 INSTALL_PREFIX=/usr/local
 
-CXXFLAGS=-fPIC -Wall -ggdb3 `pkg-config --cflags opencv` -std=c++17 -I../build
+CXXFLAGS=-fPIC -Wall -ggdb3 `pkg-config --cflags opencv4` -std=c++17 -I../build
 VERSION=0.1
 
 OBJS1=demo.o
@@ -20,11 +20,11 @@ lib1: $(OBJS1)
 
 lib2: $(OBJS2)
 	ar -r demoocv.a $(OBJS2)
-	ld -g -x -lm `pkg-config --libs opencv` -shared -soname demoocv.so.2 -o demoocv.so.$(VERSION) --whole-archive demoocv.a
+	ld -g -x -lm `pkg-config --libs opencv4` -shared -soname demoocv.so.2 -o demoocv.so.$(VERSION) --whole-archive demoocv.a
 
 lib3: $(OBJS3)
 	ar -r demoocv2.a $(OBJS3)
-	ld -g -x -lm `pkg-config --libs opencv` -shared -soname demoocv2.so.2 -o demoocv2.so.$(VERSION) --whole-archive demoocv2.a 
+	ld -g -x -lm `pkg-config --libs opencv4` -shared -soname demoocv2.so.2 -o demoocv2.so.$(VERSION) --whole-archive demoocv2.a 
 
 lib4: $(OBJS4)
 	ar -r hue-only.a $(OBJS4)
