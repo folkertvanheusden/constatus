@@ -150,8 +150,6 @@ void target_avi::operator()()
 
 	int fps = interval > 0 ? 1.0 / interval : 25;
 
-	bool use_filters = filters && !filters -> empty();
-
 	time_t next_file = max_time > 0 ? time(nullptr) + max_time : 0;
 
         for(;!local_stop_flag;) {

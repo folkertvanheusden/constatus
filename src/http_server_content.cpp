@@ -470,13 +470,13 @@ bool http_server::send_file(h_handle_t & hh, const std::string & path, const cha
 	while(!feof(fh) && rc) {
 		char buffer[4096];
 
-		int rc = fread(buffer, 1, sizeof(buffer), fh);
-		if (rc <= 0) {
+		int fread_rc = fread(buffer, 1, sizeof(buffer), fh);
+		if (fread_rc <= 0) {
 			rc = false;
 			break;
 		}
 
-		if (WRITE_SSL(hh, buffer, rc) <= 0) {
+		if (WRITE_SSL(hh, buffer, fread_rc) <= 0) {
 			log(LL_INFO, "Short write");
 			rc = false;
 			break;

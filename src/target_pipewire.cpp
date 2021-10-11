@@ -153,7 +153,7 @@ target_pipewire::target_pipewire(const std::string & id, const std::string & des
 
 	// need to retrieve 1 frame so that we know the resolution
 	s -> start();
-	video_frame *pvf = s -> get_frame(handle_failure, 0);
+	(void)s -> get_frame(handle_failure, 0);
 	s -> stop();
 
 	struct spa_rectangle min_dim = SPA_RECTANGLE(1, 1);

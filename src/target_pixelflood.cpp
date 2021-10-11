@@ -152,8 +152,6 @@ void target_pixelflood::operator()()
 
 	const double fps = 1.0 / interval;
 
-	time_t cut_ts = time(nullptr) + max_time;
-
 	uint64_t prev_ts = 0;
 	bool is_start = true;
 	std::string name;

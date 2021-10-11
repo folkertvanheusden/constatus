@@ -959,8 +959,6 @@ void http_server::view_menu(http_thread_t *const ct, const std::map<std::string,
 	if (auto view_it = pars.find("id"); view_it != pars.end())
 		id = view_it -> second;
 
-	view *v = find_view(this->views, id);
-
 	std::string reply = get_http_200_header(cookie, "text/html") + get_html_header(true);
 	
 	std::string iup = myformat("?int=%s&view-proxy", id.c_str());

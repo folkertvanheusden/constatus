@@ -84,7 +84,6 @@ void http_cookies::delete_cookie_for_user(const std::string & user)
 	const std::lock_guard<std::mutex> lck(lock);
 
 	std::vector<std::string> to_erase;
-	time_t now = time(nullptr);
 
 	for(auto it : cookies) {
 		if (it.first == user) {

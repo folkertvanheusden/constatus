@@ -122,7 +122,6 @@ std::tuple<uint8_t *, size_t> video_frame::get_data_and_len_internal(const encod
 				return std::make_tuple(gray, n_pixels);
 			}
 
-
 			uint8_t *frame_jpeg { nullptr };
 			size_t frame_jpeg_len = 0;
 			if (!my_jpeg.write_JPEG_memory(m_, w, h, jpeg_quality, gray, &frame_jpeg, &frame_jpeg_len)) {
