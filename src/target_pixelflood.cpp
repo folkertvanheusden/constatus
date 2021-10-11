@@ -136,8 +136,8 @@ bool target_pixelflood::send_frame(const uint8_t *const data, const int w, const
 		if (o >= 0) {
 			if (sendto(fd, buffer, o, 0, (const struct sockaddr *) &servaddr, sizeof(servaddr)) == -1)
 				log(id, LL_INFO, "Cannot send pixelflood packet (%s)", strerror(errno));
-
-			st->track_bw(o);
+			else
+				st->track_bw(o);
 		}
 	}
 
