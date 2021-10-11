@@ -277,9 +277,11 @@ void * udp_connection_thread_bin(void *p)
 
 			int off = ty * pp -> width * 3 + tx * 3;
 
-			pp -> fb[off + 0] = pkt[i + 4];
-			pp -> fb[off + 1] = pkt[i + 5];
-			pp -> fb[off + 2] = pkt[i + 6];
+			if (tx < pp -> width && ty < pp -> height) {
+				pp -> fb[off + 0] = pkt[i + 4];
+				pp -> fb[off + 1] = pkt[i + 5];
+				pp -> fb[off + 2] = pkt[i + 6];
+			}
 		}
 	}
 
@@ -311,6 +313,8 @@ void * udp_connection_thread_txt(void *p)
 			continue;
 
 		int rc = recv(sfd, pkt, sizeof pkt - 1, 0);
+		if (rc == -1)
+			continue;
 		pkt[rc] = 0x00;
 
 		pp -> st -> track_bw(rc);
