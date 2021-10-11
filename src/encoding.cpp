@@ -2,12 +2,6 @@
 #include <algorithm>
 #include <stdint.h>
 
-static inline int clip(const int in)
-{
-	return std::max(0, std::min(255, in));
-}
-
-#include <stdio.h>
 // based on https://stackoverflow.com/questions/4491649/how-to-convert-yuy2-to-a-bitmap-in-c
 void yuy2_to_rgb(const uint8_t *const in, const int width, const int height, uint8_t **out)
 {
@@ -28,14 +22,14 @@ void yuy2_to_rgb(const uint8_t *const in, const int width, const int height, uin
 			int c = y0 - 16;
 			int d = u0 - 128;
 			int e = v0 - 128;
-			out_work[0] = clip((298 * c + 409 * e + 128) >> 8); // red
-			out_work[1] = clip((298 * c - 100 * d - 208 * e + 128) >> 8); // green
-			out_work[2] = clip((298 * c + 516 * d + 128) >> 8); // blue
+			out_work[0] = std::clamp((298 * c + 409 * e + 128) >> 8, 0, 255); // red
+			out_work[1] = std::clamp((298 * c - 100 * d - 208 * e + 128) >> 8, 0, 255); // green
+			out_work[2] = std::clamp((298 * c + 516 * d + 128) >> 8, 0, 255); // blue
 
 			c = y1 - 16;
-			out_work[3] = clip((298 * c + 409 * e + 128) >> 8); // red
-			out_work[4] = clip((298 * c - 100 * d - 208 * e + 128) >> 8); // green
-			out_work[5] = clip((298 * c + 516 * d + 128) >> 8); // blue
+			out_work[3] = std::clamp((298 * c + 409 * e + 128) >> 8, 0, 255); // red
+			out_work[4] = std::clamp((298 * c - 100 * d - 208 * e + 128) >> 8, 0, 255); // green
+			out_work[5] = std::clamp((298 * c + 516 * d + 128) >> 8, 0, 255); // blue
 
 			out_work += 6;
 		}
