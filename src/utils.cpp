@@ -194,8 +194,10 @@ std::string myformat(const char *const fmt, ...)
         va_list ap;
 
         va_start(ap, fmt);
-        if (vasprintf(&buffer, fmt, ap) == -1)
+        if (vasprintf(&buffer, fmt, ap) == -1) {
+		va_end(ap);
 		return "(?)";
+	}
         va_end(ap);
 
 	std::string result = buffer;
