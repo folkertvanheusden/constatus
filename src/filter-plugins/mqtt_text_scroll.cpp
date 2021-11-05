@@ -6,7 +6,7 @@
 #include <string>
 #include <string.h>
 #include <cairo/cairo.h>
-#include "../cairo.h"
+#include "cairo.h"
 #include "../filter_add_text.h"
 #include "../utils.h"
 

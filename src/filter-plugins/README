@@ -16,7 +16,16 @@ demoocv is a filter using OpenCV, it finds the contours in an image
 MQTT FEED
 =========
 mqtt reads from an mqtt source and adds the result as text in the stream
+'par' should contain:
+mqtt_host:mqtt_port:mqtt_topic
 
+
+MQTT OVERLAY
+============
+switches on an overlay picture when '1', 'true' or 'on' is put in the mqtt-topic
+'par' should contain:
+mqtt_host:mqtt_port:mqtt_topic:png_overlay_path
+make lib6
 
 
 Using plugins
@@ -24,8 +33,8 @@ Using plugins
 
 filters = (
 		{
-			"type" : "filter-plugin",
-			"file" : "filter-plugins/demoocv.so.0.1",
-			"par" : ""
+			type = "filter-plugin";
+			file = "filter-plugins/demoocv.so.0.1";
+			par = "";
 		}
 	)

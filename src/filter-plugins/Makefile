@@ -9,9 +9,10 @@ OBJS1=demo.o
 OBJS2=demo2.o
 OBJS3=demoocv.o
 OBJS4=demoocv2.o
-OBJS5=mqtt.o
+OBJS5=mqtt_text_scroll.o cairo.o
+OBJS6=mqtt_trigg_overlap.o
 
-all: lib1 lib2 lib3 lib4 lib5
+all: lib1 lib2 lib3 lib4 lib5 lib6
 
 lib1: $(OBJS1)
 	ar -r demo.a $(OBJS1)
@@ -30,15 +31,19 @@ lib4: $(OBJS4)
 	ld -g -x -lm `pkg-config --libs opencv` -shared -soname demoocv2.so.2 -o demoocv2.so.$(VERSION) --whole-archive demoocv2.a 
 
 lib5: $(OBJS5)
-	ar -r mqtt.a $(OBJS5)
-	ld -g -x -lm `pkg-config --libs libmosquitto` -shared -soname mqtt.so.2 -o mqtt.so.$(VERSION) --whole-archive mqtt.a 
+	ar -r mqtt_text_scroll.a $(OBJS5)
+	ld -g -x -lm `pkg-config --libs libmosquitto` -shared -soname mqtt.so.2 -o mqtt_text_scroll.so.$(VERSION) --whole-archive mqtt_text_scroll.a 
+
+lib6: $(OBJS6)
+	ar -r mqtt_trigg_overlap.a $(OBJS6)
+	ld -g -x -lm `pkg-config --libs libmosquitto` -shared -soname mqtt_trigg_overlap.so.2 -o mqtt_trigg_overlap.so.$(VERSION) --whole-archive mqtt_trigg_overlap.a 
 
 install: all
-	cp demo.so.* demo2.so.* demoocv.so.* mqtt.so.* $(INSTALL_PREFIX)/lib
+	cp demo.so.* demo2.so.* demoocv.so.* mqtt_text_scroll.so.* mqtt_trigg_overlap.so.* $(INSTALL_PREFIX)/lib
 	/sbin/ldconfig
 
 uninstall: clean
-	rm -f $(INSTALL_PREFIX)/lib/demo.so.* $(INSTALL_PREFIX)/lib/demo2.so.* $(INSTALL_PREFIX)/lib/demoocv.so.* $(INSTALL_PREFIX)/lib/mqtt.so.*
+	rm -f $(INSTALL_PREFIX)/lib/demo.so.* $(INSTALL_PREFIX)/lib/demo2.so.* $(INSTALL_PREFIX)/lib/demoocv.so.* $(INSTALL_PREFIX)/lib/mqtt_text_scroll.so.* $(INSTALL_PREFIX)/lib/mqtt_trigg_overlap.so.*
 
 clean:
-	rm -f $(OBJS1) $(OBJS2) demo.a demo.so.* core demo2.a demo2.so.* $(OBJS3) demoocv.so.* demoocv.a $(OBJS4) mqtt.so.* mqtt.a
+	rm -f $(OBJS1) $(OBJS2) demo.a demo.so.* core demo2.a demo2.so.* $(OBJS3) demoocv.so.* demoocv.a $(OBJS4) mqtt_text_scroll.so.* mqtt_text_scroll.a $(OBJS5) mqtt_trigg_overlap.so.* mqtt_trigg_overlap.a $(OBJS6)
