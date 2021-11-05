@@ -191,7 +191,8 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 			uint8_t *i420 { nullptr }, *y { nullptr }, *u { nullptr }, *v { nullptr };
 			my_jpeg.rgb_to_i420(th, rgb, w, h, &i420, &y, &u, &v);
 
-//			theora_write_frame(t, hh, w, h, y, u, v, 0);
+			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
+				local_stop_flag = true;
 
 			free(i420);
 

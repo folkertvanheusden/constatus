@@ -7,6 +7,7 @@
 typedef struct {
 	ogg_stream_state ss;
 	th_enc_ctx *ctx;
+	th_info ti;
 } theora_t;
 
 theora_t *theora_init(const int w, const int h, const int fps, const int quality);
