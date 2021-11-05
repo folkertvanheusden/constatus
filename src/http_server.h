@@ -10,6 +10,7 @@
 #include <openssl/ssl.h>
 #endif
 #include "stats_tracker.h"
+#include "interface.h"
 #include "webservices.h"
 #include "utils.h"
 
@@ -86,6 +87,7 @@ private:
 	void handle_http_client(http_thread_t *const ct);
 
 	void send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
+	void send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
 	void send_mpng_stream(h_handle_t & hh, source *s, double fps, bool get, const int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
 	void send_png_frame(h_handle_t & hh, source *s, bool get, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
 	void send_jpg_frame(h_handle_t & hh, source *s, bool get, int quality, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);

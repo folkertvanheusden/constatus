@@ -72,3 +72,6 @@
 
 #cmakedefine01 SPA_FOUND
 #define HAVE_SPA SPA_FOUND
+
+#cmakedefine01 THEORA_FOUND
+#define HAVE_THEORA THEORA_FOUND

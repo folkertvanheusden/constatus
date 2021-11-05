@@ -1929,6 +1929,17 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);
 	}
+	else if (path == "stream.ogg" && s) {
+		ct->is_stream = true;
+
+		if (ws_privacy == false)
+			register_peer(true, ct->peer_name);
+
+		send_theora_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+
+		if (ws_privacy == false)
+			register_peer(false, ct->peer_name);
+	}
 	else if (path == "stream.mpng" && s) {
 		ct->is_stream = true;
 
