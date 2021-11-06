@@ -1,7 +1,6 @@
 #include "config.h"
 
 #ifdef HAVE_THEORA
-
 #include <theora/theoraenc.h>
 
 typedef struct {

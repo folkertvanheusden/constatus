@@ -26,7 +26,7 @@ public:
 	bool write_JPEG_memory(const meta *const m, const int ncols, const int nrows, const int quality, const uint8_t *const pixels, uint8_t **out, size_t *out_len);
 	bool read_JPEG_memory(unsigned char *in, int n_bytes_in, int *w, int *h, unsigned char **pixels);
 
-	static void rgb_to_i420(transformer_t t, const uint8_t *const in, const int width, const int height, uint8_t **const out, uint8_t **const y = nullptr, uint8_t **const u = nullptr, uint8_t **const v = nullptr);
+	static void rgb_to_i420(transformer_t t, const uint8_t *const in, const int width, const int height, uint8_t **const out, uint8_t **const y = nullptr, uint8_t **const u = nullptr, uint8_t **const v = nullptr, const bool swap_rgb = false);
 	static void i420_to_rgb(transformer_t t, const uint8_t *const in, const int width, const int height, uint8_t **const out);
 	static transformer_t allocate_transformer();
 	static void free_transformer(transformer_t h);

@@ -196,6 +196,8 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 
 	bool stop = false;
 
+	transformer_t local_th = myjpeg::allocate_transformer();
+
 	uint64_t prev = 0;
 	time_t end = time(nullptr) + time_limit;
 	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag && !stop;) {
@@ -211,12 +213,10 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 			uint8_t *rgb = pvf->get_data(E_RGB);
 
 			uint8_t *i420 { nullptr }, *y { nullptr }, *u { nullptr }, *v { nullptr };
-			my_jpeg.rgb_to_i420(th, rgb, w, h, &i420, &y, &u, &v);
+			my_jpeg.rgb_to_i420(local_th, rgb, w, h, &i420, &y, &u, &v, true);
 
 			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
 				stop = true;
-
-//			printf("written theora frame %d\n", stop);
 
 			free(i420);
 
@@ -228,6 +228,8 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 
 		handle_fps(&local_stop_flag, fps, before_ts);
 	}
+
+	myjpeg::free_transformer(local_th);
 
 	delete prev_frame;
 
