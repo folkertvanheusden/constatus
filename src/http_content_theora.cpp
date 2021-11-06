@@ -42,8 +42,8 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 
 	ogg_stream_init(&t->ss, rand());
 
-        ogg_packet op;
-        ogg_page og;
+        ogg_packet op { 0 };
+        ogg_page og { 0 };
 
 	/* setting just the granule shift only allows power-of-two keyframe
 	   spacing.  Set the actual requested spacing. */
