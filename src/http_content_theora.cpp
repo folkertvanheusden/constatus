@@ -35,8 +35,7 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 	t->ti.colorspace = TH_CS_UNSPECIFIED;
 	t->ti.pixel_fmt = TH_PF_420;
 	t->ti.target_bitrate = 2000000;  // TODO configurable
-	t->ti.quality = 99;  // TODO
-	t->ti.keyframe_granule_shift = ilog(keyframe_frequency - 1);
+	t->ti.quality = 63;  // TODO
 
 	t->ctx = th_encode_alloc(&t->ti);
 	th_info_clear(&t->ti);
@@ -81,7 +80,7 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 			fprintf(stderr, "ogg_stream_packetin failed\n");
 	}
 
-	for(;;){
+	for(;;) {
 		int result = ogg_stream_flush(&t->ss,&og);
 		if(result<0){
 			/* can't get here */
