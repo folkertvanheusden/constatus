@@ -208,6 +208,24 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 		if (pvf) {
 			prev = pvf->get_ts();
 
+			if (resize_h != -1 || resize_w != -1) {
+				video_frame *temp = pvf->do_resize(r, resize_w, resize_h);
+				delete pvf;
+				pvf = temp;
+			}
+
+			if (filters && !filters->empty()) {
+				source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
+				instance *inst = find_instance_by_interface(cfg, cur_s);
+
+				video_frame *temp = pvf->apply_filtering(inst, s, prev_frame, filters, nullptr);
+				delete pvf;
+				pvf = temp;
+			}
+
+			delete prev_frame;
+			prev_frame = pvf;
+
 			constexpr char term[] = "\r\n";
 
 			uint8_t *rgb = pvf->get_data(E_RGB);
@@ -219,9 +237,6 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 				stop = true;
 
 			free(i420);
-
-			delete prev_frame;
-			prev_frame = pvf;
 		}
 
 		st->track_cpu_usage();

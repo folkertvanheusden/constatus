@@ -120,7 +120,7 @@ private:
 	void take_snapshot(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, source *const s, const std::string & cookie);
 	void video_snapshot(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, instance *const inst, source *const s, const bool is_view_proxy, const std::string & cookie);
 	void authorize(http_thread_t *const ct, const std::vector<std::string> & header_lines, bool *const auth_ok, std::string *const username, std::string *const cookie);
-	void send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie);
+	void send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie, const bool ogg);
 	void do_auth(http_thread_t *const ct, const std::vector<std::string> & header_lines);
 	void logout(http_thread_t *const ct, const std::string & username);
 	void send_auth_html(http_thread_t *const ct, const std::string & cookie, const std::vector<std::string> & header_lines, const std::map<std::string, std::string> & pars);
