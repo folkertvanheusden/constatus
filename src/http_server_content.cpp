@@ -188,12 +188,12 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 		return;
 	}
 
-	theora_t *t = theora_init(w, h, fps, quality, hh);
+	int use_w = resize_w != -1 ? resize_w : w;
+	int use_h = resize_h != -1 ? resize_h : h;
+
+	theora_t *t = theora_init(use_w, use_h, fps, quality, hh);
 
 	video_frame *prev_frame = nullptr;
-
-	bool sc = resize_h != -1 || resize_w != -1;
-	bool nf = filters == nullptr || filters -> empty();
 
 	bool stop = false;
 
@@ -227,14 +227,12 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 			delete prev_frame;
 			prev_frame = pvf;
 
-			constexpr char term[] = "\r\n";
-
 			uint8_t *rgb = pvf->get_data(E_RGB);
 
 			uint8_t *i420 { nullptr }, *y { nullptr }, *u { nullptr }, *v { nullptr };
-			my_jpeg.rgb_to_i420(local_th, rgb, w, h, &i420, &y, &u, &v, true);
+			my_jpeg.rgb_to_i420(local_th, rgb, use_w, use_h, &i420, &y, &u, &v, true);
 
-			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
+			if (theora_write_frame(t, hh, use_w, use_h, y, u, v, 0) == -1)
 				stop = true;
 
 			free(i420);

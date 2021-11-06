@@ -118,8 +118,9 @@ int theora_write_frame(theora_t *const t, h_handle_t & hh, int w, int h, uint8_t
 
 	/* Theora is a one-frame-in,one-frame-out system; submit a frame
 	   for compression and pull out the packet */
-	if (th_encode_ycbcr_in(t->ctx, ycbcr)) {
-		log(LL_ERR, "[theora_write_frame] Error: could not encode frame");
+	int rc = 0;
+	if ((rc = th_encode_ycbcr_in(t->ctx, ycbcr))) {
+		log(LL_ERR, "[theora_write_frame] Error: could not encode frame (%d)", rc);
 		return -1;
 	}
 
