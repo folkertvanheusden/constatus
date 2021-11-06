@@ -19,12 +19,12 @@ It is an NVR (network video recorder) with special features.
 - output:
    - AVI file(s)
    - individual JPEGs
-   - HTTP streaming
+   - HTTP streaming (MJPEG, OGG (Theora))
    - video4linux loopback device
    - build-in VNC server
    - pixelflood
-   - via plugins
    - pipewire
+   - others via plugins
 
 - motion detection
    - configurable detector
