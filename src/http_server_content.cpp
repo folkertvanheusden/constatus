@@ -24,6 +24,7 @@
 #include "db.h"
 #include "cfg.h"
 #include "view_all.h"
+#include "http_content_theora.h"
 
 void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
 {
@@ -161,6 +162,93 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 	}
 
 	delete prev_frame;
+}
+
+void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
+{
+	const int w = s->get_width();
+	const int h = s->get_height();
+
+	std::string reply_headers = myformat(
+		"HTTP/1.0 200 OK\r\n"
+		"Cache-Control: no-cache\r\n"
+		"Pragma: no-cache\r\n"
+		"Server: " NAME " " VERSION "\r\n"
+		"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
+		"Last-Modified: %s\r\n"
+		"Date: %s\r\n"
+		"Connection: close\r\n"
+		"%s"
+		"Content-Type: video/ogg\r\n"
+		"\r\n", date_header(0 /* TODO */).c_str(), date_header(0).c_str(), cookie.c_str());
+
+	if (WRITE_SSL(hh, reply_headers.c_str(), reply_headers.size()) <= 0) {
+		log(LL_DEBUG, "short write on response header");
+		return;
+	}
+
+	theora_t *t = theora_init(w, h, fps, quality, hh);
+
+	video_frame *prev_frame = nullptr;
+
+	bool sc = resize_h != -1 || resize_w != -1;
+	bool nf = filters == nullptr || filters -> empty();
+
+	bool stop = false;
+
+	transformer_t local_th = myjpeg::allocate_transformer();
+
+	uint64_t prev = 0;
+	time_t end = time(nullptr) + time_limit;
+	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag && !stop;) {
+		uint64_t before_ts = get_us();
+
+		video_frame *pvf = s->get_frame(handle_failure, prev);
+
+		if (pvf) {
+			prev = pvf->get_ts();
+
+			if (resize_h != -1 || resize_w != -1) {
+				video_frame *temp = pvf->do_resize(r, resize_w, resize_h);
+				delete pvf;
+				pvf = temp;
+			}
+
+			if (filters && !filters->empty()) {
+				source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
+				instance *inst = find_instance_by_interface(cfg, cur_s);
+
+				video_frame *temp = pvf->apply_filtering(inst, s, prev_frame, filters, nullptr);
+				delete pvf;
+				pvf = temp;
+			}
+
+			delete prev_frame;
+			prev_frame = pvf;
+
+			constexpr char term[] = "\r\n";
+
+			uint8_t *rgb = pvf->get_data(E_RGB);
+
+			uint8_t *i420 { nullptr }, *y { nullptr }, *u { nullptr }, *v { nullptr };
+			my_jpeg.rgb_to_i420(local_th, rgb, w, h, &i420, &y, &u, &v, true);
+
+			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
+				stop = true;
+
+			free(i420);
+		}
+
+		st->track_cpu_usage();
+
+		handle_fps(&local_stop_flag, fps, before_ts);
+	}
+
+	myjpeg::free_transformer(local_th);
+
+	delete prev_frame;
+
+	theora_uninit(t);
 }
 
 void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool get, const int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)

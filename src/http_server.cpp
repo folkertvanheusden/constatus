@@ -966,9 +966,11 @@ void http_server::view_menu(http_thread_t *const ct, const std::map<std::string,
 	reply += "<section><ul>" +
 		myformat("<li><a href=\"stream.mjpeg%s\">MJPEG without controls</a>"
 			"<li><a href=\"stream.html%s\">MJPEG with controls</a>"
+			"<li><a href=\"stream.ogg%s\">OGG (Theora) w/o controls</a>"
+			"<li><a href=\"stream_ogg.html%s\">MJPEG with controls</a>"
 			"<li><a href=\"stream.mpng%s\">MPNG stream w/o controls</a>"
 			"<li><a href=\"image.jpg%s\">Show snapshot (JPEG)</a>"
-			"<li><a href=\"image.png%s\">Show snapshot (PNG)</a>", iup.c_str(), iup.c_str(), iup.c_str(), iup.c_str(), iup.c_str());
+			"<li><a href=\"image.png%s\">Show snapshot (PNG)</a>", iup.c_str(), iup.c_str(), iup.c_str(), iup.c_str(), iup.c_str(), iup.c_str(), iup.c_str());
 
 	if (allow_admin) {
 		reply += myformat("<li><a href=\"snapshot-img/%s\">Take a snapshot and store it on disk</a>"
@@ -1209,7 +1211,7 @@ void http_server::authorize(http_thread_t *const ct, const std::vector<std::stri
 	}
 }
 
-void http_server::send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie)
+void http_server::send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie, const bool ogg)
 {
 	std::string reply = get_http_200_header(cookie, "text/html") + page_header;
 
@@ -1223,7 +1225,11 @@ void http_server::send_stream_html(http_thread_t *const ct, const std::string & 
 
 	const std::string id = s->get_id();
 
-	reply += myformat("<section><figure><div class=\"fs-div\"><img class=\"fs-big\" onclick=\"fs('%s')\" src=\"stream.mjpeg%s%s\" id=\"%s\"><img class=\"fs-small\" onclick=\"fs('%s')\" src=\"images/fullscreen.svg\"></div><figcaption>%s</figcaption></figure>", id.c_str(), iup.c_str(), vp.c_str(), id.c_str(), id.c_str(), caption.c_str());
+	if (ogg)
+		reply += myformat("<section><figure><div class=\"fs-div\"><video class=\"fs-big\" onclick=\"fs('%s')\" src=\"stream.ogg%s%s\" id=\"%s\" autoplay><img class=\"fs-small\" onclick=\"fs('%s')\" src=\"images/fullscreen.svg\"></div><figcaption>%s</figcaption></figure>", id.c_str(), iup.c_str(), vp.c_str(), id.c_str(), id.c_str(), caption.c_str());
+	else {
+		reply += myformat("<section><figure><div class=\"fs-div\"><img class=\"fs-big\" onclick=\"fs('%s')\" src=\"stream.ogg%s%s\" id=\"%s\"><img class=\"fs-small\" onclick=\"fs('%s')\" src=\"images/fullscreen.svg\"></div><figcaption>%s</figcaption></figure>", id.c_str(), iup.c_str(), vp.c_str(), id.c_str(), id.c_str(), caption.c_str());
+	}
 
 	// controls
 
@@ -1535,9 +1541,11 @@ void http_server::send_index_html(http_thread_t *const ct, const std::string & p
 			myformat(""
 					"<li><a href=\"stream.mjpeg%s\">MJPEG without controls</a>"
 					"<li><a href=\"stream.html%s\">MJPEG %s</a>"
+					"<li><a href=\"stream.ogg%s\">OGG (Theora) w/o controls</a>"
+					"<li><a href=\"stream_ogg.html%s\">OGG (Theora) %s</a>"
 					"<li><a href=\"stream.mpng%s\">MPNG stream</a>"
 					"<li><a href=\"image.jpg%s\">Show snapshot (JPEG)</a>"
-					"<li><a href=\"image.png%s\">Show snapshot (PNG)</a>", iup.c_str(), iup.c_str(), controls_msg.c_str(), iup.c_str(), iup.c_str(), iup.c_str()
+					"<li><a href=\"image.png%s\">Show snapshot (PNG)</a>", iup.c_str(), iup.c_str(), controls_msg.c_str(), iup.c_str(), iup.c_str(), controls_msg.c_str(), iup.c_str(), iup.c_str(), iup.c_str()
 				);
 
 		if (allow_admin) {
@@ -1929,6 +1937,17 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);
 	}
+	else if (path == "stream.ogg" && s) {
+		ct->is_stream = true;
+
+		if (ws_privacy == false)
+			register_peer(true, ct->peer_name);
+
+		send_theora_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+
+		if (ws_privacy == false)
+			register_peer(false, ct->peer_name);
+	}
 	else if (path == "stream.mpng" && s) {
 		ct->is_stream = true;
 
@@ -1945,7 +1964,9 @@ void http_server::handle_http_client(http_thread_t *const ct)
 	else if (path == "image.jpg" && s)
 		send_jpg_frame(ct->hh, s, get_or_post, quality, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
 	else if (path == "stream.html" && s)
-		send_stream_html(ct, page_header, iup, s, is_view_proxy, cookie);
+		send_stream_html(ct, page_header, iup, s, is_view_proxy, cookie, false);
+	else if (path == "stream_ogg.html" && s)
+		send_stream_html(ct, page_header, iup, s, is_view_proxy, cookie, true);
 	else if (path == "index.html" || path.empty())
 		send_index_html(ct, page_header, iup, inst, s, username, cookie);
 	else if (path == "copypaste" && (archive_acces || allow_admin))

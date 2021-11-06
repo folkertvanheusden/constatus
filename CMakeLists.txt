@@ -61,6 +61,7 @@ add_executable(constatus
 	src/http_auth.cpp
 	src/http_auth_pam.cpp
 	src/http_client.cpp
+	src/http_content_theora.cpp
 	src/http_cookies.cpp
 	src/http_server_content.cpp
 	src/http_server.cpp
@@ -249,6 +250,11 @@ pkg_check_modules(IMAGICK ImageMagick++)
 target_link_libraries(constatus ${IMAGICK_LIBRARIES})
 target_include_directories(constatus PUBLIC ${IMAGICK_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${IMAGICK_CFLAGS_OTHER})
+
+pkg_check_modules(THEORA theoraenc)
+target_link_libraries(constatus ${THEORA_LIBRARIES})
+target_include_directories(constatus PUBLIC ${THEORA_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${THEORA_CFLAGS_OTHER})
 
 
 # pipewire

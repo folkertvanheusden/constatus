@@ -10,6 +10,7 @@
 #include <openssl/ssl.h>
 #endif
 #include "stats_tracker.h"
+#include "interface.h"
 #include "webservices.h"
 #include "utils.h"
 
@@ -86,6 +87,7 @@ private:
 	void handle_http_client(http_thread_t *const ct);
 
 	void send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
+	void send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
 	void send_mpng_stream(h_handle_t & hh, source *s, double fps, bool get, const int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
 	void send_png_frame(h_handle_t & hh, source *s, bool get, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
 	void send_jpg_frame(h_handle_t & hh, source *s, bool get, int quality, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie);
@@ -118,7 +120,7 @@ private:
 	void take_snapshot(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, source *const s, const std::string & cookie);
 	void video_snapshot(http_thread_t *const ct, const std::map<std::string, std::string> & pars, const std::string & page_header, instance *const inst, source *const s, const bool is_view_proxy, const std::string & cookie);
 	void authorize(http_thread_t *const ct, const std::vector<std::string> & header_lines, bool *const auth_ok, std::string *const username, std::string *const cookie);
-	void send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie);
+	void send_stream_html(http_thread_t *const ct, const std::string & page_header, const std::string & iup, source *const s, const bool view_proxy, const std::string & cookie, const bool ogg);
 	void do_auth(http_thread_t *const ct, const std::vector<std::string> & header_lines);
 	void logout(http_thread_t *const ct, const std::string & username);
 	void send_auth_html(http_thread_t *const ct, const std::string & cookie, const std::vector<std::string> & header_lines, const std::map<std::string, std::string> & pars);

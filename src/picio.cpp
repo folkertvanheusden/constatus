@@ -277,7 +277,7 @@ bool myjpeg::read_JPEG_memory(unsigned char *in, int n_bytes_in, int *w, int *h,
 	return ok;
 }
 
-void myjpeg::rgb_to_i420(tjhandle t, const uint8_t *const in, const int width, const int height, uint8_t **const out)
+void myjpeg::rgb_to_i420(tjhandle t, const uint8_t *const in, const int width, const int height, uint8_t **const out, uint8_t **const y, uint8_t **const u, uint8_t **const v, const bool swap_rgb)
 {
 	*out = (uint8_t *)malloc(width * height + width * height / 2);
 
@@ -287,7 +287,13 @@ void myjpeg::rgb_to_i420(tjhandle t, const uint8_t *const in, const int width, c
         uint8_t *v_ptr = *out + pos;
 	uint8_t *dstPlanes[] = { y_ptr, u_ptr, v_ptr };
 
-	tjEncodeYUVPlanes(t, in, width, 0, height, TJPF_BGR, dstPlanes, nullptr, TJSAMP_420, 0);
+	tjEncodeYUVPlanes(t, in, width, 0, height, swap_rgb ? TJPF_RGB : TJPF_BGR, dstPlanes, nullptr, TJSAMP_420, 0);
+
+	if (y) {
+		*y = y_ptr;
+		*u = u_ptr;
+		*v = v_ptr;
+	}
 }
 
 void myjpeg::i420_to_rgb(tjhandle t, const uint8_t *const in, const int width, const int height, uint8_t **const out)
