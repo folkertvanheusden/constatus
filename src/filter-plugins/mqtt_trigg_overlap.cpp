@@ -104,7 +104,7 @@ void apply_filter(void *arg, const uint64_t ts, const int w, const int h, const 
 			return;
 
 		for(int y=0; y<ch; y++) {
-			for(int x=0; x<ch; x++) {
+			for(int x=0; x<cw; x++) {
 				const int out_offset = y * w * 3 + x * 3;
 				const int pic_offset = y * p->w * 4 + x * 4;
 
