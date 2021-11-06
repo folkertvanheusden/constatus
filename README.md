@@ -79,6 +79,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - pkg-config
 
 - Not required (OPTIONAL!):
+  - libtheora-dev               - Ogg/Theora streaming
   - libv4l-dev			- USB cameras
   - libnetpbm10-dev		- PBM pictures loading/saving
   - libexiv2-dev		- JPEG meta data

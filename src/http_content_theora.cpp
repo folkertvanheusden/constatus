@@ -1,6 +1,6 @@
 #include "config.h"
 
-#ifdef HAVE_THEORA
+#if HAVE_THEORA == 1
 #include "http_server.h"
 #include "http_utils.h"
 #include "http_content_theora.h"
