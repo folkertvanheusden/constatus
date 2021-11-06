@@ -216,7 +216,7 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
 				stop = true;
 
-			printf("written theora frame %d\n", stop);
+//			printf("written theora frame %d\n", stop);
 
 			free(i420);
 
