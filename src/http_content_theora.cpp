@@ -47,9 +47,9 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 
 	/* setting just the granule shift only allows power-of-two keyframe
 	   spacing.  Set the actual requested spacing. */
-	int ret=th_encode_ctl(t->ctx, TH_ENCCTL_SET_KEYFRAME_FREQUENCY_FORCE, &keyframe_frequency, sizeof(keyframe_frequency - 1));
-	if (ret < 0)
-		fprintf(stderr,"Could not set keyframe interval to %d.\n",(int)keyframe_frequency);
+//	int ret=th_encode_ctl(t->ctx, TH_ENCCTL_SET_KEYFRAME_FREQUENCY_FORCE, &keyframe_frequency, sizeof(keyframe_frequency - 1));
+//	if (ret < 0)
+//		fprintf(stderr,"Could not set keyframe interval to %d.\n",(int)keyframe_frequency);
 
 	/* write the bitstream header packets with proper page interleave */
 	th_comment tc;
