@@ -166,6 +166,7 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 
 void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
 {
+#if HAVE_THEORA == 1
 	const int w = s->get_width();
 	const int h = s->get_height();
 
@@ -249,6 +250,7 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 	delete prev_frame;
 
 	theora_uninit(t);
+#endif
 }
 
 void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool get, const int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
