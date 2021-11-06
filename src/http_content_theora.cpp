@@ -4,16 +4,7 @@
 #include "http_server.h"
 #include "http_utils.h"
 #include "http_content_theora.h"
-
-int ilog(unsigned _v)
-{
-	int ret = 0;
-
-	for(ret=0; _v; ret++)
-		_v >>= 1;
-
-	return ret;
-}
+#include "log.h"
 
 theora_t *theora_init(const int w, const int h, const int fps, const int quality, h_handle_t & hh)
 {
@@ -35,7 +26,7 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 	t->ti.colorspace = TH_CS_UNSPECIFIED;
 	t->ti.pixel_fmt = TH_PF_420;
 	t->ti.target_bitrate = 2000000;  // TODO configurable
-	t->ti.quality = 63;  // TODO
+	t->ti.quality = quality * 63 / 100;
 
 	t->ctx = th_encode_alloc(&t->ti);
 	th_info_clear(&t->ti);
@@ -45,53 +36,46 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
         ogg_packet op { 0 };
         ogg_page og { 0 };
 
-	/* setting just the granule shift only allows power-of-two keyframe
-	   spacing.  Set the actual requested spacing. */
-//	int ret=th_encode_ctl(t->ctx, TH_ENCCTL_SET_KEYFRAME_FREQUENCY_FORCE, &keyframe_frequency, sizeof(keyframe_frequency - 1));
-//	if (ret < 0)
-//		fprintf(stderr,"Could not set keyframe interval to %d.\n",(int)keyframe_frequency);
-
 	/* write the bitstream header packets with proper page interleave */
 	th_comment tc;
 	th_comment_init(&tc);
 	/* first packet will get its own page automatically */
 	if (th_encode_flushheader(t->ctx,&tc,&op) <= 0)
-		fprintf(stderr,"Internal Theora library error.\n");
+		log(LL_ERR, "Internal Theora library error");
 	th_comment_clear(&tc);
 
 	if (ogg_stream_packetin(&t->ss, &op) == -1)
-		fprintf(stderr, "ogg_stream_packetin failed\n");
+		log(LL_ERR, "ogg_stream_packetin failed");
 
 	if (ogg_stream_pageout(&t->ss,&og)!=1)
-		fprintf(stderr,"Internal Ogg library error.\n");
+		log(LL_ERR, "Internal Ogg library error");
 	WRITE_SSL(hh, (const char *)og.header, og.header_len);
 	WRITE_SSL(hh, (const char *)og.body, og.body_len);
 
 	// remaining headers
 	for(;;) {
 		int result = th_encode_flushheader(t->ctx,&tc,&op);
-		if(result<0){
-			/* can't get here */
-			fprintf(stderr,"Internal Ogg library error.\n");
-		}
+		if(result < 0)
+			log(LL_ERR, "Internal Ogg library error");
 
-		if (result==0) break;
+		if (result == 0)
+			break;
+
 		if (ogg_stream_packetin(&t->ss,&op) == -1)
-			fprintf(stderr, "ogg_stream_packetin failed\n");
+			log(LL_ERR, "ogg_stream_packetin failed");
 	}
 
 	for(;;) {
 		int result = ogg_stream_flush(&t->ss,&og);
-		if(result<0){
-			/* can't get here */
-			fprintf(stderr,"Internal Ogg library error.\n");
-			exit(1);
-		}
-		if(result==0)break;
+		if (result < 0)
+			log(LL_ERR, "Internal Ogg library error");
+
+		if (result == 0)
+			break;
+
 		WRITE_SSL(hh, (const char *)og.header, og.header_len);
 		WRITE_SSL(hh, (const char *)og.body, og.body_len);
 	}
-
 
 	return t;
 }
@@ -104,8 +88,8 @@ void theora_uninit(theora_t *t)
 
 int theora_write_frame(theora_t *const t, h_handle_t & hh, int w, int h, uint8_t *yuv_y, uint8_t *yuv_u, uint8_t *yuv_v, int last)
 {
-        ogg_packet op;
-        ogg_page og;
+        ogg_packet op { 0 };
+        ogg_page og { 0 };
 
 	th_ycbcr_buffer ycbcr { 0 };
 
@@ -135,29 +119,28 @@ int theora_write_frame(theora_t *const t, h_handle_t & hh, int w, int h, uint8_t
 	/* Theora is a one-frame-in,one-frame-out system; submit a frame
 	   for compression and pull out the packet */
 	if (th_encode_ycbcr_in(t->ctx, ycbcr)) {
-		fprintf(stderr, "[theora_write_frame] Error: could not encode frame %d %d | %p %p %p\n", yuv_w, yuv_h, yuv_y, yuv_u, yuv_v);
+		log(LL_ERR, "[theora_write_frame] Error: could not encode frame");
 		return -1;
 	}
 
-	if (!th_encode_packetout(t->ctx, last, &op))
+	if (!th_encode_packetout(t->ctx, last, &op)) {
+		log(LL_ERR, "th_encode_packetout failed");
 		return -1;
+	}
 
 	if (ogg_stream_packetin(&t->ss, &op) == -1)
-		fprintf(stderr, "ogg_stream_packetin failed\n");
+		log(LL_ERR, "ogg_stream_packetin failed");
 
 	while(ogg_stream_pageout(&t->ss, &og)) {
-		size_t bytesWritten = WRITE_SSL(hh, (const char *)og.header, og.header_len);
-		if (bytesWritten != og.header_len) {
-			fprintf(stderr, "[theora_write_frame] Error: Could not write to file\n");
+		if (WRITE_SSL(hh, (const char *)og.header, og.header_len) != og.header_len) {
+			log(LL_ERR, "[theora_write_frame] Error: Could not write to file\n");
 			return -1;
 		}
 
-		bytesWritten = WRITE_SSL(hh, (const char *)og.body, og.body_len);
-		if(bytesWritten != og.body_len) {
-			bytesWritten = fprintf(stderr, "[theora_write_frame] Error: Could not write to file\n");
+		if (WRITE_SSL(hh, (const char *)og.body, og.body_len) != og.body_len) {
+			log(LL_ERR, "[theora_write_frame] Error: Could not write to file\n");
 			return -1;
 		}
-		printf("%ld %ld\n", og.header_len, og.body_len);
 	}
 
 	return 1;
