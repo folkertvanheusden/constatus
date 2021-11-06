@@ -19,7 +19,7 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 {
 	theora_t *t = new theora_t();
 
-	constexpr int keyframe_frequency = 64;
+	int keyframe_frequency = 64;
 
 	th_info_init(&t->ti);
 	t->ti.frame_width = ((w + 15) >>4)<<4;
@@ -34,34 +34,61 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 	t->ti.aspect_denominator = 0;
 	t->ti.colorspace = TH_CS_UNSPECIFIED;
 	t->ti.pixel_fmt = TH_PF_420;
-	t->ti.target_bitrate = 90000;  // TODO configurable
-	t->ti.quality = quality / 10;
+	t->ti.target_bitrate = 2000000;  // TODO configurable
+	t->ti.quality = quality;
 	t->ti.keyframe_granule_shift = ilog(keyframe_frequency - 1);
 
 	ogg_stream_init(&t->ss, rand());
 
 	t->ctx = th_encode_alloc(&t->ti);
 
+	/* setting just the granule shift only allows power-of-two keyframe
+	   spacing.  Set the actual requested spacing. */
+	int ret=th_encode_ctl(t->ctx, TH_ENCCTL_SET_KEYFRAME_FREQUENCY_FORCE, &keyframe_frequency, sizeof(keyframe_frequency - 1));
+	if(ret<0){
+		fprintf(stderr,"Could not set keyframe interval to %d.\n",(int)keyframe_frequency);
+	}
+
 	/* write the bitstream header packets with proper page interleave */
 	th_comment tc;
 	ogg_packet op;
 	th_comment_init(&tc);
 	/* first packet will get its own page automatically */
-	if(th_encode_flushheader(t->ctx,&tc,&op)<=0){
+	if(th_encode_flushheader(t->ctx,&tc,&op)<=0)
 		fprintf(stderr,"Internal Theora library error.\n");
-		exit(1);
-	}
 	th_comment_clear(&tc);
 
 	ogg_stream_packetin(&t->ss,&op);
 	ogg_page og;
-	if (ogg_stream_pageout(&t->ss,&og)!=1){
+	if (ogg_stream_pageout(&t->ss,&og)!=1)
 		fprintf(stderr,"Internal Ogg library error.\n");
-		exit(1);
-	}
-
 	WRITE_SSL(hh, (const char *)og.header, og.header_len);
 	WRITE_SSL(hh, (const char *)og.body, og.body_len);
+
+	// remaining headers
+	for(;;) {
+		int result = th_encode_flushheader(t->ctx,&tc,&op);
+		if(result<0){
+			/* can't get here */
+			fprintf(stderr,"Internal Ogg library error.\n");
+		}
+
+		if (result==0) break;
+		ogg_stream_packetin(&t->ss,&op);
+	}
+
+	for(;;){
+		int result = ogg_stream_flush(&t->ss,&og);
+		if(result<0){
+			/* can't get here */
+			fprintf(stderr,"Internal Ogg library error.\n");
+			exit(1);
+		}
+		if(result==0)break;
+		WRITE_SSL(hh, (const char *)og.header, og.header_len);
+		WRITE_SSL(hh, (const char *)og.body, og.body_len);
+	}
+
 
 	return t;
 }
@@ -74,9 +101,10 @@ void theora_uninit(theora_t *t)
 
 int theora_write_frame(theora_t *const t, h_handle_t & hh, int w, int h, uint8_t *yuv_y, uint8_t *yuv_u, uint8_t *yuv_v, int last)
 {
-	th_ycbcr_buffer ycbcr;
-	ogg_packet op;
-	ogg_page og;
+	printf("last: %d, w/h %d/%d\n", last, w, h);
+	th_ycbcr_buffer ycbcr { 0 };
+	ogg_packet op { 0 };
+	ogg_page og { 0 };
 
 	/* Must hold: yuv_w >= w */
 	int yuv_w = (w + 15) & ~15;
@@ -113,6 +141,7 @@ int theora_write_frame(theora_t *const t, h_handle_t & hh, int w, int h, uint8_t
 	}
 
 	ogg_stream_packetin(&t->ss, &op);
+
 	ssize_t bytesWritten = 0;
 	int pagesOut = 0;
 	while(ogg_stream_pageout(&t->ss, &og)) {
@@ -129,6 +158,7 @@ int theora_write_frame(theora_t *const t, h_handle_t & hh, int w, int h, uint8_t
 			bytesWritten = fprintf(stderr, "[theora_write_frame] Error: Could not write to file\n");
 			return -1;
 		}
+		printf("%ld %ld\n", og.header_len, og.body_len);
 	}
 
 	return pagesOut;

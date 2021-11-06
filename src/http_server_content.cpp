@@ -204,6 +204,8 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 		video_frame *pvf = s->get_frame(handle_failure, prev);
 
 		if (pvf) {
+			prev = pvf->get_ts();
+
 			constexpr char term[] = "\r\n";
 
 			uint8_t *rgb = pvf->get_data(E_RGB);
@@ -213,6 +215,8 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 
 			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
 				stop = true;
+
+			printf("written theora frame %d\n", stop);
 
 			free(i420);
 
