@@ -166,33 +166,53 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 
 void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
 {
-	bool first = true;
-
 	const int w = s->get_width();
 	const int h = s->get_height();
 
-	theora_t *t = theora_init(w, h, fps, quality);
+	std::string reply_headers = myformat(
+		"HTTP/1.0 200 OK\r\n"
+		"Cache-Control: no-cache\r\n"
+		"Pragma: no-cache\r\n"
+		"Server: " NAME " " VERSION "\r\n"
+		"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
+		"Last-Modified: %s\r\n"
+		"Date: %s\r\n"
+		"Connection: close\r\n"
+		"%s"
+		"Content-Type: video/ogg\r\n"
+		"\r\n", date_header(0 /* TODO */).c_str(), date_header(0).c_str(), cookie.c_str());
+
+	if (WRITE_SSL(hh, reply_headers.c_str(), reply_headers.size()) <= 0) {
+		log(LL_DEBUG, "short write on response header");
+		return;
+	}
+
+	theora_t *t = theora_init(w, h, fps, quality, hh);
 
 	video_frame *prev_frame = nullptr;
 
 	bool sc = resize_h != -1 || resize_w != -1;
 	bool nf = filters == nullptr || filters -> empty();
 
+	bool stop = false;
+
 	uint64_t prev = 0;
 	time_t end = time(nullptr) + time_limit;
-	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag;) {
+	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag && !stop;) {
 		uint64_t before_ts = get_us();
 
 		video_frame *pvf = s->get_frame(handle_failure, prev);
 
 		if (pvf) {
+			constexpr char term[] = "\r\n";
+
 			uint8_t *rgb = pvf->get_data(E_RGB);
 
 			uint8_t *i420 { nullptr }, *y { nullptr }, *u { nullptr }, *v { nullptr };
 			my_jpeg.rgb_to_i420(th, rgb, w, h, &i420, &y, &u, &v);
 
 			if (theora_write_frame(t, hh, w, h, y, u, v, 0) == -1)
-				local_stop_flag = true;
+				stop = true;
 
 			free(i420);
 

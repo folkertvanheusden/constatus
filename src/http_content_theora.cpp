@@ -15,7 +15,7 @@ int ilog(unsigned _v)
 	return ret;
 }
 
-theora_t *theora_init(const int w, const int h, const int fps, const int quality)
+theora_t *theora_init(const int w, const int h, const int fps, const int quality, h_handle_t & hh)
 {
 	theora_t *t = new theora_t();
 
@@ -25,7 +25,7 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 	t->ti.frame_width = ((w + 15) >>4)<<4;
 	t->ti.frame_height = ((h + 15)>>4)<<4;
 	t->ti.pic_width = w;
-	t->ti.pic_height = h & (~15);
+	t->ti.pic_height = h;
 	t->ti.pic_x = 0;
 	t->ti.pic_y = 0;
 	t->ti.fps_numerator = fps;
@@ -43,7 +43,7 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 	t->ctx = th_encode_alloc(&t->ti);
 
 	/* write the bitstream header packets with proper page interleave */
-	th_comment       tc;
+	th_comment tc;
 	ogg_packet op;
 	th_comment_init(&tc);
 	/* first packet will get its own page automatically */
@@ -53,6 +53,15 @@ theora_t *theora_init(const int w, const int h, const int fps, const int quality
 	}
 	th_comment_clear(&tc);
 
+	ogg_stream_packetin(&t->ss,&op);
+	ogg_page og;
+	if (ogg_stream_pageout(&t->ss,&og)!=1){
+		fprintf(stderr,"Internal Ogg library error.\n");
+		exit(1);
+	}
+
+	WRITE_SSL(hh, (const char *)og.header, og.header_len);
+	WRITE_SSL(hh, (const char *)og.body, og.body_len);
 
 	return t;
 }
