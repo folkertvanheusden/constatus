@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <cstring>
 #include <linux/videodev2.h>
-#include <libcamera/libcamera/base/event_dispatcher.h>
 #include <sys/mman.h>
 
 #include "error.h"
@@ -26,7 +25,7 @@ source_libcamera::~source_libcamera()
 	delete c;
 }
 
-void source_libcamera::request_completed(std::unique_ptr<libcamera::Request> request)
+void source_libcamera::request_completed(libcamera::Request *request)
 {
 	if (request->status() == libcamera::Request::RequestCancelled)
                 return;
@@ -52,7 +51,7 @@ void source_libcamera::request_completed(std::unique_ptr<libcamera::Request> req
 		}
         }
 
-	request = camera->createRequest();
+	request = camera->createRequest().get();
         if (!request) {
 		log(id, LL_ERR, "Cannot create request for camera: stream will stall");
 		return;
@@ -65,7 +64,7 @@ void source_libcamera::request_completed(std::unique_ptr<libcamera::Request> req
                 request->addBuffer(stream, buffer);
         }
 
-        camera->queueRequest(request.get());
+        camera->queueRequest(request);
 }
 
 void source_libcamera::list_devices()
@@ -130,6 +129,7 @@ void source_libcamera::operator()()
 	if (idx == camera_config->size())
 		idx = 0;
 
+	log(id, LL_INFO, "Requested: %d x %d", w_requested, h_requested);
 	libcamera::StreamConfiguration & stream_config = camera_config->at(idx);
 	stream_config.size.width = w_requested;
 	stream_config.size.height = h_requested;
@@ -198,25 +198,21 @@ void source_libcamera::operator()()
 				}
 			}
 
-			requests.push_back(request);
+			requests.push_back(request.get());
 		}
 
 		if (!fail) {
+			log(id, LL_INFO, "source libcamera: starting main-loop");
+
 			camera->requestCompleted.connect(this, &source_libcamera::request_completed);
 
 			camera->start();
 
-			libcamera::EventDispatcher *const dispatcher = cm->eventDispatcher();
-
 			for(auto & request : requests)
-				camera->queueRequest(request.get());
+				camera->queueRequest(request);
 
 			for(;!local_stop_flag;) {
-				libcamera::Timer timer;
-				timer.start(100);
-
-				while (timer.isRunning())
-					dispatcher->processEvents();
+				mysleep(100000, &local_stop_flag, nullptr);
 
 				st->track_cpu_usage();
 			}

@@ -12,6 +12,9 @@ set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+message( "Found environment variable LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}" )
+link_directories( $ENV{LD_LIBRARY_PATH} )
+
 add_executable(list-libcamera
 	src/list-libcamera.cpp
 	)

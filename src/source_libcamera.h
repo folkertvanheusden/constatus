@@ -25,12 +25,12 @@ protected:
 	std::shared_ptr<libcamera::Camera> camera;
 	libcamera::FrameBufferAllocator *allocator{ nullptr };
 	libcamera::Stream *stream{ nullptr };
-        std::vector<std::unique_ptr<libcamera::Request> > requests;
+        std::vector<libcamera::Request *> requests;
 	std::map<int, std::pair<void *, unsigned int>> mappedBuffers;
 
 	uint32_t pixelformat{ 0 };
 
-	void request_completed(std::unique_ptr<libcamera::Request> request);
+	void request_completed(libcamera::Request *request);
 
 public:
 	source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c);
