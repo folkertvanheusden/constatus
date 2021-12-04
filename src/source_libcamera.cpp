@@ -40,9 +40,9 @@ void source_libcamera::request_completed(libcamera::Request *request)
 			void *data = mappedBuffers[plane.fd.fd()].first;
 			unsigned int length = plane.length;
 
-			if (pixelformat == V4L2_PIX_FMT_MJPEG || pixelformat == V4L2_PIX_FMT_JPEG)
+			if (pixelformat == libcamera::formats::MJPEG)
 				set_frame(E_JPEG, (const uint8_t *)data, length);
-			else if (pixelformat == V4L2_PIX_FMT_RGB24)
+			else if (pixelformat == libcamera::formats::RGB888)
 				set_frame(E_RGB, (const uint8_t *)data, length);
 			else
 				log(id, LL_ERR, "Unexpected pixelformat");
@@ -108,10 +108,10 @@ void source_libcamera::operator()()
 	for(; idx<camera_config->size(); idx++) {
 		uint32_t format = camera_config->at(idx).pixelFormat.fourcc();
 
-		if (prefer_jpeg && (format == V4L2_PIX_FMT_MJPEG || format == V4L2_PIX_FMT_JPEG))
+		if (prefer_jpeg && format == libcamera::formats::MJPEG)
 			break;
 
-		if (!prefer_jpeg && format == V4L2_PIX_FMT_RGB24)
+		if (!prefer_jpeg && format == libcamera::formats::RGB888)
 			break;
 	}
 
