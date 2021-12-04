@@ -272,7 +272,7 @@ void help()
 	printf("-h     this help\n");
 	printf("\n");
 
-#if HAVE_LIBCAMERA == 1
+#if HAVE_LIBCAMERA == 1 || HAVE_LIBCAMERA2 == 1
 	source_libcamera::list_devices();
 #endif
 }

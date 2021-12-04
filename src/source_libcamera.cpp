@@ -1,9 +1,10 @@
 // (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
 #include "config.h"
-#if HAVE_LIBCAMERA == 1
+#if HAVE_LIBCAMERA == 1 || HAVE_LIBCAMERA2 == 1
 #include <errno.h>
 #include <cstring>
 #include <linux/videodev2.h>
+#include <libcamera/libcamera/base/event_dispatcher.h>
 #include <sys/mman.h>
 
 #include "error.h"
@@ -25,7 +26,7 @@ source_libcamera::~source_libcamera()
 	delete c;
 }
 
-void source_libcamera::request_completed(libcamera::Request *request)
+void source_libcamera::request_completed(std::unique_ptr<libcamera::Request> request)
 {
 	if (request->status() == libcamera::Request::RequestCancelled)
                 return;
@@ -51,20 +52,20 @@ void source_libcamera::request_completed(libcamera::Request *request)
 		}
         }
 
-        request = camera->createRequest();
+	request = camera->createRequest();
         if (!request) {
 		log(id, LL_ERR, "Cannot create request for camera: stream will stall");
 		return;
         }
 
         for(auto it = buffers.begin(); it != buffers.end(); ++it) {
-		libcamera::Stream *stream = it->first;
+		const libcamera::Stream *stream = it->first;
 		libcamera::FrameBuffer *buffer = it->second;
 
                 request->addBuffer(stream, buffer);
         }
 
-        camera->queueRequest(request);
+        camera->queueRequest(request.get());
 }
 
 void source_libcamera::list_devices()
@@ -76,7 +77,7 @@ void source_libcamera::list_devices()
 
 	auto cams = lcm->cameras();
 	for(auto camera : cams)
-		printf("libcamera device: %s\n", camera.get()->name().c_str());
+		printf("libcamera device: %s\n", camera.get()->id().c_str());
 
 	lcm->stop();
 }
@@ -99,7 +100,7 @@ void source_libcamera::operator()()
 	if (camera->acquire())
 		error_exit(false, "Cannot acquire \"%s\"", dev.c_str());
 
-	log(id, LL_INFO, "Camera name: %s", camera->name().c_str());
+	log(id, LL_INFO, "Camera name: %s", camera->id().c_str());
 
 	std::string controls_list;
         for(const auto & ctrl : camera->controls()) {
@@ -162,7 +163,7 @@ void source_libcamera::operator()()
 		const std::vector<std::unique_ptr<libcamera::FrameBuffer>> & buffers = allocator->buffers(stream);
 
 		for(size_t i = 0; i < buffers.size(); i++) {
-			libcamera::Request *request = camera->createRequest();
+			std::unique_ptr<libcamera::Request> request = camera->createRequest();
 			if (!request) {
 				fail = true;
 				log(id, LL_ERR, "Can't create request for camera");
@@ -207,8 +208,8 @@ void source_libcamera::operator()()
 
 			libcamera::EventDispatcher *const dispatcher = cm->eventDispatcher();
 
-			for(auto request : requests)
-				camera->queueRequest(request);
+			for(auto & request : requests)
+				camera->queueRequest(request.get());
 
 			for(;!local_stop_flag;) {
 				libcamera::Timer timer;

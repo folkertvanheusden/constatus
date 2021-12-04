@@ -18,7 +18,7 @@ using namespace libconfig;
 #if HAVE_LIBV4L2 == 1
 #include "source_v4l.h"
 #endif
-#if HAVE_LIBCAMERA == 1
+#if HAVE_LIBCAMERA == 1 || HAVE_LIBCAMERA2 == 1
 #include "source_libcamera.h"
 #endif
 #include "source_http_mjpeg.h"
@@ -985,7 +985,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 #endif
 		}
 		else if (s_type == "libcamera") {
-#if HAVE_LIBCAMERA == 1
+#if HAVE_LIBCAMERA == 1 || HAVE_LIBCAMERA2 == 1
 			int w = cfg_int(o_source, "width", "width of picture", false);
 			int h = cfg_int(o_source, "height", "height of picture", false);
 			std::string dev = cfg_str(o_source, "device", "device name", false, "");
