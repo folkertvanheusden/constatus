@@ -1,3 +1,4 @@
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <libcamera/libcamera.h>
@@ -12,10 +13,13 @@ int main(int argc, char *argv[])
 	}
 
 	auto cams = lcm->cameras();
+#ifdef LIBCAMERA2_FOUND
+	for(auto camera : cams)
+		printf("libcamera device: %s\n", camera.get()->id().c_str());
+#else
 	for(auto camera : cams)
 		printf("libcamera device: %s\n", camera.get()->name().c_str());
-
-	delete lcm;
+#endif
 
 	return 0;
 }

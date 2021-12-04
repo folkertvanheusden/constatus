@@ -269,6 +269,14 @@ target_link_libraries(list-libcamera ${LIBCAMERA_LIBRARIES})
 target_include_directories(list-libcamera PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
 target_compile_options(list-libcamera PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
 
+pkg_check_modules(LIBCAMERA2 libcamera)
+target_link_libraries(constatus ${LIBCAMERA2_LIBRARIES})
+target_include_directories(constatus PUBLIC ${LIBCAMERA2_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${LIBCAMERA2_CFLAGS_OTHER})
+target_link_libraries(list-libcamera ${LIBCAMERA2_LIBRARIES})
+target_include_directories(list-libcamera PUBLIC ${LIBCAMERA2_INCLUDE_DIRS})
+target_compile_options(list-libcamera PUBLIC ${LIBCAMERA2_CFLAGS_OTHER})
+
 
 # pipewire
 find_package(PipeWire)
@@ -321,6 +329,7 @@ target_link_libraries(constatus -lutil)
 
 configure_file(config.h.in config.h)
 target_include_directories(constatus PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(list-libcamera PUBLIC "${PROJECT_BINARY_DIR}")
 
 target_link_libraries(constatus "-Wl,--export-dynamic -latomic")
 

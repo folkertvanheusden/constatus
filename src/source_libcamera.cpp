@@ -78,7 +78,7 @@ void source_libcamera::list_devices()
 	for(auto camera : cams)
 		printf("libcamera device: %s\n", camera.get()->name().c_str());
 
-	delete lcm;
+	lcm->stop();
 }
 
 void source_libcamera::operator()()
