@@ -60,11 +60,12 @@ It is an NVR (network video recorder) with special features.
 ### Debian/Ubuntu
 
 - Required:
+  - cmake
   - libconfig++-dev
   - libfontconfig1-dev
   - libfreetype6-dev
   - libicu-dev
-  - libturbojpeg0-dev             - !
+  - libturbojpeg0-dev
   - libpng-dev
   - libcurl-dev e.g. libcurl4-openssl-dev
   - libjansson-dev
@@ -80,7 +81,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
 
 - Not required (OPTIONAL!):
   - libtheora-dev               - Ogg/Theora streaming
-  - libv4l-dev			- USB cameras
+  - libv4l-dev			- USB cameras (it will complain that "libv4l2" is missing if not installed)
   - libnetpbm10-dev		- PBM pictures loading/saving
   - libexiv2-dev		- JPEG meta data
   - libmysqlcppconn-dev		- MySQL
