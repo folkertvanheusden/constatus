@@ -69,6 +69,7 @@ void source_libcamera::list_devices()
 	lcm->stop();
 }
 
+#include <unistd.h>
 void source_libcamera::operator()()
 {
 	log(id, LL_INFO, "source libcamera thread started");
@@ -117,12 +118,13 @@ void source_libcamera::operator()()
 	if (idx == camera_config->size())
 		idx = 0;
 
-	log(id, LL_INFO, "Requested: %d x %d", w_requested, h_requested);
+	log(id, LL_INFO, "Requested: %d x %d, slot %zu of %zu", w_requested, h_requested, idx, camera_config->size());
 	libcamera::StreamConfiguration & stream_config = camera_config->at(idx);
+	log(id, LL_INFO, "Default: %s", stream_config.toString().c_str());
+
 	stream_config.size.width = w_requested;
 	stream_config.size.height = h_requested;
-
-	stream_config.pixelFormat = libcamera::PixelFormat(V4L2_PIX_FMT_RGB24);
+	stream_config.pixelFormat = libcamera::formats::RGB888;
 
 	camera_config->validate();
 
@@ -188,7 +190,7 @@ void source_libcamera::operator()()
 				}
 			}
 
-			requests.push_back(request.get());
+			requests.push_back(std::move(request));
 		}
 
 		if (!fail) {
@@ -198,8 +200,9 @@ void source_libcamera::operator()()
 
 			camera->start();
 
+		sleep(5);
 			for(auto & request : requests)
-				camera->queueRequest(request);
+				camera->queueRequest(request.get());
 
 			for(;!local_stop_flag;) {
 				mysleep(100000, &local_stop_flag, nullptr);

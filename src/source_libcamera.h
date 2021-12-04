@@ -25,7 +25,7 @@ protected:
 	std::shared_ptr<libcamera::Camera> camera;
 	libcamera::FrameBufferAllocator *allocator{ nullptr };
 	libcamera::Stream *stream{ nullptr };
-        std::vector<libcamera::Request *> requests;
+	std::vector<std::unique_ptr<libcamera::Request> > requests;
 	std::map<int, std::pair<void *, unsigned int>> mappedBuffers;
 
 	uint32_t pixelformat{ 0 };
