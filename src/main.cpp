@@ -74,6 +74,7 @@
 #include "announce_upnp.h"
 #include "instance.h"
 #include "utils.h"
+#include "source_libcamera.h"
 
 std::atomic_bool terminate { false };
 
@@ -269,6 +270,11 @@ void help()
 	printf("-v     enable verbose mode\n");
 	printf("-V     show version & exit\n");
 	printf("-h     this help\n");
+	printf("\n");
+
+#if HAVE_LIBCAMERA == 1
+	source_libcamera::list_devices();
+#endif
 }
 
 int main(int argc, char *argv[])

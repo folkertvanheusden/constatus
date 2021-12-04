@@ -12,6 +12,10 @@ set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+add_executable(list-libcamera
+	src/list-libcamera.cpp
+	)
+
 add_executable(constatus
 	src/announce_upnp.cpp
 	src/audio.cpp
@@ -94,6 +98,7 @@ add_executable(constatus
 	src/source_gstreamer.cpp
 	src/source_http_jpeg.cpp
 	src/source_http_mjpeg.cpp
+	src/source_libcamera.cpp
 	src/source_pipewire.cpp
 	src/source_pixelflood.cpp
 	src/source_plugin.cpp
@@ -255,6 +260,14 @@ pkg_check_modules(THEORA theoraenc)
 target_link_libraries(constatus ${THEORA_LIBRARIES})
 target_include_directories(constatus PUBLIC ${THEORA_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${THEORA_CFLAGS_OTHER})
+
+pkg_check_modules(LIBCAMERA camera)
+target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
+target_include_directories(constatus PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
+target_link_libraries(list-libcamera ${LIBCAMERA_LIBRARIES})
+target_include_directories(list-libcamera PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
+target_compile_options(list-libcamera PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
 
 
 # pipewire

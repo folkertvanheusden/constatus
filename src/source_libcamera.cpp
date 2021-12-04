@@ -3,6 +3,7 @@
 #if HAVE_LIBCAMERA == 1
 #include <errno.h>
 #include <cstring>
+#include <linux/videodev2.h>
 #include <sys/mman.h>
 
 #include "error.h"
@@ -39,9 +40,9 @@ void source_libcamera::request_completed(libcamera::Request *request)
 			void *data = mappedBuffers[plane.fd.fd()].first;
 			unsigned int length = plane.length;
 
-			if (pixelformat == fourcc_code('M', 'J', 'P', 'G') || pixelformat == fourcc_code('J', 'P', 'E', 'G'))
+			if (pixelformat == V4L2_PIX_FMT_MJPEG || pixelformat == V4L2_PIX_FMT_JPEG)
 				set_frame(E_JPEG, (const uint8_t *)data, length);
-			else if (pixelformat == DRM_FORMAT_RGB888)
+			else if (pixelformat == V4L2_PIX_FMT_RGB24)
 				set_frame(E_RGB, (const uint8_t *)data, length);
 			else
 				log(id, LL_ERR, "Unexpected pixelformat");
@@ -66,6 +67,20 @@ void source_libcamera::request_completed(libcamera::Request *request)
         camera->queueRequest(request);
 }
 
+void source_libcamera::list_devices()
+{
+	libcamera::CameraManager *lcm = new libcamera::CameraManager();
+
+	if (int rc = lcm->start(); rc != 0)
+		error_exit(false, "libcamera: %s", strerror(-rc));
+
+	auto cams = lcm->cameras();
+	for(auto camera : cams)
+		printf("libcamera device: %s\n", camera.get()->name().c_str());
+
+	delete lcm;
+}
+
 void source_libcamera::operator()()
 {
 	log(id, LL_INFO, "source libcamera thread started");
@@ -73,7 +88,7 @@ void source_libcamera::operator()()
 	set_thread_name("src_libcamera");
 
 	cm = new libcamera::CameraManager();
-	
+
 	if (int rc = cm->start(); rc != 0)
 		error_exit(false, "libcamera: %s", strerror(-rc));
 
@@ -104,10 +119,10 @@ void source_libcamera::operator()()
 	for(; idx<camera_config->size(); idx++) {
 		uint32_t format = camera_config->at(idx).pixelFormat.fourcc();
 
-		if (prefer_jpeg && (format == fourcc_code('M', 'J', 'P', 'G') || format == fourcc_code('J', 'P', 'E', 'G')))
+		if (prefer_jpeg && (format == V4L2_PIX_FMT_MJPEG || format == V4L2_PIX_FMT_JPEG))
 			break;
 
-		if (!prefer_jpeg && format == DRM_FORMAT_RGB888)
+		if (!prefer_jpeg && format == V4L2_PIX_FMT_RGB24)
 			break;
 	}
 
@@ -118,7 +133,7 @@ void source_libcamera::operator()()
 	stream_config.size.width = w_requested;
 	stream_config.size.height = h_requested;
 
-	stream_config.pixelFormat = libcamera::PixelFormat(DRM_FORMAT_RGB888);
+	stream_config.pixelFormat = libcamera::PixelFormat(V4L2_PIX_FMT_RGB24);
 
 	camera_config->validate();
 
