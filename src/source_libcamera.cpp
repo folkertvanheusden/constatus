@@ -51,19 +51,7 @@ void source_libcamera::request_completed(libcamera::Request *request)
 		}
         }
 
-	request = camera->createRequest().get();
-        if (!request) {
-		log(id, LL_ERR, "Cannot create request for camera: stream will stall");
-		return;
-        }
-
-        for(auto it = buffers.begin(); it != buffers.end(); ++it) {
-		const libcamera::Stream *stream = it->first;
-		libcamera::FrameBuffer *buffer = it->second;
-
-                request->addBuffer(stream, buffer);
-        }
-
+	request->reuse(libcamera::Request::ReuseBuffers);
         camera->queueRequest(request);
 }
 
@@ -154,12 +142,20 @@ void source_libcamera::operator()()
 		fail = true;
 	}
 	else {
-		stream = stream_config.stream();
-
 		allocator = new libcamera::FrameBufferAllocator(camera);
-		allocator->allocate(stream);
-		log(id, LL_INFO, "Allocated %u buffers for stream", allocator->buffers(stream).size());
 
+		for (libcamera::StreamConfiguration &cfg : *camera_config) {
+			int ret = allocator->allocate(cfg.stream());
+			if (ret < 0) {
+				log(id, LL_ERR, "Can't allocate buffers");
+				fail = true;
+			}
+
+			size_t allocated = allocator->buffers(cfg.stream()).size();
+			log(id, LL_INFO, "Allocated %zu buffers for stream", allocated);
+		}
+
+		stream = stream_config.stream();
 		const std::vector<std::unique_ptr<libcamera::FrameBuffer>> & buffers = allocator->buffers(stream);
 
 		for(size_t i = 0; i < buffers.size(); i++) {
@@ -175,12 +171,6 @@ void source_libcamera::operator()()
 				fail = true;
 				log(id, LL_ERR, "Can't set buffer for request: %s", strerror(-ret));
 				break;
-			}
-
-			for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
-				void *memory = mmap(NULL, plane.length, PROT_READ, MAP_SHARED, plane.fd.fd(), 0);
-
-				mappedBuffers[plane.fd.fd()] = std::make_pair(memory, plane.length);
 			}
 
 			for(const auto & ctrl : camera->controls()) {
