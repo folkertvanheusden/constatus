@@ -14,7 +14,7 @@
 #include "filter.h"
 #include "schedule.h"
 
-target_new_source::target_new_source(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const std::string & new_s_id, const std::string & new_s_descr, schedule *const sched) : target(id, descr, s, "", "", "", -1, interval, filters, "", "", "", -1, cfg, false, false, sched), new_s_id(new_s_id), new_s_descr(new_s_descr)
+target_new_source::target_new_source(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const std::string & new_s_id, const std::string & new_s_descr, schedule *const sched, const bool rot90) : target(id, descr, s, "", "", "", -1, interval, filters, "", "", "", -1, cfg, false, false, sched), new_s_id(new_s_id), new_s_descr(new_s_descr), rot90(rot90)
 {
 }
 
@@ -71,11 +71,36 @@ void target_new_source::operator()()
 					pvf = temp;
 				}
 
-				const bool allow_store = sched == nullptr || (sched && sched->is_on());
+				const bool allow_store = sched == nullptr || sched->is_on();
 
 				if (allow_store) {
-					auto img = pvf->get_data_and_len(E_JPEG);
-					new_source->set_frame(E_RGB, std::get<0>(img), std::get<1>(img));
+					auto img = pvf->get_data_and_len(E_RGB);
+					const uint8_t *data = std::get<0>(img);
+					const size_t len = std::get<1>(img);
+					const int w = pvf->get_w();
+					const int h = pvf->get_h();
+
+					if (rot90) {
+						// rotate
+						uint8_t *new_ = (uint8_t *)malloc(len);
+
+						for(int y=0; y<h; y++) {
+							for(int x=0; x<w; x++) {
+								new_[x * h * 3 + y * 3 + 0] = data[y * w * 3 + x * 3 + 0];
+								new_[x * h * 3 + y * 3 + 1] = data[y * w * 3 + x * 3 + 1];
+								new_[x * h * 3 + y * 3 + 2] = data[y * w * 3 + x * 3 + 2];
+							}
+						}
+
+						new_source->set_size(h, w);
+						new_source->set_frame(E_RGB, new_, len);
+
+						free(new_);
+					}
+					else {
+						new_source->set_size(w, h);
+						new_source->set_frame(E_RGB, data, len);
+					}
 				}
 
 				delete prev_frame;

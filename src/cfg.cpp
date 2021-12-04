@@ -1177,9 +1177,8 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 	target *t = nullptr;
 
 	const std::string id = cfg_str(in, "id", "some identifier: used for selecting this module", true, "");
-	const std::string descr = cfg_str(in, "descr", "description: visible in e.g. the http server", true, "");
-
 	log(LL_INFO, "Loading target %s", id.c_str());
+	const std::string descr = cfg_str(in, "descr", "description: visible in e.g. the http server", true, "");
 
 #if HAVE_GSTREAMER == 1
 	std::string format = cfg_str(in, "format", "avi, extpipe, ffmpeg (for mp4, ogg, etc), jpeg, vnc, plugin, as-a-new-source or pixelflood", false, "");
@@ -1230,8 +1229,7 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		error_exit(false, "'avi' requires gstreamer");
 #endif
 	}
-	else
-	if (format == "extpipe") {
+	else if (format == "extpipe") {
 		std::string cmd = cfg_str(in, "cmd", "Command to send the frames to", false, "");
 
 		t = new target_extpipe(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, cmd, cfg, false, handle_failure, sched);
@@ -1293,17 +1291,18 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 	else if (format == "as-a-new-source") {
 		const std::string new_id = cfg_str(in, "new-id", "some identifier: used for selecting this module", false, "");
 		const std::string new_descr = cfg_str(in, "new-descr", "description: visible in e.g. the http server", false, "");
+		bool rot90 = cfg_bool(in, "rot90", "rotate 90", true, false);
 
-		t = new target_new_source(id, descr, s, interval, filters, cfg, new_id, new_descr, sched);
+		t = new target_new_source(id, descr, s, interval, filters, cfg, new_id, new_descr, sched, rot90);
 
-		instance *new_source_instance = new instance;
+		instance *new_source_instance = new instance();
 		new_source_instance->name = myformat("%s to %s", id.c_str(), new_id.c_str());
 		new_source_instance->interfaces.push_back(((target_new_source *)t) -> get_new_source());
 
 		cfg->instances.push_back(new_source_instance);
 	}
 	else {
-		error_exit(false, "Format %s is unknown (stream to disk backends)", format.c_str());
+		error_exit(false, "Format %s is unknown (targets)", format.c_str());
 	}
 
 	return t;
