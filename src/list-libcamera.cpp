@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 	}
 
 	auto cams = lcm->cameras();
-#ifdef LIBCAMERA2_FOUND
+#if LIBCAMERA2_FOUND == 1
 	for(auto camera : cams)
 		printf("libcamera device: %s\n", camera.get()->id().c_str());
 #else
