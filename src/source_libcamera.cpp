@@ -175,6 +175,12 @@ void source_libcamera::operator()()
 				break;
 			}
 
+			for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
+				void *memory = mmap(NULL, plane.length, PROT_READ, MAP_SHARED, plane.fd.fd(), 0);
+
+				mappedBuffers[plane.fd.fd()] = std::make_pair(memory, plane.length);
+			}
+
 			for(const auto & ctrl : camera->controls()) {
 				const libcamera::ControlId *id = ctrl.first;
 
@@ -200,7 +206,6 @@ void source_libcamera::operator()()
 
 			camera->start();
 
-		sleep(5);
 			for(auto & request : requests)
 				camera->queueRequest(request.get());
 
