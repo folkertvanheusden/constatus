@@ -15,6 +15,7 @@ It is an NVR (network video recorder) with special features.
    - pixelflood
    - gstreamer pipeline
    - pipewire
+   - libcamera
 
 - output:
    - AVI file(s)
