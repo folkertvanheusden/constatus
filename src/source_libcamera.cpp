@@ -37,15 +37,31 @@ void source_libcamera::request_completed(libcamera::Request *request)
                 const libcamera::FrameMetadata & metadata = buffer->metadata();
 
 		for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
-			void *data = mappedBuffers[plane.fd.fd()].first;
+			uint8_t *data = (uint8_t *)mappedBuffers[plane.fd.fd()].first;
 			unsigned int length = plane.length;
 
 			if (pixelformat == libcamera::formats::MJPEG)
-				set_frame(E_JPEG, (const uint8_t *)data, length);
-			else if (pixelformat == libcamera::formats::RGB888)
-				set_frame(E_RGB, (const uint8_t *)data, length);
-			else
+				set_frame(E_JPEG, data, length);
+			else if (pixelformat == libcamera::formats::RGB888) {
+#ifdef __arm__  // hopefully a raspberry pi
+				uint8_t *work = (uint8_t *)malloc(length);
+
+				for(size_t i=0; i<length; i += 3) {
+					work[i] = data[i + 2];
+					work[i + 2] = data[i];
+					work[i + 1] = data[i + 1];
+				}
+
+				set_frame(E_RGB, work, length);
+
+				free(work);
+#else
+				set_frame(E_RGB, data, length);
+#endif
+			}
+			else {
 				log(id, LL_ERR, "Unexpected pixelformat");
+			}
 
 			break;
 		}
