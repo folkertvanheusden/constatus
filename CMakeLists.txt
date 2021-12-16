@@ -15,10 +15,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 message("Found environment variable LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}")
 link_directories( $ENV{LD_LIBRARY_PATH} )
 
-add_executable(list-libcamera
-	src/list-libcamera.cpp
-	)
-
 add_executable(constatus
 	src/announce_upnp.cpp
 	src/audio.cpp
@@ -268,10 +264,18 @@ pkg_check_modules(LIBCAMERA libcamera)
 target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
 target_include_directories(constatus PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
-target_link_libraries(list-libcamera ${LIBCAMERA_LIBRARIES})
-target_include_directories(list-libcamera PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
-target_compile_options(list-libcamera PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
 
+if (LIBCAMERA_FOUND)
+	message("libcamera found, building list-libcamera")
+	add_executable(list-libcamera
+		src/list-libcamera.cpp
+	)
+	target_link_libraries(list-libcamera ${LIBCAMERA_LIBRARIES})
+	target_include_directories(list-libcamera PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
+	target_compile_options(list-libcamera PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
+else()
+	message("libcamera NOT found, list-libcamera won't be build")
+endif()
 
 # pipewire
 find_package(PipeWire)

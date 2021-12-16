@@ -43,8 +43,23 @@ void source_libcamera::request_completed(libcamera::Request *request)
 
 			if (pixelformat == libcamera::formats::MJPEG)
 				set_frame(E_JPEG, data, length);
-			else if (pixelformat == libcamera::formats::RGB888)
+			else if (pixelformat == libcamera::formats::RGB888) {
+#ifdef __arm__  // hopefully a raspberry pi
+				uint8_t *work = (uint8_t *)malloc(length);
+
+				for(size_t i=0; i<length; i += 3) {
+					work[i] = data[i + 2];
+					work[i + 2] = data[i];
+					work[i + 1] = data[i + 1];
+				}
+
+				set_frame(E_RGB, work, length);
+
+				free(work);
+#else
 				set_frame(E_RGB, data, length);
+#endif
+			}
 			else if (pixelformat == libcamera::formats::YUYV) {
 				uint8_t *rgb = nullptr;
 				yuy2_to_rgb(data, width, height, &rgb);
@@ -53,6 +68,7 @@ void source_libcamera::request_completed(libcamera::Request *request)
 			}
 			else
 				log(id, LL_ERR, "Unexpected pixelformat");
+			}
 
 			break;
 		}
