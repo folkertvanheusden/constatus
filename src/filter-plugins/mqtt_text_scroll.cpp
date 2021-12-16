@@ -18,6 +18,7 @@ typedef struct {
 	const char *topic;
 	struct mosquitto *mi;
 	std::vector<std::string> lines;
+	size_t n_lines;
 } pars_t;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -38,7 +39,7 @@ void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg
 
 	pars->lines.push_back(std::string((const char *)msg->payload, msg->payloadlen));
 
-	while(pars->lines.size() > 10)
+	while(pars->lines.size() > pars->n_lines)
 		pars->lines.erase(pars->lines.begin());
 
 	pthread_mutex_unlock(&lock);
@@ -51,11 +52,15 @@ void * init_filter(const char *const parameter)
 
 	char *temp = strdup(parameter);
 	pars_t *p = new pars_t;
-	char *saveptr = nullptr;
 
-	p -> host = strdup(strtok_r(temp, ":", &saveptr));
-	p -> port = atoi(strtok_r(nullptr, ":", &saveptr));
-	p -> topic = strdup(strtok_r(nullptr, ":", &saveptr));
+	std::vector<std::string> *parts = split(parameter, ":");
+
+	p -> host = strdup(parts->at(0).c_str());
+	p -> port = atoi(parts->at(1).c_str());
+	p -> topic = strdup(parts->at(2).c_str());
+	p -> n_lines = atoi(parts->at(3).c_str());
+
+	delete parts;
 
 	p -> mi = mosquitto_new("constatus", true, p);
 
