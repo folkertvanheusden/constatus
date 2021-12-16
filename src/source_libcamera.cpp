@@ -3,9 +3,10 @@
 #if HAVE_LIBCAMERA == 1 || HAVE_LIBCAMERA2 == 1
 #include <errno.h>
 #include <cstring>
-#include <linux/videodev2.h>
+#include <stdint.h>
 #include <sys/mman.h>
 
+#include "encoding.h"
 #include "error.h"
 #include "source_libcamera.h"
 #include "log.h"
@@ -37,13 +38,19 @@ void source_libcamera::request_completed(libcamera::Request *request)
                 const libcamera::FrameMetadata & metadata = buffer->metadata();
 
 		for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
-			void *data = mappedBuffers[plane.fd.fd()].first;
+			const uint8_t *data = (const uint8_t *)mappedBuffers[plane.fd.fd()].first;
 			unsigned int length = plane.length;
 
 			if (pixelformat == libcamera::formats::MJPEG)
-				set_frame(E_JPEG, (const uint8_t *)data, length);
+				set_frame(E_JPEG, data, length);
 			else if (pixelformat == libcamera::formats::RGB888)
-				set_frame(E_RGB, (const uint8_t *)data, length);
+				set_frame(E_RGB, data, length);
+			else if (pixelformat == libcamera::formats::YUYV) {
+				uint8_t *rgb = nullptr;
+				yuy2_to_rgb(data, width, height, &rgb);
+				set_frame(E_RGB, rgb, width * height * 3);
+				free(rgb);
+			}
 			else
 				log(id, LL_ERR, "Unexpected pixelformat");
 
