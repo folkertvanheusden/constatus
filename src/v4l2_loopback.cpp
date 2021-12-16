@@ -95,6 +95,10 @@ void v4l2_loopback::operator()()
 					v.fmt.pix.pixelformat = V4L2_PIX_FMT_BGR24;
 					enc_n = IMS(pvf->get_w(), pvf->get_h(), 3);
 				}
+				else if (pixel_format == "YUYV") {
+					v.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+					enc_n = v.fmt.pix.width * 2 * v.fmt.pix.height;
+				}
 
 				v.fmt.pix.sizeimage = enc_n;
 				if (ioctl(v4l2sink, VIDIOC_S_FMT, &v) == -1) {
@@ -117,6 +121,19 @@ void v4l2_loopback::operator()()
 			if (pixel_format == "YUV420") {
 				uint8_t *temp { nullptr };
 				my_jpeg.rgb_to_i420(th, std::get<0>(img), pvf->get_w(), pvf->get_h(), &temp);
+
+				if (write(v4l2sink, temp, enc_n) == -1) {
+					set_error("write to video loopback failed", true);
+					free(temp);
+					delete pvf;
+					break;
+				}
+
+				free(temp);
+			}
+			else if (pixel_format == "YUYV") {
+				uint8_t *temp { nullptr };
+				rgb_to_yuy2(std::get<0>(img), pvf->get_w(), pvf->get_h(), &temp);
 
 				if (write(v4l2sink, temp, enc_n) == -1) {
 					set_error("write to video loopback failed", true);
