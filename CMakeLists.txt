@@ -328,7 +328,6 @@ target_link_libraries(constatus -lutil)
 
 configure_file(config.h.in config.h)
 target_include_directories(constatus PUBLIC "${PROJECT_BINARY_DIR}")
-target_include_directories(list-libcamera PUBLIC "${PROJECT_BINARY_DIR}")
 
 target_link_libraries(constatus "-Wl,--export-dynamic -latomic")
 
