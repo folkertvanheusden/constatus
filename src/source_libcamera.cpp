@@ -31,11 +31,11 @@ void source_libcamera::request_completed(libcamera::Request *request)
 	if (request->status() == libcamera::Request::RequestCancelled)
                 return;
 
-        const auto & buffers = request->buffers();
+	const auto & buffers = request->buffers();
 
-        for(auto bufferPair : buffers) {
+	for(auto bufferPair : buffers) {
 		libcamera::FrameBuffer *const buffer = bufferPair.second;
-                const libcamera::FrameMetadata & metadata = buffer->metadata();
+		const libcamera::FrameMetadata & metadata = buffer->metadata();
 
 		for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
 			const uint8_t *data = (const uint8_t *)mappedBuffers[plane.fd.fd()].first;
@@ -68,14 +68,11 @@ void source_libcamera::request_completed(libcamera::Request *request)
 			}
 			else
 				log(id, LL_ERR, "Unexpected pixelformat");
-			}
-
-			break;
 		}
-        }
+	}
 
 	request->reuse(libcamera::Request::ReuseBuffers);
-        camera->queueRequest(request);
+	camera->queueRequest(request);
 }
 
 void source_libcamera::list_devices()
@@ -114,8 +111,8 @@ void source_libcamera::operator()()
 	log(id, LL_INFO, "Camera name: %s", camera->id().c_str());
 
 	std::string controls_list;
-        for(const auto & ctrl : camera->controls()) {
-                const libcamera::ControlId *id = ctrl.first;
+	for(const auto & ctrl : camera->controls()) {
+		const libcamera::ControlId *id = ctrl.first;
 
 		controls_list += " " + ctrl.first->name();
 	}
@@ -242,12 +239,12 @@ void source_libcamera::operator()()
 
 	log(id, LL_INFO, "source libcamera thread terminating");
 
-        camera->stop();
-        allocator->free(stream);
-        delete allocator;
+	camera->stop();
+	allocator->free(stream);
+	delete allocator;
 
-        camera->release();
-        cm->stop();
+	camera->release();
+	cm->stop();
 
 	register_thread_end("source libcamera");
 }
