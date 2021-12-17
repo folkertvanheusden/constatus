@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_other::source_other(const std::string & id, const std::string & descr, const std::string & o_inst, const std::string & o_id, resize *const r, const int resize_w, const int resize_h, const std::vector<filter *> *const filters) : source(id, descr, exec_failure, -1, r, resize_w, resize_h, LL_INFO, -1.0, filters, false, nullptr, 100), o_inst(o_inst), o_id(o_id)
+source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::vector<filter *> *const filters) : source(id, descr, "", -1, -1, nullptr, nullptr, 100), other(other)
 {
 }
 
@@ -29,69 +29,31 @@ void source_other::operator()()
 
 	set_thread_name("src_other");
 
+	other->start();
+
 	bool first = true, resize = resize_h != -1 || resize_w != -1;
 
 	const uint64_t interval = max_fps > 0.0 ? 1.0 / max_fps * 1000.0 * 1000.0 : 0;
 	long int backoff = 101000;
+
+	uint64_t after = 0;
 
 	for(;!local_stop_flag;)
 	{
 		uint64_t start_ts = get_us();
 
 		if (work_required()) {
-			uint8_t *work = NULL;
-			size_t work_len = 0;
-
-			if (!http_get(url, ignore_cert, auth.empty() ? NULL : auth.c_str(), loglevel == LL_DEBUG_VERBOSE, &work, &work_len, &local_stop_flag))
-			{
-				set_error("did not get a frame", false);
-				myusleep(backoff);
-
-				do_exec_failure();
-
-				if (backoff <= 2000000)
-					backoff += 51000;
-				continue;
-			}
-
-			st->track_bw(work_len);
-
-			backoff = 101000;
+			video_frame *vf = other->get_frame(true, after);
+			after = vf->get_ts();
 
 			if (!is_paused()) {
-				unsigned char *temp = NULL;
-				int dw = -1, dh = -1;
-				if (first || resize) {
-					if (!my_jpeg.read_JPEG_memory(work, work_len, &dw, &dh, &temp)) {
-						set_error("JPEG decode error", false);
-						continue;
-					}
+				auto data = vf->get_data_and_len(E_RGB);
 
-					std::unique_lock<std::mutex> lck(lock);
-					if (resize) {
-						width = resize_w;
-						height = resize_h;
-					}
-					else {
-						width = dw;
-						height = dh;
-					}
-					lck.unlock();
-
-					first = false;
-				}
-
-				if (resize)
-					set_scaled_frame(temp, dw, dh);
-				else
-					set_frame(E_JPEG, work, work_len);
-
-				clear_error();
-
-				free(temp);
+				set_size(vf->get_w(), vf->get_h());
+				set_frame(E_RGB, std::get<0>(data), std::get<1>(data));
 			}
 
-			free(work);
+			delete vf;
 		}
 
 		st->track_cpu_usage();
@@ -102,6 +64,8 @@ void source_other::operator()()
 		if (left > 0)
 			myusleep(left);
 	}
+
+	other->stop();
 
 	register_thread_end("source other source");
 }
