@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::vector<filter *> *const filters) : source(id, descr, "", -1, -1, nullptr, nullptr, 100), other(other)
+source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : source(id, descr, exec_failure, -1, -1, -1, loglevel, filters, failure, c, jpeg_quality), other(other)
 {
 }
 
