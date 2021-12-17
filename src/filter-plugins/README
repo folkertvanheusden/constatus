@@ -17,7 +17,7 @@ MQTT FEED
 =========
 mqtt reads from an mqtt source and adds the result as text in the stream
 'par' should contain:
-mqtt_host:mqtt_port:mqtt_topic
+mqtt_host:mqtt_port:mqtt_topic:nr_of_lines_to_show
 
 
 MQTT OVERLAY

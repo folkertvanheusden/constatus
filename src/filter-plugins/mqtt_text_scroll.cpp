@@ -17,12 +17,11 @@ typedef struct {
 	int port;
 	const char *topic;
 	struct mosquitto *mi;
+	std::vector<std::string> lines;
+	size_t n_lines;
 } pars_t;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-char *buffer1 = nullptr;
-char *buffer2 = nullptr;
-char *buffer3 = nullptr;
 
 void * thread(void *p)
 {
@@ -32,19 +31,16 @@ void * thread(void *p)
 		mosquitto_loop(mi, 11000, 1);
 }
 
-void on_message(struct mosquitto *, void *, const struct mosquitto_message *msg, const mosquitto_property *)
+void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)
 {
+	pars_t *pars = (pars_t *)p;
+
 	pthread_mutex_lock(&lock);
 
-	free(buffer1);
-	buffer1 = buffer2;
-	buffer2 = buffer3;
+	pars->lines.push_back(std::string((const char *)msg->payload, msg->payloadlen));
 
-	buffer3 = (char *)malloc(msg -> payloadlen + 1);
-	memcpy(buffer3, msg -> payload, msg -> payloadlen);
-	buffer3[msg -> payloadlen] = 0x00;
-
-	printf("Received MQTT message: %s\n", buffer3);
+	while(pars->lines.size() > pars->n_lines)
+		pars->lines.erase(pars->lines.begin());
 
 	pthread_mutex_unlock(&lock);
 }
@@ -56,13 +52,17 @@ void * init_filter(const char *const parameter)
 
 	char *temp = strdup(parameter);
 	pars_t *p = new pars_t;
-	char *saveptr = nullptr;
 
-	p -> host = strdup(strtok_r(temp, ":", &saveptr));
-	p -> port = atoi(strtok_r(nullptr, ":", &saveptr));
-	p -> topic = strdup(strtok_r(nullptr, ":", &saveptr));
+	std::vector<std::string> *parts = split(parameter, ":");
 
-	p -> mi = mosquitto_new("constatus", true, nullptr);
+	p -> host = strdup(parts->at(0).c_str());
+	p -> port = atoi(parts->at(1).c_str());
+	p -> topic = strdup(parts->at(2).c_str());
+	p -> n_lines = atoi(parts->at(3).c_str());
+
+	delete parts;
+
+	p -> mi = mosquitto_new("constatus", true, p);
 
 	int rc = 0;
 	if ((rc = mosquitto_connect(p -> mi, p -> host, p -> port, 30)) != MOSQ_ERR_SUCCESS)
@@ -83,12 +83,18 @@ void * init_filter(const char *const parameter)
 
 void apply_filter(void *arg, const uint64_t ts, const int w, const int h, const uint8_t *const prev_frame, const uint8_t *const current_frame, uint8_t *const result)
 {
+	pars_t *p = (pars_t *)arg;
+
+	std::string text_out;
+
 	pthread_mutex_lock(&lock);
-	std::string text1 = buffer1 ? buffer1 : "";
-	std::string text2 = buffer2 ? buffer2 : "";
-	std::string text3 = buffer3 ? buffer3 : "";
+	for(auto line : p->lines) {
+		if (text_out.empty() == false)
+			text_out += "\\n";
+
+		text_out += line;
+	}
 	pthread_mutex_unlock(&lock);
-	std::string text_out = text1 + "\\n" + text2 + "\\n" + text3;
 
 	uint32_t *temp = NULL;
 	cairo_surface_t *const cs = rgb_to_cairo(current_frame, w, h, &temp);
