@@ -11,7 +11,7 @@
 #include "filter.h"
 #include "resize.h"
 
-view_pip::view_pip(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, std::vector<filter *> *const filters, int perc, const int jpeg_quality) : view_ss(cfg, id, descr, width, height, false, sources, 0.0, filters, jpeg_quality), perc(perc)
+view_pip::view_pip(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, std::vector<filter *> *const filters, const int jpeg_quality) : view_ss(cfg, id, descr, width, height, false, sources, 0.0, filters, jpeg_quality)
 {
 	frames.resize(sources.size());
 }
@@ -55,6 +55,7 @@ void view_pip::operator()()
 
 		if (pvf) {
 			if (i) {
+				int perc = sources.at(i).perc;
 				video_frame *temp = pvf->do_resize(r, pvf->get_w() * perc / 100, pvf->get_h() * perc / 100);
 				delete pvf;
 				pvf = temp;

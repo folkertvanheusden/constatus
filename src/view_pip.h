@@ -10,8 +10,6 @@
 class view_pip : public view_ss
 {
 private:
-	const int perc;
-
 	std::mutex prev_frame_lock;
 	video_frame *prev_frame { nullptr };
 
@@ -22,7 +20,7 @@ private:
 	std::vector<video_frame *> frames;
 
 public:
-	view_pip(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, std::vector<filter *> *const filters, int perc, const int jpeg_quality);
+	view_pip(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, std::vector<filter *> *const filters, const int jpeg_quality);
 	virtual ~view_pip();
 
 	std::string get_html(const std::map<std::string, std::string> & pars) const override;

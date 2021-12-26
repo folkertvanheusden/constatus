@@ -1467,7 +1467,9 @@ std::pair<source *, std::vector<target *> *> load_view(configuration_t *const cf
 		std::string p = cfg_str(src, "position", "where to put the source", true, "none");
 		pos_t pos = pos_to_pos(p);
 
-		ids.push_back({ id, pos });
+		int perc = cfg_int(src, "perc", "shrink percentage", true, 100);
+
+		ids.push_back({ id, pos, perc });
 	}
 
 	int width = cfg_int(in, "width", "width of the total view", true, -1);
@@ -1511,9 +1513,7 @@ std::pair<source *, std::vector<target *> *> load_view(configuration_t *const cf
 			v = new view_all(cfg, id, descr, width, height, gwidth, gheight, ids, interval, filters, jpeg_quality);
 		}
 		else if (type == "pip") {
-			int perc = cfg_int(in, "percentage", "resize (shrink) percentage", false, 25);
-
-			v = new view_pip(cfg, id, descr, width, height, ids, filters, perc, jpeg_quality);
+			v = new view_pip(cfg, id, descr, width, height, ids, filters, jpeg_quality);
 		}
 		else if (type == "3d" || type == "3D") {
 			const std::string packing = cfg_str(in, "packing", "how to combine the left & right picture", false, "side-by-side");

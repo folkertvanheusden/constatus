@@ -10,6 +10,7 @@
 typedef struct {
 	std::string id;
 	pos_t pos; // currently only for PIP views
+	int perc;  // shrink percentage (PIP views)
 } view_src_t;
 
 class view : public source
