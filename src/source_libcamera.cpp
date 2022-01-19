@@ -43,23 +43,12 @@ void source_libcamera::request_completed(libcamera::Request *request)
 
 			if (pixelformat == libcamera::formats::MJPEG)
 				set_frame(E_JPEG, data, length);
-			else if (pixelformat == libcamera::formats::RGB888) {
+			else if (pixelformat == libcamera::formats::RGB888)
+				set_frame(E_RGB, data, length);
 #ifdef __arm__  // hopefully a raspberry pi
-				uint8_t *work = (uint8_t *)malloc(length);
-
-				for(size_t i=0; i<length; i += 3) {
-					work[i] = data[i + 2];
-					work[i + 2] = data[i];
-					work[i + 1] = data[i + 1];
-				}
-
-				set_frame(E_RGB, work, length);
-
-				free(work);
-#else
+			else if (pixelformat == libcamera::formats::BGR888)
 				set_frame(E_RGB, data, length);
 #endif
-			}
 			else if (pixelformat == libcamera::formats::YUYV) {
 				uint8_t *rgb = nullptr;
 				yuy2_to_rgb(data, width, height, &rgb);
@@ -131,8 +120,13 @@ void source_libcamera::operator()()
 		if (prefer_jpeg && format == libcamera::formats::MJPEG)
 			break;
 
+#ifdef __arm__  // hopefully a raspberry pi
+		if (!prefer_jpeg && format == libcamera::formats::BGR888)
+			break;
+#else
 		if (!prefer_jpeg && format == libcamera::formats::RGB888)
 			break;
+#endif
 	}
 
 	if (idx == camera_config->size())
@@ -144,7 +138,11 @@ void source_libcamera::operator()()
 
 	stream_config.size.width = w_requested;
 	stream_config.size.height = h_requested;
+#ifdef __arm__  // hopefully a raspberry pi
+	stream_config.pixelFormat = libcamera::formats::BGR888;
+#else
 	stream_config.pixelFormat = libcamera::formats::RGB888;
+#endif
 
 	camera_config->validate();
 
