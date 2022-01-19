@@ -84,7 +84,7 @@ void draw_text::draw_background(const int width, const int height, const rgb_t &
 	for(int y=target_y; y<std::min(target_height, target_y + height); y++) {
 		int o = y * target_width * 3 + target_x * 3;
 
-		for(int x=target_x; x<std::min(target_width, target_y + width); x++, o += 3) {
+		for(int x=target_x; x<std::min(target_width, target_x + width); x++, o += 3) {
 			target[o + 0] = col.r;
 			target[o + 1] = col.g;
 			target[o + 2] = col.b;

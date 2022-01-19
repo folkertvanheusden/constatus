@@ -1,4 +1,4 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #include "config.h"
 #include <dlfcn.h>
 #include <libconfig.h++>
@@ -813,6 +813,7 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 			int x = cfg_int(ae, "x", "x-coordinate of text", false, 0);
 			int y = cfg_int(ae, "y", "y-coordinate of text", false, 0);
 			int fs = cfg_int(ae, "font-size", "font size (in pixels)", false, 10);
+			int w = cfg_int(ae, "w", "text width", true, -1);
 			bool invert = cfg_bool(ae, "invert", "invert colors", true, false);
 
 			std::optional<rgb_t> col = get_color(ae);
@@ -823,7 +824,7 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 
 			auto bg_col = get_color(ae, "bg-");
 
-			filters -> push_back(new filter_add_scaled_text(s_text, font, x, y, fs, bg_col, col.value(), invert));
+			filters -> push_back(new filter_add_scaled_text(s_text, font, x, y, fs, w, bg_col, col.value(), invert));
 		}
 		else if (s_type == "average") {
 			int average_n = cfg_int(ae, "average-n", "how many frames to average", false, 3);

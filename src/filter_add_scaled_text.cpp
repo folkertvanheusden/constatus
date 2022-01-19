@@ -1,4 +1,4 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #include "config.h"
 #include <stdint.h>
 #include <string>
@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "draw_text.h"
 
-filter_add_scaled_text::filter_add_scaled_text(const std::string & what, const std::string & font_file, const int x, const int y, const int font_size, const std::optional<rgb_t> bg, const rgb_t col, const bool invert) : what(what), font_file(font_file), x(x), y(y), font_size(font_size), bg(bg), col(col), invert(invert)
+filter_add_scaled_text::filter_add_scaled_text(const std::string & what, const std::string & font_file, const int x, const int y, const int font_size, const int width, const std::optional<rgb_t> bg, const rgb_t col, const bool invert) : what(what), font_file(font_file), x(x), y(y), font_size(font_size), width(width), bg(bg), col(col), invert(invert)
 {
 }
 
@@ -34,7 +34,7 @@ void filter_add_scaled_text::apply(instance *const i, interface *const specific_
 	int work_y = y < 0 ? y + h : y;
 
 	for(std::string cl : *parts) {
-		draw_text dt(font_file, cl, font_size, true, in_out, w, h, work_x, work_y, w - work_x, bg, col, invert);
+		draw_text dt(font_file, cl, font_size, true, in_out, w, h, work_x, work_y, width > 0 ? width : w - work_x, bg, col, invert);
 
 		work_y += font_size + 1;
 	}
