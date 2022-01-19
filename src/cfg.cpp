@@ -33,6 +33,7 @@ using namespace libconfig;
 #if HAVE_PIPEWIRE == 1
 #include "source_pipewire.h"
 #endif
+#include "source_other.h"
 #include "source_static.h"
 #include "source_black.h"
 #include "webservices.h"
@@ -1105,6 +1106,14 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			s = new source_black(id, descr, w, h, use_controls ? new controls_software() : nullptr);
 
 			delete source_filters;
+		}
+		// other-source (ivm target as-a-new-source)
+		else if (s_type == "other-source") {
+			std::string o_id = cfg_str(o_source, "other-id", "id of the source in the other instance", false, "");
+
+			source *other = (source *)find_interface_by_id(cfg, o_id);
+
+			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
 		}
 		else {
 			error_exit(false, "Source-type \"%s\" is not known", s_type.c_str());
