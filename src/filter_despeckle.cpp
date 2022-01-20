@@ -13,7 +13,7 @@ void dilation(const uint8_t *const in, uint8_t *const gray, const int w, const i
 
 	for(int y=half_kernel; y<h-half_kernel; y++) {
 		for(int x=half_kernel; x<w-half_kernel; x++) {
-			int best = -1, r, g, b;
+			int best = -1, r = 0, g = 0, b = 0;
 
 			for(int ky=y-half_kernel; ky<y+half_kernel; ky++) {
 				for(int kx=x-half_kernel; kx<x+half_kernel; kx++) {
