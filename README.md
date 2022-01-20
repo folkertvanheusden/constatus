@@ -82,6 +82,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
 
 - Not required (OPTIONAL!):
   - libtheora-dev               - Ogg/Theora streaming
+  - libcamera-dev               - libcamera still once in a while changes API so this may not always compile
   - libv4l-dev			- USB cameras (it will complain that "libv4l2" is missing if not installed)
   - libnetpbm10-dev		- PBM pictures loading/saving
   - libexiv2-dev		- JPEG meta data
@@ -242,4 +243,4 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 
 
 
-(C) 2017-2021 by Folkert van Heusden <mail@vanheusden.com>, Constatus is released under Apache License v2.0
+(C) 2017-2022 by Folkert van Heusden <mail@vanheusden.com>, Constatus is released under Apache License v2.0
