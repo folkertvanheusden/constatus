@@ -185,7 +185,7 @@ fail:
 		uint8_t *work = vf->get_data(E_RGB);
 		uint64_t vf_ts = vf->get_ts();
 
-		size_t n_bytes = IMS(width, height, 3);
+		size_t n_bytes = IMS(vf->get_w(), vf->get_h(), 3);
 
 		uint8_t *copy = (uint8_t *)duplicate(work, n_bytes);
 
@@ -194,7 +194,7 @@ fail:
 		if (need_filters) {
 			std::lock_guard<std::mutex> pflck(prev_frame_rgb_lock);
 
-			apply_filters(nullptr, this, filters, prev_frame_rgb, copy, vf_ts, width, height);
+			apply_filters(nullptr, this, filters, prev_frame_rgb, copy, vf_ts, vf->get_w(), vf->get_h());
 
 			if (!prev_frame_rgb)
 				prev_frame_rgb = (uint8_t *)malloc(n_bytes);
@@ -208,7 +208,7 @@ fail:
 			c->apply(copy, vf->get_w(), vf->get_h());
 		}
 
-		return new video_frame(get_meta(), jpeg_quality, vf->get_ts(), width, height, copy, n_bytes, E_RGB);
+		return new video_frame(get_meta(), jpeg_quality, vf->get_ts(), vf->get_w(), vf->get_h(), copy, n_bytes, E_RGB);
 	}
 
 	return vf->duplicate({ });

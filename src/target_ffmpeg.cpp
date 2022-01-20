@@ -162,6 +162,7 @@ static bool add_stream(OutputStream *ost, AVFormatContext *oc, AVCodec **codec, 
 			break;
 
 		case AVMEDIA_TYPE_VIDEO:
+			log(LL_INFO, "Adding stream of dimensions %dx%d @ %dfps with bitrate %d", w, h, fps, bitrate);
 			c->codec_id = codec_id;
 
 			c->bit_rate = bitrate;

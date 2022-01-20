@@ -1113,7 +1113,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 			source *other = (source *)find_interface_by_id(cfg, o_id);
 
-			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
+			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h);
 		}
 		else {
 			error_exit(false, "Source-type \"%s\" is not known", s_type.c_str());

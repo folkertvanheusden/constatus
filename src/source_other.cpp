@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : source(id, descr, exec_failure, -1, -1, -1, loglevel, filters, failure, c, jpeg_quality), other(other)
+source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, resize *const r, const int resize_w, const int resize_h) : source(id, descr, exec_failure, -1, r, resize_w, resize_h, loglevel, 86400, filters, failure, c, jpeg_quality), other(other)
 {
 }
 
@@ -50,7 +50,11 @@ void source_other::operator()()
 				auto data = vf->get_data_and_len(E_RGB);
 
 				set_size(vf->get_w(), vf->get_h());
-				set_frame(E_RGB, std::get<0>(data), std::get<1>(data));
+
+				if (resize_w != -1 && resize_h != -1)
+					set_scaled_frame(std::get<0>(data), resize_w, resize_h);
+				else
+					set_frame(E_RGB, std::get<0>(data), std::get<1>(data));
 			}
 
 			delete vf;
