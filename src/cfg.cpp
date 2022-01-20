@@ -1112,6 +1112,8 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			std::string o_id = cfg_str(o_source, "other-id", "id of the source in the other instance", false, "");
 
 			source *other = (source *)find_interface_by_id(cfg, o_id);
+			if (!other)
+				error_exit(false, "\"other-id\" \"%s\" is not known", o_id.c_str());
 
 			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h);
 		}
