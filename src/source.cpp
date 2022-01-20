@@ -110,10 +110,12 @@ void source::set_frame(const encoding_t pe, const uint8_t *const data, const siz
 
 	uint8_t *copy = (uint8_t *)(do_duplicate ? duplicate(data, size) : data);
 
-	const std::lock_guard<std::mutex> lck(lock);
+	std::unique_lock<std::mutex> lck(lock);
 
 	delete vf;
 	vf = new video_frame(get_meta(), jpeg_quality, use_ts, width, height, copy, size, pe);
+
+	lck.unlock();
 
 	cond.notify_all();
 }
@@ -128,10 +130,12 @@ void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const 
         uint8_t *out = nullptr;
         r -> do_resize(sourcew, sourceh, in, target_w, target_h, &out);
 
-	const std::lock_guard<std::mutex> lck(lock);
+	std::unique_lock<std::mutex> lck(lock);
 
 	delete vf;
 	vf = new video_frame(get_meta(), jpeg_quality, use_ts, target_w, target_h, out, IMS(target_w, target_h, 3), E_RGB);
+
+	lck.unlock();
 
 	cond.notify_all();
 }

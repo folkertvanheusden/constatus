@@ -52,7 +52,7 @@ void source_other::operator()()
 				set_size(vf->get_w(), vf->get_h());
 
 				if (resize_w != -1 && resize_h != -1)
-					set_scaled_frame(std::get<0>(data), resize_w, resize_h);
+					set_scaled_frame(std::get<0>(data), vf->get_w(), vf->get_h());
 				else
 					set_frame(E_RGB, std::get<0>(data), std::get<1>(data));
 			}
