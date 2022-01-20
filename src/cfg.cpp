@@ -1007,7 +1007,6 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 					parameter::add_value(ctrls, str_tolower(name), "control " + name, value);
 				}
-
 			}
 			catch(SettingNotFoundException & snfe) {
 			}

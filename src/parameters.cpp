@@ -5,6 +5,7 @@
 
 #include "parameters.h"
 #include "log.h"
+#include "utils.h"
 
 parameter::parameter(const std::string & name, const std::string & descr, const bool v) : type(V_BOOL), name(name), descr(descr), vb(v)
 {
@@ -28,10 +29,18 @@ parameter::~parameter()
 
 bool parameter::get_value_bool() const
 {
-	assert(type == V_BOOL);
-
 	lock.lock_shared();
-	bool rc = vb;
+
+	bool rc = false;
+
+	if (type == V_BOOL)
+		rc = vb;
+	else if (type == V_STRING) {
+		std::string work = str_tolower(vs);
+
+		rc = work == "true" || work == "1" || work == "on" || work == "yes";
+	}
+
 	lock.unlock_shared();
 
 	return rc;
@@ -39,10 +48,15 @@ bool parameter::get_value_bool() const
 
 int parameter::get_value_int() const
 {
-	assert(type == V_INT);
-
 	lock.lock_shared();
+
 	int rc = vi;
+
+	if (type == V_INT)
+		rc = vi;
+	else if (type == V_STRING)
+		rc = atoi(vs.c_str());
+
 	lock.unlock_shared();
 
 	return rc;
@@ -50,10 +64,15 @@ int parameter::get_value_int() const
 
 double parameter::get_value_double() const
 {
-	assert(type == V_DOUBLE);
-
 	lock.lock_shared();
-	double rc = vd;
+
+	double rc = vi;
+
+	if (type == V_DOUBLE)
+		rc = vi;
+	else if (type == V_STRING)
+		rc = atof(vs.c_str());
+
 	lock.unlock_shared();
 
 	return rc;
