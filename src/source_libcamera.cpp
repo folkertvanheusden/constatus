@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <cstring>
 #include <stdint.h>
+#include <unistd.h>
 #include <sys/mman.h>
 
 #include "encoding.h"
@@ -38,30 +39,32 @@ void source_libcamera::request_completed(libcamera::Request *request)
 		const libcamera::FrameMetadata & metadata = buffer->metadata();
 
 		for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
-			const uint8_t *data = (const uint8_t *)mappedBuffers[plane.fd.fd()].first;
-			unsigned int length = plane.length;
+			const uint8_t *data = (const uint8_t *)mappedBuffers[plane.fd.get()].first;
+			const unsigned int length = plane.length;
 
 			if (pixelformat == libcamera::formats::MJPEG)
 				set_frame(E_JPEG, data, length);
 			else if (pixelformat == libcamera::formats::RGB888)
 				set_frame(E_RGB, data, length);
-#ifdef __arm__  // hopefully a raspberry pi
 			else if (pixelformat == libcamera::formats::BGR888)
 				set_frame(E_RGB, data, length);
-#endif
 			else if (pixelformat == libcamera::formats::YUYV) {
 				uint8_t *rgb = nullptr;
 				yuy2_to_rgb(data, width, height, &rgb);
 				set_frame(E_RGB, rgb, width * height * 3);
 				free(rgb);
 			}
-			else
-				log(id, LL_ERR, "Unexpected pixelformat");
+			else {
+				log(id, LL_ERR, "Unexpected pixelformat (%x / %c%c%c%c)", pixelformat, pixelformat >> 24 ?:' ', pixelformat >> 16 ?:' ', pixelformat >> 8 ?:' ', pixelformat ?:' ');
+			}
 		}
 	}
 
 	request->reuse(libcamera::Request::ReuseBuffers);
-	camera->queueRequest(request);
+
+	int rc = camera->queueRequest(request);
+	if (rc)
+		log(id, LL_ERR, "source libcamera: error %s", strerror(rc));
 }
 
 void source_libcamera::list_devices()
@@ -78,7 +81,6 @@ void source_libcamera::list_devices()
 	lcm->stop();
 }
 
-#include <unistd.h>
 void source_libcamera::operator()()
 {
 	log(id, LL_INFO, "source libcamera thread started");
@@ -113,41 +115,85 @@ void source_libcamera::operator()()
 	libcamera::StreamRoles roles{ libcamera::VideoRecording };
 	std::unique_ptr<libcamera::CameraConfiguration> camera_config = camera->generateConfiguration(roles);
 
-	size_t idx = 0;
-	for(; idx<camera_config->size(); idx++) {
-		uint32_t format = camera_config->at(idx).pixelFormat.fourcc();
+	if (!camera_config.get() || camera_config->size() == 0)
+		error_exit(false, "The device \"%s\" cannot produce a video stream that Constatus can use", dev.c_str());
 
-		if (prefer_jpeg && format == libcamera::formats::MJPEG)
-			break;
+	libcamera::StreamConfiguration & stream_config = camera_config->at(0);
+	libcamera::PixelFormat best_format = stream_config.pixelFormat;
 
+	for(;;) {
+
+		// try MJPEG if preferred
+		if (prefer_jpeg) {
+			stream_config.size.width = w_requested;
+			stream_config.size.height = h_requested;
+			stream_config.pixelFormat = libcamera::formats::MJPEG;
+
+			libcamera::CameraConfiguration::Status status = camera_config->validate();
+
+			if (status == libcamera::CameraConfiguration::Status::Valid)
+				break;
+		}
+
+		// try RGB
+		stream_config.size.width = w_requested;
+		stream_config.size.height = h_requested;
 #ifdef __arm__  // hopefully a raspberry pi
-		if (!prefer_jpeg && format == libcamera::formats::BGR888)
-			break;
+		stream_config.pixelFormat = libcamera::formats::BGR888;
 #else
-		if (!prefer_jpeg && format == libcamera::formats::RGB888)
-			break;
+		stream_config.pixelFormat = libcamera::formats::RGB888;
 #endif
+
+		log(id, LL_INFO, "Trying: %s", stream_config.toString().c_str());
+
+		libcamera::CameraConfiguration::Status status = camera_config->validate();
+
+		if (status == libcamera::CameraConfiguration::Status::Valid)
+			break;
+
+		if (status == libcamera::CameraConfiguration::Status::Adjusted)
+			best_format = stream_config.pixelFormat;
+
+		// try YUYV
+		stream_config.size.width = w_requested;
+		stream_config.size.height = h_requested;
+		stream_config.pixelFormat = libcamera::formats::YUYV;
+
+		log(id, LL_INFO, "Trying: %s", stream_config.toString().c_str());
+
+		status = camera_config->validate();
+
+		if (status == libcamera::CameraConfiguration::Status::Valid)
+			break;
+
+		if (status == libcamera::CameraConfiguration::Status::Adjusted)
+			best_format = stream_config.pixelFormat;
+
+		// try MJPEG also as last resort
+		if (!prefer_jpeg) {
+			stream_config.size.width = w_requested;
+			stream_config.size.height = h_requested;
+			stream_config.pixelFormat = libcamera::formats::MJPEG;
+
+			status = camera_config->validate();
+
+			if (status == libcamera::CameraConfiguration::Status::Valid || status == libcamera::CameraConfiguration::Status::Adjusted)
+				break;
+		}
+
+		stream_config.size.width = w_requested;
+		stream_config.size.height = h_requested;
+		stream_config.pixelFormat = best_format;
+
+		if (camera_config->validate())
+			error_exit(false, "source libcamera: configuration is unexpectedly invalid");
+
+		break;
 	}
 
-	if (idx == camera_config->size())
-		idx = 0;
+	log(LL_INFO, "source libcamera: chosen format: %s", stream_config.toString().c_str());
 
-	log(id, LL_INFO, "Requested: %d x %d, slot %zu of %zu", w_requested, h_requested, idx, camera_config->size());
-	libcamera::StreamConfiguration & stream_config = camera_config->at(idx);
-	log(id, LL_INFO, "Default: %s", stream_config.toString().c_str());
-
-	stream_config.size.width = w_requested;
-	stream_config.size.height = h_requested;
-#ifdef __arm__  // hopefully a raspberry pi
-	stream_config.pixelFormat = libcamera::formats::BGR888;
-#else
-	stream_config.pixelFormat = libcamera::formats::RGB888;
-#endif
-
-	camera_config->validate();
-
-	pixelformat = stream_config.pixelFormat.fourcc();
-	log(id, LL_INFO, "Validated configuration is: %s (%c%c%c%c)", stream_config.toString().c_str(), pixelformat, pixelformat >> 8, pixelformat >> 16, pixelformat >> 24);
+	pixelformat = stream_config.pixelFormat;
 
 	std::unique_lock<std::mutex> lck(lock);
 	width = stream_config.size.width;
@@ -182,21 +228,23 @@ void source_libcamera::operator()()
 			std::unique_ptr<libcamera::Request> request = camera->createRequest();
 			if (!request) {
 				fail = true;
-				log(id, LL_ERR, "Can't create request for camera");
+				error_exit(false, "Can't create request for camera");
 				break;
 			}
 
 			const std::unique_ptr<libcamera::FrameBuffer> & buffer = buffers[i];
 			if (int ret = request->addBuffer(stream, buffer.get()); ret < 0) {
 				fail = true;
-				log(id, LL_ERR, "Can't set buffer for request: %s", strerror(-ret));
+				error_exit(false, "Can't set buffer for request: %s", strerror(-ret));
 				break;
 			}
 
 			for(const libcamera::FrameBuffer::Plane & plane : buffer->planes()) {
-				void *memory = mmap(NULL, plane.length, PROT_READ, MAP_SHARED, plane.fd.fd(), 0);
+				void *memory = mmap(NULL, plane.length, PROT_READ, MAP_SHARED, plane.fd.get(), 0);
+				if (memory == MAP_FAILED)
+					error_exit(true, "mmap failed for fd %d, size %ld", plane.fd.get(), plane.length);
 
-				mappedBuffers[plane.fd.fd()] = std::make_pair(memory, plane.length);
+				mappedBuffers[plane.fd.get()] = std::make_pair(memory, plane.length);
 			}
 
 			for(const auto & ctrl : camera->controls()) {
@@ -222,15 +270,23 @@ void source_libcamera::operator()()
 
 			camera->requestCompleted.connect(this, &source_libcamera::request_completed);
 
-			camera->start();
+			int rc = camera->start();
+			if (rc == 0) {
+				for(auto & request : requests) {
+					rc = camera->queueRequest(request.get());
 
-			for(auto & request : requests)
-				camera->queueRequest(request.get());
+					if (rc)
+						log(id, LL_ERR, "source libcamera: queue request error %s", strerror(rc));
+				}
 
-			for(;!local_stop_flag;) {
-				mysleep(100000, &local_stop_flag, nullptr);
+				for(;!local_stop_flag;) {
+					mysleep(100000, &local_stop_flag, nullptr);
 
-				st->track_cpu_usage();
+					st->track_cpu_usage();
+				}
+			}
+			else {
+				log(id, LL_ERR, "source libcamera: cannot start camera (%s)", strerror(rc));
 			}
 		}
 	}
