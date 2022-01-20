@@ -266,6 +266,12 @@ target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
 target_include_directories(constatus PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
 
+pkg_check_modules(LIBCAMERA_BASE libcamera-base)
+target_link_libraries(constatus ${LIBCAMERA_BASE_LIBRARIES})
+target_include_directories(constatus PUBLIC ${LIBCAMERA_BASE_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${LIBCAMERA_BASE_CFLAGS_OTHER})
+
+
 if (LIBCAMERA_FOUND)
 	message("libcamera found, building list-libcamera")
 	add_executable(list-libcamera
