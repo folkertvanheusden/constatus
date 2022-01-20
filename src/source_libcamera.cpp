@@ -103,9 +103,27 @@ void source_libcamera::operator()()
 
 	std::string controls_list;
 	for(const auto & ctrl : camera->controls()) {
-		const libcamera::ControlId *id = ctrl.first;
-
 		controls_list += " " + ctrl.first->name();
+
+		switch(ctrl.first->type()) {
+			case libcamera::ControlTypeNone:
+				break;
+			case libcamera::ControlTypeBool:
+				controls_list += "(bool)"; break;
+			case libcamera::ControlTypeByte:
+				controls_list += "(byte)"; break;
+			case libcamera::ControlTypeInteger32:
+				controls_list += "(32bit value)"; break;
+			case libcamera::ControlTypeInteger64:
+				controls_list += "(64bit value)"; break;
+			case libcamera::ControlTypeFloat:
+				controls_list += "(floating point)"; break;
+			case libcamera::ControlTypeString:
+				controls_list += "(string)"; break;
+			default:
+				controls_list += "(?)";
+				break;
+		}
 	}
 
 	log(id, LL_INFO, " Controls:%s", controls_list.c_str());
@@ -259,6 +277,14 @@ void source_libcamera::operator()()
 						ctls.set(id->id(), float(atof(it->second->get_value_string().c_str())));
 					else if (id->type() == libcamera::ControlTypeString)
 						ctls.set(id->id(), it->second->get_value_string());
+					else if (id->type() == libcamera::ControlTypeBool)
+						ctls.set(id->id(), it->second->get_value_bool());
+					else if (id->type() == libcamera::ControlTypeInteger32 || id->type() == libcamera::ControlTypeInteger64)
+						ctls.set(id->id(), it->second->get_value_int());
+					else if (id->type() == libcamera::ControlTypeNone)
+						log(LL_WARNING, "Don't know how to hande libcamera::ControlTypeNone");
+					else
+						error_exit(false, "Unimplemented control-type for source libcamera");
 				}
 			}
 
