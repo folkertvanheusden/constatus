@@ -16,7 +16,7 @@
 #include "parameters.h"
 #include "controls.h"
 
-source_libcamera::source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality), dev(dev), w_requested(w_requested), h_requested(h_requested), prefer_jpeg(prefer_jpeg), ctrls(ctrls)
+source_libcamera::source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c, const int rotate_angle) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality), dev(dev), w_requested(w_requested), h_requested(h_requested), prefer_jpeg(prefer_jpeg), ctrls(ctrls), rotate_angle(rotate_angle)
 {
 }
 
@@ -140,6 +140,17 @@ void source_libcamera::operator()()
 	libcamera::PixelFormat best_format = stream_config.pixelFormat;
 
 	for(;;) {
+		// reset as validate can alter it
+		if (rotate_angle == 0) {
+		}
+		else if (rotate_angle == 90)
+			camera_config->transform = libcamera::Transform::Rot90;
+		else if (rotate_angle == 180)
+			camera_config->transform = libcamera::Transform::Rot180;
+		else if (rotate_angle == 270)
+			camera_config->transform = libcamera::Transform::Rot270;
+		else
+			error_exit(false, "Can only rotate in steps of 90 degrees (not %d, libcamera - %s)", rotate_angle, dev.c_str());
 
 		// try MJPEG if preferred
 		if (prefer_jpeg) {

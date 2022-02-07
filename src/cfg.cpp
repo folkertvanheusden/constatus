@@ -993,6 +993,8 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			std::string dev = cfg_str(o_source, "device", "device name", false, "");
 			bool prefer_jpeg = cfg_bool(o_source, "prefer-jpeg", "try to get directly JPEG from camera", true, false);
 
+			int rotate = cfg_int(o_source, "rotate-angle", "angle to rotate width (0, 90, 180 or 270)", true);
+
 			std::map<std::string, parameter *> ctrls;
 
 			try {
@@ -1011,7 +1013,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			catch(SettingNotFoundException & snfe) {
 			}
 
-			s = new source_libcamera(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, ctrls, use_controls ? new controls_software() : nullptr);
+			s = new source_libcamera(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, ctrls, use_controls ? new controls_software() : nullptr, rotate);
 #else
 			error_exit(false, "'libcamera' is required");
 #endif
