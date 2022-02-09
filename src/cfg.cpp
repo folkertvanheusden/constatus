@@ -995,6 +995,9 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 			int rotate = cfg_int(o_source, "rotate-angle", "angle to rotate width (0, 90, 180 or 270)", true);
 
+			if (rotate == -1)
+				rotate = 0;
+
 			std::map<std::string, parameter *> ctrls;
 
 			try {
