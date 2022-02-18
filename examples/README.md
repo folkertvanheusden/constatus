@@ -70,3 +70,8 @@ is detected.
 
 Shows how to generate a timelapse and give access to it via a
 webserver.
+
+* crop.cfg
+
+Shows how to cut a part of a videostream and publish it as a
+new source.
