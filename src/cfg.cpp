@@ -1115,11 +1115,21 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 		else if (s_type == "other-source") {
 			std::string o_id = cfg_str(o_source, "other-id", "id of the source in the other instance", false, "");
 
+			int x = cfg_int(o_source, "cut-x", "x coordinate of sub-picture", true, -1);
+			int y = cfg_int(o_source, "cut-y", "y coordinate of sub-picture", true, -1);
+			int w = cfg_int(o_source, "cut-w", "width of sub-picture", true, -1);
+			int h = cfg_int(o_source, "cut-h", "height of sub-picture", true, -1);
+
+			std::optional<cut_t> cut;
+
+			if (x != -1 && y != -1 && w != -1 && h != -1)
+				cut = { x, y, w, h };
+
 			source *other = (source *)find_interface_by_id(cfg, o_id);
 			if (!other)
 				error_exit(false, "\"other-id\" \"%s\" is not known", o_id.c_str());
 
-			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h);
+			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h, cut);
 		}
 		else {
 			error_exit(false, "Source-type \"%s\" is not known", s_type.c_str());
