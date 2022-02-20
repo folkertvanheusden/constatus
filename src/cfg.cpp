@@ -23,6 +23,7 @@ using namespace libconfig;
 #endif
 #include "source_http_mjpeg.h"
 #include "source_http_jpeg.h"
+#include "source_http_png.h"
 #include "source_filesystem_jpeg.h"
 #include "source_ffmpeg.h"
 #include "source_plugin.h"
@@ -1024,9 +1025,16 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 		else if (s_type == "jpeg") {
 			bool ign_cert = cfg_bool(o_source, "ignore-cert", "ignore SSL errors", true, false);
 			const std::string auth = cfg_str(o_source, "http-auth", "HTTP authentication string", true, "");
-			const std::string url = cfg_str(o_source, "url", "address of JPEG stream", false, "");
+			const std::string url = cfg_str(o_source, "url", "address of JPEG-files stream", false, "");
 
 			s = new source_http_jpeg(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
+		}
+		else if (s_type == "png") {
+			bool ign_cert = cfg_bool(o_source, "ignore-cert", "ignore SSL errors", true, false);
+			const std::string auth = cfg_str(o_source, "http-auth", "HTTP authentication string", true, "");
+			const std::string url = cfg_str(o_source, "url", "address of PNG-files stream", false, "");
+
+			s = new source_http_png(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
 		}
 		else if (s_type == "jpeg-file") {
 			const std::string path = cfg_str(o_source, "path", "path + file name of JPEG file to monitor", false, "");

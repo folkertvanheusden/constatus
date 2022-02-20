@@ -7,7 +7,7 @@
 
 class meta;
 
-void read_PNG_file_rgba(FILE *fh, int *w, int *h, uint8_t **pixels);
+void read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pixels);
 void write_PNG_file(FILE *fh, int ncols, int nrows, unsigned char *pixels);
 
 void load_PBM_file(FILE *const fh, int *const w, int *const h, uint8_t **out);

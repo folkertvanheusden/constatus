@@ -53,7 +53,7 @@ static void libpng_warning_handler(png_structp png, png_const_charp msg)
 }
 
 // rgbA (!)
-void read_PNG_file_rgba(FILE *fh, int *w, int *h, uint8_t **pixels)
+void read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pixels)
 {
 	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, libpng_error_handler, libpng_warning_handler);
 	if (!png)
@@ -94,21 +94,35 @@ void read_PNG_file_rgba(FILE *fh, int *w, int *h, uint8_t **pixels)
 		png_set_tRNS_to_alpha(png);
 
 	// These color_type don't have an alpha channel then fill it with 0xff.
-	if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_PALETTE)
-		png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
+	if (with_alpha) {
+		if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_PALETTE)
+			png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
+	}
 
 	if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
 		png_set_gray_to_rgb(png);
 
 	png_read_update_info(png, info);
 
-	*pixels = (uint8_t *)malloc(IMS(*w, *h, 4));
+	png_bytep *row_pointers = nullptr;
 
-	png_bytep *row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * *h);
-	for(int y = 0; y < *h; y++)
-		row_pointers[y] = &(*pixels)[y * *w * 4];
+	if (with_alpha) {
+		*pixels = (uint8_t *)malloc(IMS(*w, *h, 4));
+
+		row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * *h);
+		for(int y = 0; y < *h; y++)
+			row_pointers[y] = &(*pixels)[y * *w * 4];
+	}
+	else {
+		*pixels = (uint8_t *)malloc(IMS(*w, *h, 3));
+
+		row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * *h);
+		for(int y = 0; y < *h; y++)
+			row_pointers[y] = &(*pixels)[y * *w * 3];
+	}
 
 	png_read_image(png, row_pointers);
+
 	free(row_pointers);
 
 	png_destroy_read_struct(&png, &info, nullptr);

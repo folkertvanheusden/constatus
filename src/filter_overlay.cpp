@@ -15,7 +15,7 @@ filter_overlay::filter_overlay(const std::string & file, const pos_t & pos) : po
 	if (!fh)
 		error_exit(true, "%s failed to read", file.c_str());
 
-	read_PNG_file_rgba(fh, &w, &h, &pixels);
+	read_PNG_file_rgba(true, fh, &w, &h, &pixels);
 
 	fclose(fh);
 }

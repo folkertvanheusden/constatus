@@ -97,6 +97,7 @@ add_executable(constatus
 	src/source_gstreamer.cpp
 	src/source_http_jpeg.cpp
 	src/source_http_mjpeg.cpp
+	src/source_http_png.cpp
 	src/source_libcamera.cpp
 	src/source_other.cpp
 	src/source_pipewire.cpp

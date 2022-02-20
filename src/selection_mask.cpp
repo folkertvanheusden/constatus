@@ -33,7 +33,7 @@ selection_mask::selection_mask(resize *const r, const std::string & selection_bi
 #endif
 	if (ext == "png") {
 		uint8_t *temp = NULL;
-		read_PNG_file_rgba(fh, &w, &h, &temp);
+		read_PNG_file_rgba(true, fh, &w, &h, &temp);
 
 		size_t n = IMS(w, h, 1);
 		pixels = (uint8_t *)malloc(n);
