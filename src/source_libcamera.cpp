@@ -44,10 +44,17 @@ void source_libcamera::request_completed(libcamera::Request *request)
 
 			if (pixelformat == libcamera::formats::MJPEG)
 				set_frame(E_JPEG, data, length);
+#ifdef __arm__  // hopefully a raspberry pi
+			else if (pixelformat == libcamera::formats::RGB888)
+				set_frame(E_BGR, data, length);
+			else if (pixelformat == libcamera::formats::BGR888)
+				set_frame(E_RGB, data, length);
+#else
 			else if (pixelformat == libcamera::formats::RGB888)
 				set_frame(E_RGB, data, length);
 			else if (pixelformat == libcamera::formats::BGR888)
-				set_frame(E_RGB, data, length);
+				set_frame(E_BGR, data, length);
+#endif
 			else if (pixelformat == libcamera::formats::YUYV)
 				set_frame(E_YUYV, data, length);
 			else {
@@ -172,6 +179,25 @@ void source_libcamera::operator()()
 		log(id, LL_INFO, "Trying: %s", stream_config.toString().c_str());
 
 		libcamera::CameraConfiguration::Status status = camera_config->validate();
+
+		if (status == libcamera::CameraConfiguration::Status::Valid)
+			break;
+
+		if (status == libcamera::CameraConfiguration::Status::Adjusted)
+			best_format = stream_config.pixelFormat;
+
+		// try BGR
+		stream_config.size.width = w_requested;
+		stream_config.size.height = h_requested;
+#ifdef __arm__  // hopefully a raspberry pi
+		stream_config.pixelFormat = libcamera::formats::RGB888;
+#else
+		stream_config.pixelFormat = libcamera::formats::BGR888;
+#endif
+
+		log(id, LL_INFO, "Trying: %s", stream_config.toString().c_str());
+
+		status = camera_config->validate();
 
 		if (status == libcamera::CameraConfiguration::Status::Valid)
 			break;

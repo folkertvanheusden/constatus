@@ -60,6 +60,26 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 
 	// TODO improve this. decoding jpeg may be faster for example (when also available).
 	if (it_rgb == data.end()) {
+		auto it_bgr = data.find(E_BGR);
+
+		if (it_bgr != data.end()) {
+			size_t n_bytes = w * h * 3;
+			uint8_t *frame_rgb = (uint8_t *)malloc(n_bytes);
+
+			for(int i=0; i<n_bytes; i += 3) {
+				frame_rgb[i + 0] = it_bgr->second.first[i + 2];
+				frame_rgb[i + 1] = it_bgr->second.first[i + 1];
+				frame_rgb[i + 2] = it_bgr->second.first[i + 0];
+			}
+
+			std::pair<uint8_t *, size_t> d { frame_rgb, n_bytes };
+			auto rc = data.emplace(E_RGB, d);
+			assert(rc.second);
+
+			if (new_e == E_RGB)
+				return rc.first;
+		}
+
 		auto it_yuyv = data.find(E_YUYV);
 
 		if (it_yuyv != data.end()) {
