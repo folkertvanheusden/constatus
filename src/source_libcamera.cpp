@@ -48,12 +48,8 @@ void source_libcamera::request_completed(libcamera::Request *request)
 				set_frame(E_RGB, data, length);
 			else if (pixelformat == libcamera::formats::BGR888)
 				set_frame(E_RGB, data, length);
-			else if (pixelformat == libcamera::formats::YUYV) {
-				uint8_t *rgb = nullptr;
-				yuy2_to_rgb(data, width, height, &rgb);
-				set_frame(E_RGB, rgb, width * height * 3);
-				free(rgb);
-			}
+			else if (pixelformat == libcamera::formats::YUYV)
+				set_frame(E_YUYV, data, length);
 			else {
 				log(id, LL_ERR, "Unexpected pixelformat (%x / %c%c%c%c)", pixelformat, pixelformat >> 24 ?:' ', pixelformat >> 16 ?:' ', pixelformat >> 8 ?:' ', pixelformat ?:' ');
 			}

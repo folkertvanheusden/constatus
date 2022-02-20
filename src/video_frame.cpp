@@ -56,6 +56,25 @@ void video_frame::put_data(const uint8_t *const data, const size_t len, const en
 
 std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_encoding(const encoding_t new_e)
 {
+	auto it_rgb = data.find(E_RGB);
+
+	// TODO improve this. decoding jpeg may be faster for example (when also available).
+	if (it_rgb == data.end()) {
+		auto it_yuyv = data.find(E_YUYV);
+
+		if (it_yuyv != data.end()) {
+			uint8_t *frame_rgb { nullptr };
+			yuy2_to_rgb(it_yuyv->second.first, w, h, &frame_rgb);
+
+			std::pair<uint8_t *, size_t> d { frame_rgb, w * h * 3 };
+			auto rc = data.emplace(E_RGB, d);
+			assert(rc.second);
+
+			if (new_e == E_RGB)
+				return rc.first;
+		}
+	}
+
 	if (new_e == E_JPEG) {
 		auto it = data.find(E_RGB);
 
@@ -230,7 +249,7 @@ void video_frame::keep_only_format(const encoding_t ek)
 {
 	const std::lock_guard<std::mutex> lock(m);
 
-	// currently there's only E_RGB and E_JPEG so this suffices
+	// TODO handle E_YUYV
 	auto it = data.find(ek == E_RGB ? E_JPEG : E_RGB);
 
 	if (it != data.end()) {

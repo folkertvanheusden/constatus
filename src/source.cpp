@@ -115,9 +115,9 @@ void source::set_frame(const encoding_t pe, const uint8_t *const data, const siz
 	delete vf;
 	vf = new video_frame(get_meta(), jpeg_quality, use_ts, width, height, copy, size, pe);
 
-	lck.unlock();
-
 	cond.notify_all();
+
+	lck.unlock();
 }
 
 void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const int sourceh)
