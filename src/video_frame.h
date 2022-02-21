@@ -52,4 +52,5 @@ public:
 	video_frame *duplicate(const std::optional<encoding_t> e);
 	video_frame *do_resize(resize *const r, const int new_w, const int new_h);
 	video_frame *apply_filtering(instance *const inst, source *const s, video_frame *const prev, const std::vector<filter *> *const filters, controls *const c);
+	video_frame *do_rotate(const int angle);
 };

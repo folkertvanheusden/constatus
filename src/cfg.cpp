@@ -1133,11 +1133,13 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			if (x != -1 && y != -1 && w != -1 && h != -1)
 				cut = { x, y, w, h };
 
+			int rotate = cfg_int(o_source, "rotate", "rotate angle (0, 90, 180 or 270 degrees)", true, 0);
+
 			source *other = (source *)find_interface_by_id(cfg, o_id);
 			if (!other)
 				error_exit(false, "\"other-id\" \"%s\" is not known", o_id.c_str());
 
-			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h, cut);
+			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h, cut, rotate);
 		}
 		else {
 			error_exit(false, "Source-type \"%s\" is not known", s_type.c_str());
