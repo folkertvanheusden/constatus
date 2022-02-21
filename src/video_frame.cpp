@@ -257,3 +257,49 @@ void video_frame::keep_only_format(const encoding_t ek)
 		data.erase(it);
 	}
 }
+
+video_frame *video_frame::do_rotate(const int angle)
+{
+	auto img = get_data_and_len(E_RGB);
+	const uint8_t *data = std::get<0>(img);
+	const size_t len = std::get<1>(img);
+
+	if (angle == 90) {
+		uint8_t *new_ = (uint8_t *)malloc(len);
+
+		for(int y=0; y<h; y++) {
+			for(int x=0; x<w; x++) {
+				new_[x * h * 3 + y * 3 + 0] = data[y * w * 3 + x * 3 + 0];
+				new_[x * h * 3 + y * 3 + 1] = data[y * w * 3 + x * 3 + 1];
+				new_[x * h * 3 + y * 3 + 2] = data[y * w * 3 + x * 3 + 2];
+			}
+		}
+
+		return new video_frame(m_, jpeg_quality, ts, h, w, new_, IMS(h, w, 3), E_RGB);
+	}
+	else if (angle == 180) {
+		uint8_t *new_ = (uint8_t *)malloc(len);
+
+		for(int y=0; y<h; y++)
+			memcpy(&new_[y * w * 3], &data[(h - 1 - y) * w * 3], w * 3);
+
+		return new video_frame(m_, jpeg_quality, ts, w, h, new_, IMS(w, h, 3), E_RGB);
+	}
+	else if (angle == 270) {
+		uint8_t *new_ = (uint8_t *)malloc(len);
+
+		for(int y=0; y<h; y++) {
+			for(int x=0; x<w; x++) {
+				int mx = w - 1 - x;
+
+				new_[x * h * 3 + y * 3 + 0] = data[y * w * 3 + mx * 3 + 0];
+				new_[x * h * 3 + y * 3 + 1] = data[y * w * 3 + mx * 3 + 1];
+				new_[x * h * 3 + y * 3 + 2] = data[y * w * 3 + mx * 3 + 2];
+			}
+		}
+
+		return new video_frame(m_, jpeg_quality, ts, h, w, new_, IMS(h, w, 3), E_RGB);
+	}
+
+	return duplicate(E_RGB);
+}
