@@ -1055,7 +1055,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			error_exit(false, "'pipewire' support not linked in");
 #endif
 		}
-		else if (s_type == "rtsp" || s_type == "mjpeg" || s_type == "stream" || s_type == "ffmpeg") {
+		else if (s_type == "rtsp" || s_type == "mjpeg" || s_type == "stream" || s_type == "ffmpeg" || s_type == "mpng") {
 #if HAVE_FFMPEG == 1
 			const std::string url = cfg_str(o_source, "url", "address of video stream", false, "");
 			bool tcp = cfg_bool(o_source, "tcp", "use TCP for RTSP transport (instead of default UDP)", true, false);
