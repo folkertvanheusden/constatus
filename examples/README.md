@@ -75,3 +75,8 @@ webserver.
 
 Shows how to cut a part of a videostream and publish it as a
 new source.
+
+* overlay-on-motion.cfg
+
+Overlay stream with an other stream when motion is detected
+in the other stream.

@@ -16,7 +16,7 @@ void picture_in_picture(uint8_t *const tgt, const int tgt_w, const int tgt_h, co
 		int tx = std::get<0>(p);
 		int ty = std::get<1>(p);
 
-		int width = std::min(win, tgt_w - win);
+		int width = std::min(win, tgt_w - tx);
 
 		if (width > 0) {
 			int x_offset = 0;
@@ -47,6 +47,8 @@ void picture_in_picture(resize *const r, uint8_t *const tgt, const int tgt_w, co
 
 	uint8_t *temp = nullptr;
 	r->do_resize(win, hin, in, wout, hout, &temp);
+
+	printf("wout: %dx%d\n", wout, hout);
 
 	picture_in_picture(tgt, tgt_w, tgt_h, temp, wout, hout, pos);
 

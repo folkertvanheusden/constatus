@@ -69,7 +69,7 @@ double parameter::get_value_double() const
 	double rc = vi;
 
 	if (type == V_DOUBLE)
-		rc = vi;
+		rc = vd;
 	else if (type == V_STRING)
 		rc = atof(vs.c_str());
 

@@ -56,6 +56,7 @@ add_executable(constatus
 	src/filter_motion_only.cpp
 	src/filter_noise_neighavg.cpp
 	src/filter_overlay.cpp
+	src/filter_overlay_on_motion.cpp
 	src/filter_plugin.cpp
 	src/filter_plugin_frei0r.cpp
 	src/filter_scroll.cpp

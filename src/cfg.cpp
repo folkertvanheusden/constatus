@@ -25,6 +25,7 @@ using namespace libconfig;
 #include "source_http_jpeg.h"
 #include "source_http_png.h"
 #include "source_filesystem_jpeg.h"
+#include "filter_overlay_on_motion.h"
 #include "source_ffmpeg.h"
 #include "source_plugin.h"
 #if HAVE_GSTREAMER == 1
@@ -650,6 +651,20 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 				error_exit(false, "Conversion mode \"%s\" not supported (grayscale filter)", mode.c_str());
 
 			filters -> push_back(new filter_grayscale(m));
+		}
+		else if (s_type == "overlay-on-motion") {
+			std::string motion_source = cfg_str(ae, "motion-source", "source to monitor", false, "");
+
+			std::string o_id = cfg_str(ae, "other-id", "id of the source to overlay", false, "");
+			source *other = (source *)find_interface_by_id(cfg, o_id);
+			if (!other)
+				error_exit(false, "\"other-id\" \"%s\" is not known", o_id.c_str());
+
+			instance *const i = (instance *)find_instance_by_name(cfg, motion_source);
+
+			int display_time_ms = cfg_int(ae, "display-time", "how long to overlay (in milliseconds)", true, 15000);
+
+			filters -> push_back(new filter_overlay_on_motion(i, other, cfg->r, display_time_ms));
 		}
 		else if (s_type == "filter-plugin") {
 			std::string file = cfg_str(ae, "file", "filename of filter plugin", false, "");
@@ -1407,8 +1422,8 @@ std::vector<interface *> load_motion_triggers(configuration_t *const cfg, const 
 		}
 		else {
 			cfg_int(trigger, "noise-factor", "at what difference levell is the pixel considered to be changed", true, 32, &dp);
-			cfg_float(trigger, "min-pixels-changed-percentage", "minimum percentage (%%) of pixels need to be changed before the motion trigger is triggered", true, 1.0, &dp);
-			cfg_float(trigger, "max-pixels-changed-percentage", "maximum percentage (%%) of pixels need to be changed before the motion trigger is triggered", true, 100.0, &dp);
+			cfg_float(trigger, "min-pixels-changed-percentage", "minimum percentage (%%) of pixels need to be changed before the motion trigger is triggered", false, 1.0, &dp);
+			cfg_float(trigger, "max-pixels-changed-percentage", "maximum percentage (%%) of pixels need to be changed before the motion trigger is triggered", false, 100.0, &dp);
 
 			cfg_bool(trigger, "pan-tilt", "pan/tilt the camera, depending on where the movement takes place", true, false, &dp);
 
