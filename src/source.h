@@ -1,7 +1,8 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #pragma once
 
 #include <atomic>
+#include <optional>
 #include <shared_mutex>
 #include <stdint.h>
 #include <thread>
@@ -69,6 +70,7 @@ public:
 	virtual ~source();
 
 	virtual video_frame * get_frame(const bool handle_failure, const uint64_t after);
+	virtual video_frame * get_frame_to(const bool handle_failure, const uint64_t after, const uint64_t us);
 	virtual video_frame * get_failure_frame();
 	void set_frame(const encoding_t pe, const uint8_t *const data, const size_t size, const bool do_duplicate = true);
 	void set_scaled_frame(const uint8_t *const in, const int sourcew, const int sourceh);

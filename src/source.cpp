@@ -218,6 +218,66 @@ fail:
 	return vf->duplicate({ });
 }
 
+video_frame * source::get_frame_to(const bool handle_failure, const uint64_t after, const uint64_t us)
+{
+	std::unique_lock<std::mutex> lck(lock);
+
+	bool     no_frame = false;
+
+	uint64_t stop_at = get_us() + us;
+	int64_t  to = 0;
+
+	while(!vf || vf->get_ts() <= after) {
+		to = stop_at - get_us();
+
+		if (cond.to <= 0 || wait_for(lck, std::chrono::microseconds(to)) == std::cv_status::timeout) {
+			no_frame = true;
+			break;
+		}
+	}
+
+	if (no_frame)
+		return nullptr;
+
+	std::shared_lock clck(controls_lock);
+	bool need_controls_apply = c && c->requires_apply();
+	clck.unlock();
+
+	bool need_filters = filters && !filters->empty();
+
+	if (need_controls_apply || need_filters) {
+		uint8_t *work = vf->get_data(E_RGB);
+		uint64_t vf_ts = vf->get_ts();
+
+		size_t n_bytes = IMS(vf->get_w(), vf->get_h(), 3);
+
+		uint8_t *copy = (uint8_t *)duplicate(work, n_bytes);
+
+		lck.unlock();
+
+		if (need_filters) {
+			std::lock_guard<std::mutex> pflck(prev_frame_rgb_lock);
+
+			apply_filters(nullptr, this, filters, prev_frame_rgb, copy, vf_ts, vf->get_w(), vf->get_h());
+
+			if (!prev_frame_rgb)
+				prev_frame_rgb = (uint8_t *)malloc(n_bytes);
+
+			memcpy(prev_frame_rgb, copy, n_bytes);
+		}
+
+		if (need_controls_apply) {
+			std::shared_lock clck(controls_lock);
+
+			c->apply(copy, vf->get_w(), vf->get_h());
+		}
+
+		return new video_frame(get_meta(), jpeg_quality, vf->get_ts(), vf->get_w(), vf->get_h(), copy, n_bytes, E_RGB);
+	}
+
+	return vf->duplicate({ });
+}
+
 bool source::wait_for_meta()
 {
 	bool err = false;

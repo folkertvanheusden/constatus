@@ -2,13 +2,14 @@
 INSTALL_PREFIX=/usr/local
 
 CFLAGS=-fPIC -Wall -pedantic -ggdb3
-CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 -std=c++11
+CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 -std=c++17
 VERSION=0.1
 
 OBJS1=demo.o
 OBJS2=vnc.o
+OBJS3=mqtt-images.o
 
-all: lib1 vnc
+all: lib1 vnc mqtt-images
 
 lib1: $(OBJS1)
 	ar -r demo.a $(OBJS1)
@@ -18,12 +19,16 @@ vnc: $(OBJS2)
 	ar -r vnc.a $(OBJS2)
 	ld -g -x -lm -shared -soname vnc.so.2 -o vnc.so.$(VERSION) --whole-archive vnc.a
 
+mqtt-images: $(OBJS3)
+	ar -r mqtt-images.a $(OBJS3)
+	ld -g -x -lm `pkg-config --libs libmosquitto` -shared -soname mqtt-images.so.2 -o mqtt-images.so.$(VERSION) --whole-archive mqtt-images.a
+
 install: all
-	cp demo.so.* vnc.so.* $(INSTALL_PREFIX)/lib
+	cp demo.so.* vnc.so.* mqtt-images.so.* $(INSTALL_PREFIX)/lib
 	/sbin/ldconfig
 
 uninstall: clean
-	rm -f $(INSTALL_PREFIX)/lib/demo.so.* $(INSTALL_PREFIX)/lib/vnc.so.*
+	rm -f $(INSTALL_PREFIX)/lib/demo.so.* $(INSTALL_PREFIX)/lib/vnc.so.* $(INSTALL_PREFIX)/lib/mqtt-images.so.*
 
 clean:
-	rm -f $(OBJS1) demo.a demo.so.* core $(OBJS2) vnc.a vnc.so.*
+	rm -f $(OBJS1) demo.a demo.so.* core $(OBJS2) vnc.a vnc.so.* mqtt-images.a mqtt-images.so.* $(OBJS3)

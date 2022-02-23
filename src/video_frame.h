@@ -1,6 +1,7 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #include <map>
 #include <mutex>
+#include <optional>
 #include <stdint.h>
 #include <tuple>
 #include <vector>

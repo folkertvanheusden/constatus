@@ -51,7 +51,7 @@ void view_pip::operator()()
 		if (main_source->get_class_type() != CT_SOURCE)
 			error_exit(false, "Object with id \"%s\" is not of type source", sources.at(i).id.c_str());
 
-		video_frame *pvf = main_source -> get_frame(true, after_ts);
+		video_frame *pvf = main_source -> get_frame_to(true, after_ts, 100000);
 
 		if (pvf) {
 			if (i) {
