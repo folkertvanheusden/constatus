@@ -44,7 +44,7 @@ thread_local myjpeg my_jpeg;
 
 static void libpng_error_handler(png_structp png, png_const_charp msg)
 {
-	error_exit(false, "libpng error: %s", msg);
+	log(LL_WARNING, "libpng error: %s", msg);
 }
 
 static void libpng_warning_handler(png_structp png, png_const_charp msg)
