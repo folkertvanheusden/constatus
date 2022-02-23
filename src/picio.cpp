@@ -53,19 +53,23 @@ static void libpng_warning_handler(png_structp png, png_const_charp msg)
 }
 
 // rgbA (!)
-void read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pixels)
+bool read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pixels)
 {
 	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, libpng_error_handler, libpng_warning_handler);
-	if (!png)
-		error_exit(false, "png_create_read_struct(PNG_LIBPNG_VER_STRING) failed");
+	if (!png) {
+		log(LL_ERR, "png_create_read_struct(PNG_LIBPNG_VER_STRING) failed");
+		return false;
+	}
 
 	png_infop info = png_create_info_struct(png);
-	if (!info)
-		error_exit(false, "png_create_info_struct failed");
+	if (!info) {
+		log(LL_ERR, "png_create_info_struct failed");
+		return false;
+	}
 
 	if (setjmp(png_jmpbuf(png))) {
 		log(LL_INFO, "PNG decode error");
-		return;
+		return false;
 	}
 
 	png_init_io(png, fh);
@@ -98,25 +102,26 @@ void read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pix
 		if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_PALETTE)
 			png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
 	}
+	else {
+		png_set_strip_alpha(png);
+	}
 
 	if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
 		png_set_gray_to_rgb(png);
 
 	png_read_update_info(png, info);
 
-	png_bytep *row_pointers = nullptr;
+	png_bytep *row_pointers = (png_bytep *)calloc(sizeof(png_bytep), *h);
 
 	if (with_alpha) {
 		*pixels = (uint8_t *)malloc(IMS(*w, *h, 4));
 
-		row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * *h);
 		for(int y = 0; y < *h; y++)
 			row_pointers[y] = &(*pixels)[y * *w * 4];
 	}
 	else {
 		*pixels = (uint8_t *)malloc(IMS(*w, *h, 3));
 
-		row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * *h);
 		for(int y = 0; y < *h; y++)
 			row_pointers[y] = &(*pixels)[y * *w * 3];
 	}
@@ -126,6 +131,8 @@ void read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pix
 	free(row_pointers);
 
 	png_destroy_read_struct(&png, &info, nullptr);
+
+	return true;
 }
 
 void write_PNG_file(FILE *fh, int ncols, int nrows, unsigned char *pixels)

@@ -36,6 +36,9 @@ size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp
 	size_t total_size  = size * nmemb;
 	curl_recv_t       *mem = (curl_recv_t *)userp;
 
+	if (mem->len + total_size > 16 * 1024 * 1024)  // sanity limit
+		return 0;
+
 	mem->data = (uint8_t *)realloc(mem->data, mem->len + total_size);
 
 	memcpy(&mem->data[mem->len], new_data, total_size);
@@ -68,22 +71,48 @@ void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *m
 	if (curl_easy_perform(curl) == CURLE_OK) {
 		int w = 0, h = 0;
 
+		std::string mime_type = "image/jpeg";  // default assumption
+		char *ct = nullptr;
+
+		if (curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct) == CURLE_OK && ct)
+			mime_type = ct;
+
+		printf("%s\n", mime_type.c_str());
+
 		uint8_t *temp = nullptr;
+		bool     ok   = false;
 
-		my_jpeg.read_JPEG_memory(data.data, data.len, &w, &h, &temp);
+		if (mime_type == "image/jpeg")
+			ok = my_jpeg.read_JPEG_memory(data.data, data.len, &w, &h, &temp);
+		else if (mime_type == "image/png") {
+			FILE *fh = fmemopen(data.data, data.len, "rb");
 
-		uint8_t *out = (uint8_t *)calloc(3, md->w * md->h);
+			ok = read_PNG_file_rgba(false, fh, &w, &h, &temp);
 
-		int perc = std::min(std::min(md->w * 100 / w, md->h * 100 / h), 100);
+			fclose(fh);
+		}
+		// TODO other mime-types
+		else {
+			log(LL_INFO, "Ignoring unknown mime-type %s", mime_type.c_str());
+		}
 
-		pos_t p { center_center, 0, 0 };
+		if (ok) {
+			uint8_t *out = (uint8_t *)calloc(3, md->w * md->h);
 
-		picture_in_picture(&r, out, md->w, md->h, temp, w, h, perc, p);
+			int perc = std::min(std::min(md->w * 100 / w, md->h * 100 / h), 100);
 
-		{
-			std::lock_guard<std::mutex> lck(md->lock);
-			free(md->pixels);
-			md->pixels = out;
+			pos_t p { center_center, 0, 0 };
+
+			picture_in_picture(&r, out, md->w, md->h, temp, w, h, perc, p);
+
+			{
+				std::lock_guard<std::mutex> lck(md->lock);
+				free(md->pixels);
+				md->pixels = out;
+			}
+		}
+		else {
+			log(LL_INFO, "Url not shown");
 		}
 
 		free(temp);
@@ -126,7 +155,7 @@ void * mqtt_thread(void *p)
 
 extern "C" void *init_plugin(source *const s, const char *const argument)
 {
-	my_data_t *md = new my_data_t;
+	my_data_t *md = new my_data_t();
 	md -> s = s;
 	md -> w = 1920;
 	md -> h = 1080;

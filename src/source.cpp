@@ -230,7 +230,7 @@ video_frame * source::get_frame_to(const bool handle_failure, const uint64_t aft
 	while(!vf || vf->get_ts() <= after) {
 		to = stop_at - get_us();
 
-		if (cond.to <= 0 || wait_for(lck, std::chrono::microseconds(to)) == std::cv_status::timeout) {
+		if (to <= 0 || cond.wait_for(lck, std::chrono::microseconds(to)) == std::cv_status::timeout) {
 			no_frame = true;
 			break;
 		}
