@@ -16,14 +16,15 @@
 
 typedef struct
 {
-	source   *s;
-	int       w;
-        int       h;
+	source     *s;
+	int         w;
+        int         h;
+	std::string topic;
 	std::atomic_bool stop_flag;
-	pthread_t th;
+	pthread_t   th;
 
-	std::mutex lock;
-	uint8_t  *pixels;
+	std::mutex  lock;
+	uint8_t    *pixels;
 } my_data_t;
 
 typedef struct {
@@ -46,6 +47,17 @@ size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp
 	mem->len += total_size;
 
 	return total_size;
+}
+
+void connect_callback(struct mosquitto *mi, void *arg, int result)
+{
+	my_data_t *md = (my_data_t *)arg;
+
+	log(LL_INFO, "subscribe to %s", md->topic.c_str());
+
+	int rc = 0;
+	if ((rc = mosquitto_subscribe(mi, nullptr, md->topic.c_str(), 0)) != MOSQ_ERR_SUCCESS)
+		log(LL_ERR, "mosquitto_subscribe failed %d (%s)", rc, strerror(errno));
 }
 
 void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *msg, const mosquitto_property *)
@@ -149,8 +161,13 @@ void * mqtt_thread(void *p)
 {
 	struct mosquitto *mi = (struct mosquitto *)p;
 
-	for(;;)
-		mosquitto_loop(mi, 11000, 1);
+	for(;;) {
+		mosquitto_loop_forever(mi, -1, 1);
+
+		sleep(1);
+
+		mosquitto_reconnect(mi);
+	}
 }
 
 extern "C" void *init_plugin(source *const s, const char *const argument)
@@ -170,6 +187,7 @@ extern "C" void *init_plugin(source *const s, const char *const argument)
 	std::string host  = parts->at(0).c_str();
 	int         port  = atoi(parts->at(1).c_str());
 	std::string topic = parts->at(2).c_str();
+	md -> topic       = topic;
 
 	delete parts;
 
@@ -183,10 +201,7 @@ extern "C" void *init_plugin(source *const s, const char *const argument)
 
 	mosquitto_message_v5_callback_set(mi, on_message);
 
-	log(LL_INFO, "subscribe to %s", topic.c_str());
-
-	if ((rc = mosquitto_subscribe(mi, nullptr, topic.c_str(), 0)) != MOSQ_ERR_SUCCESS)
-		log(LL_ERR, "mosquitto_subscribe failed %d (%s)", rc, strerror(errno));
+	mosquitto_connect_callback_set(mi, connect_callback);
 
 	pthread_t th1;
 	pthread_create(&th1, nullptr, pixel_thread, md);
