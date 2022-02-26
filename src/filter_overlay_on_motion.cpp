@@ -58,11 +58,9 @@ void filter_overlay_on_motion::apply(instance *const i, interface *const specifi
 		const int in_w = vf->get_w();
 		const int in_h = vf->get_h();
 
-		int perc = std::max(1, std::min(std::min(in_w * 100 / w, in_h * 100 / h), 100));
+		int perc = std::max(1, std::min(in_w * 100 / w, in_h * 100 / h));
 
 		pos_t p { center_center, 0, 0 };
-
-		printf("%dx%d => %dx%d | %d\n", in_w, in_h, w, h, perc);
 
 		picture_in_picture(r, in_out, w, h, vf->get_data(E_RGB), in_w, in_h, perc, p);
 

@@ -62,7 +62,6 @@ void connect_callback(struct mosquitto *mi, void *arg, int result)
 
 void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *msg, const mosquitto_property *)
 {
-	printf(" *** ON_MESSAGE ***\n");
 	my_data_t *md = (my_data_t *)arg;
 
 	std::string url = std::string((const char *)msg->payload, msg->payloadlen);
@@ -89,8 +88,6 @@ void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *m
 		if (curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct) == CURLE_OK && ct)
 			mime_type = ct;
 
-		printf("%s\n", mime_type.c_str());
-
 		uint8_t *temp = nullptr;
 		bool     ok   = false;
 
@@ -111,7 +108,8 @@ void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *m
 		if (ok) {
 			uint8_t *out = (uint8_t *)calloc(3, md->w * md->h);
 
-			int perc = std::min(std::min(md->w * 100 / w, md->h * 100 / h), 100);
+			int perc = std::min(md->w * 100 / w, md->h * 100 / h);
+			log(LL_INFO, "Resize to %d%%", perc);
 
 			pos_t p { center_center, 0, 0 };
 
@@ -173,12 +171,10 @@ void * mqtt_thread(void *p)
 extern "C" void *init_plugin(source *const s, const char *const argument)
 {
 	my_data_t *md = new my_data_t();
-	md -> s = s;
-	md -> w = 1920;
-	md -> h = 1080;
-	md -> stop_flag = false;
-
-	s -> set_size(md -> w, md -> h);
+	md->s         = s;
+	md->w         = s->get_width();
+	md->h         = s->get_height();
+	md->stop_flag = false;
 
 	mosquitto_lib_init();
 

@@ -48,8 +48,6 @@ void picture_in_picture(resize *const r, uint8_t *const tgt, const int tgt_w, co
 	uint8_t *temp = nullptr;
 	r->do_resize(win, hin, in, wout, hout, &temp);
 
-	printf("wout: %dx%d\n", wout, hout);
-
 	picture_in_picture(tgt, tgt_w, tgt_h, temp, wout, hout, pos);
 
 	free(temp);

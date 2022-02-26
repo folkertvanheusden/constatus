@@ -13,6 +13,8 @@ configuration example
 ---------------------
 descr = "my plugin source";
 type = "plugin";
+width = 1920;
+height = 1080;
 source-plugin-file = "source-plugins/vnc.so.0.1";
 source-plugin-parameter = "192.168.1.100 5901 mypassword";
 

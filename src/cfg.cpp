@@ -1081,10 +1081,12 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 #endif
 		}
 		else if (s_type == "plugin") {
+			int         w          = cfg_int(o_source, "width", "width of picture",   false);
+			int         h          = cfg_int(o_source, "height", "height of picture", false);
 			std::string plugin_bin = cfg_str(o_source, "source-plugin-file", "filename of video data source plugin", true, "");
 			std::string plugin_arg = cfg_str(o_source, "source-plugin-parameter", "parameter for video data source plugin", true, "");
 
-			s = new source_plugin(id, descr, exec_failure, plugin_bin, plugin_arg, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
+			s = new source_plugin(id, descr, w, h, exec_failure, plugin_bin, plugin_arg, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality);
 		}
 		else if (s_type == "delay") {
 			int n_frames = cfg_int(o_source, "n-frames", "how many frames in the past", false, 1);
