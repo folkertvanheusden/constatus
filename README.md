@@ -98,41 +98,11 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - libmagick++-dev             - for animated gif/mng overlay
   - ffmpeg: libavformat-dev / libswscale-dev / libavcodec-dev / libavutil-dev / libswresample-dev / libavresample-dev / libatomic1 - for mp4 and other file formats
   - pipewire: libpipewire-0.3-dev / libspa-0.2-dev
+  - libmosquitto-dev            - for obtaining text that can be placed as an overlay/scroll text
 
 
 libgwavi is since version 4.3 not used anymore; you can remove it from your computer if you ony installed it for constatus.
 
-### Fedora / CentOS
-
-- Required:
-  - libconfig-devel
-  - fontconfig-devel
-  - libicu-devel
-  - turbojpeg-devel
-  - libpng-devel
-  - libcurl-devel
-  - jansson-devel
-  - boost-devel
-  - libatomic
-  - openssl-devel
-
-- Not required (OPTIONAL!):
-  - libv4l-devel
-  - netpbm-devel
-  - exiv2-devel
-  - mysql-connector-c++-devel
-  - frei0r-devel
-  - pam-devel
-  - gstreamer1-devel
-  - gstreamer1-plugins-base-devel
-  - SDL2-devel
-  - rygel-devel
-  - alsa-lib-devel
-  - ImageMagick-c++-devel
-
-- Only for building:
-  - cmake
-  - pkg-config
 
 ## How to use
 
