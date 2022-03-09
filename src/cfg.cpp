@@ -10,6 +10,7 @@
 using namespace libconfig;
 
 #include "feed_exec.h"
+#include "feed_mqtt.h"
 #include "instance.h"
 #include "config.h"
 #include "error.h"
@@ -626,7 +627,7 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 	for(size_t i=0; i<n_feeds; i++) {
 		const Setting & f_setting = in[i];
 
-		std::string     f_type    = cfg_str(f_setting, "type", "feed type (exec, file, mqtt)", false, "");
+		std::string     f_type    = cfg_str(f_setting, "type", "feed type (exec, mqtt)", false, "");
 		std::string     f_id      = cfg_str(f_setting, "id",   "ID of the feed - used in \"escapes\" for texts", false, "");
 
 		feed           *f         = nullptr;
@@ -636,6 +637,23 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 			int         interval    = cfg_int(f_setting, "interval",    "interval in milliseconds", true, 1000);
 
 			f = new feed_exec(commandline, interval);
+		}
+		else if (f_type == "mqtt") {
+			std::string host        = cfg_str(f_setting, "host", "MQTT host to connect to", false, "");
+			int         port        = cfg_int(f_setting, "port", "port number of the MQTT host", true, 1883);
+
+			std::vector<std::string> topics;
+
+			const Setting & t_setting = f_setting["topics"];
+			size_t n_topics = t_setting.getLength();
+
+			for(size_t i=0; i<n_topics; i++) {
+				std::string topic = t_setting[i].c_str();
+
+				topics.push_back(topic);
+			}
+
+			f = new feed_mqtt(host, port, topics);
 		}
 		else {
 			error_exit(false, "Feed type %s is not known", f_type.c_str());
@@ -1942,7 +1960,7 @@ bool load_configuration(configuration_t *const cfg, const bool verbose, const in
 		load_text_feeds(cfg, feeds);
 	}
 	catch(SettingNotFoundException & snfe) {
-		log(LL_INFO, " no maintenance-items set");
+		log(LL_INFO, " no text feeds set");
 	}
 
 	log(LL_INFO, "Configuring maintenance settings...");

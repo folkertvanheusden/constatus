@@ -21,6 +21,8 @@ feed_exec::~feed_exec()
 
 void feed_exec::operator()()
 {
+	set_thread_name("feed_exec");
+
 	while(!stop_flag) {
 		uint64_t before_ts = get_us();
 

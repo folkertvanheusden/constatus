@@ -37,6 +37,7 @@ add_executable(constatus
 	src/icons.cpp
 	src/feed.cpp
 	src/feed_exec.cpp
+	src/feed_mqtt.cpp
 	src/filter_add_bitmap.cpp
 	src/filter_add_scaled_text.cpp
 	src/filter_add_text.cpp
@@ -266,9 +267,9 @@ target_include_directories(constatus PUBLIC ${THEORA_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${THEORA_CFLAGS_OTHER})
 
 pkg_check_modules(LIBMOSQUITTO libmosquitto)
-target_link_libraries(constatus ${LIBMOSQUITTO_BASE_LIBRARIES})
-target_include_directories(constatus PUBLIC ${LIBMOSQUITTO_BASE_INCLUDE_DIRS})
-target_compile_options(constatus PUBLIC ${LIBMOSQUITTO_BASE_CFLAGS_OTHER})
+target_link_libraries(constatus ${LIBMOSQUITTO_LIBRARIES})
+target_include_directories(constatus PUBLIC ${LIBMOSQUITTO_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${LIBMOSQUITTO_CFLAGS_OTHER})
 
 pkg_check_modules(LIBCAMERA libcamera)
 target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
