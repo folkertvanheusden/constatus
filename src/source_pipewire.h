@@ -39,7 +39,7 @@ private:
 	struct spa_fraction min_frac, default_frac, max_frac;
 
 public:
-	source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps);
+	source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps, const std::map<std::string, feed *> & text_feeds);
 	~source_pipewire();
 
 	void operator()() override;

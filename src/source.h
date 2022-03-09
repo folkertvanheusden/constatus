@@ -15,6 +15,7 @@
 
 class audio;
 class controls;
+class feed;
 class filter;
 class ptz;
 class resize;
@@ -58,15 +59,17 @@ protected:
 
 	audio *a { nullptr };
 
-	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality);
-	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality);
-	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality);
+	const std::map<std::string, feed *> text_feeds;
+
+	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
+	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
+	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
 
 	void init();
 	bool need_scale() const;
 
 public:
-	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality);
+	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
 	virtual ~source();
 
 	virtual video_frame * get_frame(const bool handle_failure, const uint64_t after);

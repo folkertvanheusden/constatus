@@ -16,7 +16,7 @@ typedef struct {
 class view : public source
 {
 protected:
-	configuration_t *const cfg;
+	configuration_t              *const cfg;
 	const std::vector<view_src_t> sources;
 
 public:

@@ -14,7 +14,7 @@ private:
 	transformer_t tf;
 
 public:
-	source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality);
+	source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
 	virtual ~source_gstreamer();
 
 	void operator()() override;

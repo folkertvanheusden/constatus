@@ -134,7 +134,7 @@ static const struct pw_stream_events stream_events = {
         .process = on_process,
 };
 
-source_pipewire::source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps) : source(id, descr, "", width, height, nullptr, c, quality), source_id(source_id), interval(1.0 / max_fps)
+source_pipewire::source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps, const std::map<std::string, feed *> & text_feeds) : source(id, descr, "", width, height, nullptr, c, quality, text_feeds), source_id(source_id), interval(1.0 / max_fps)
 {
 	uint8_t buffer[1024] { 0 };
 	struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof buffer);

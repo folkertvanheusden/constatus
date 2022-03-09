@@ -1,10 +1,11 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #include "config.h"
 #include <string>
 #include <cstring>
 #include <time.h>
 
 #include "gen.h"
+#include "feed.h"
 #include "filter_add_text.h"
 #include "error.h"
 #include "instance.h"
@@ -1458,8 +1459,10 @@ void replace_double(meta *const m, std::string *const work, const std::string & 
 	work -> assign(search_replace(*work, key, myformat("%f", val.second)));
 }
 
-std::string unescape(const std::string & in, const uint64_t ts, instance *const i, interface *const specific_int)
+std::string unescape(const std::string & in, const uint64_t ts, instance *const i, interface *const specific_int, const std::map<std::string, feed *> & text_feeds)
 {
+	uint64_t get_feed_ts = 0;
+
 	time_t now = (time_t)(ts / 1000 / 1000);
 	struct tm ptm;
 	localtime_r(&now, &ptm);
@@ -1536,9 +1539,9 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 		if (dollar2 == std::string::npos)
 			break;
 
-		std::string name = work.substr(dollar1, dollar2 - dollar1 + 1);
+		std::string name = work.substr(dollar1 + 1, dollar2 - dollar1);
 
-		if (name.substr(0, 6) == "$exec:") {
+		if (name.substr(0, 6) == "exec:") {
 			std::string replace_with_what;
 
 			FILE *fh = exec(name.substr(6, name.size() - 7));
@@ -1562,7 +1565,7 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 
 			 work = search_replace(work, name, replace_with_what);
 		}
-		else if (name.substr(0, 6) == "$file:") {
+		else if (name.substr(0, 6) == "file:") {
 			std::string replace_with_what;
 
 			std::string filename = name.substr(6, name.size() - 7);
@@ -1592,6 +1595,8 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 			std::pair<uint64_t, int> val_int;
 			std::pair<uint64_t, double> val_double;
 			std::pair<uint64_t, std::string> val_string;
+			
+			auto f = text_feeds.find(name);
 
 			if (m && m -> get_int(name, &val_int)) {
 				work = search_replace(work, name, myformat("%d", val_int.second));
@@ -1602,6 +1607,15 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 			else if (m && m -> get_string(name, &val_string)) {
 				work = search_replace(work, name, val_string.second);
 			}
+			else if (f != text_feeds.end()) {
+				auto feed_text = f->second->wait_for_text(get_feed_ts, 99000);
+
+				if (feed_text.has_value()) {
+					work = search_replace(work, name, feed_text.value().first);
+
+					get_feed_ts = feed_text.value().second;
+				}
+			}
 			else {
 				dollar1 = dollar2 + 1;
 			}
@@ -1611,7 +1625,10 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 	return work;
 }
 
-filter_add_text::filter_add_text(const std::string & whatIn, const pos_t tpIn) : what(whatIn), tp(tpIn)
+filter_add_text::filter_add_text(const std::string & whatIn, const pos_t tpIn, const std::map<std::string, feed *> & text_feeds) :
+	what(whatIn),
+	tp(tpIn),
+	text_feeds(text_feeds)
 {
 }
 
@@ -1671,11 +1688,11 @@ void add_text(unsigned char *const img, const int width, const int height, const
 	}
 }
 
-void print_timestamp(unsigned char *const img, const int width, const int height, const std::string & text, const pos_t n_pos, const uint64_t ts, instance *const i, interface *const specific_int)
+void print_timestamp(unsigned char *const img, const int width, const int height, const std::string & text, const pos_t n_pos, const uint64_t ts, instance *const i, interface *const specific_int, const std::map<std::string, feed *> & text_feeds)
 {
 	int x = 0, y = 0;
 
-	std::string text_out = unescape(text, ts, i, specific_int);
+	std::string text_out = unescape(text, ts, i, specific_int, text_feeds);
 
 	int n_lines = 0, max_ll = 0;
 	find_text_dim(text_out.c_str(), &n_lines, &max_ll);
@@ -1716,5 +1733,5 @@ void print_timestamp(unsigned char *const img, const int width, const int height
 
 void filter_add_text::apply(instance *const i, interface *const specific_int, const uint64_t ts, const int w, const int h, const uint8_t *const prev, uint8_t *const in_out)
 {
-	print_timestamp(in_out, w, h, what, tp, ts, i, specific_int);
+	print_timestamp(in_out, w, h, what, tp, ts, i, specific_int, text_feeds);
 }

@@ -41,7 +41,7 @@ void blit(uint8_t *const out, const int w, const int h, const int x, const int y
 	}
 }
 
-filter_scroll::filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert) : font_file(font_file), x(x), y(y), text_w(text_w), n_lines(n_lines), font_size(font_size), exec_what(exec_what), horizontal_scroll(horizontal_scroll), bg(bg), scroll_speed(scroll_speed), col(col), invert(invert)
+filter_scroll::filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) : font_file(font_file), x(x), y(y), text_w(text_w), n_lines(n_lines), font_size(font_size), exec_what(exec_what), horizontal_scroll(horizontal_scroll), bg(bg), scroll_speed(scroll_speed), col(col), invert(invert), text_feeds(text_feeds)
 {
 	restart_process();
 
@@ -148,7 +148,7 @@ void filter_scroll::apply(instance *const i, interface *const specific_int, cons
 		const std::lock_guard<std::mutex> lock(buffer_lock);
 		for(auto & what : buffer) {
 			if (what.bitmap == nullptr) {
-				draw_text_bitmap dtm(font_file, unescape(what.text, ts, i, specific_int), font_size, true, bg, col, invert);
+				draw_text_bitmap dtm(font_file, unescape(what.text, ts, i, specific_int, text_feeds), font_size, true, bg, col, invert);
 
 				auto dimensions = dtm.text_final_dimensions();
 				what.w = std::get<0>(dimensions);
@@ -186,7 +186,7 @@ void filter_scroll::apply(instance *const i, interface *const specific_int, cons
 		const std::lock_guard<std::mutex> lock(buffer_lock);
 
 		for(auto what : buffer) {
-			std::string text_out = unescape(what.text, ts, i, specific_int);
+			std::string text_out = unescape(what.text, ts, i, specific_int, text_feeds);
 
 			std::vector<std::string> *parts { nullptr };
 			if (text_out.find("\n") != std::string::npos)

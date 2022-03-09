@@ -14,8 +14,8 @@
 #include "utils.h"
 #include "controls.h"
 
-source_plugin::source_plugin(const std::string & id, const std::string & descr, const int w, const int h, const std::string & exec_failure, const std::string & plugin_filename, const std::string & plugin_arg, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) :
-	source(id, descr, exec_failure, max_fps, w, h, loglevel, filters, failure, c, jpeg_quality)
+source_plugin::source_plugin(const std::string & id, const std::string & descr, const int w, const int h, const std::string & exec_failure, const std::string & plugin_filename, const std::string & plugin_arg, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) :
+	source(id, descr, exec_failure, max_fps, w, h, loglevel, filters, failure, c, jpeg_quality, text_feeds)
 {
 	library = dlopen(plugin_filename.c_str(), RTLD_NOW);
 	if (!library)

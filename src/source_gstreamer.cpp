@@ -8,7 +8,7 @@
 #include "picio.h"
 #include "controls.h"
 
-source_gstreamer::source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : source(id, descr, exec_failure, -1.0, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality), pipeline(pipeline)
+source_gstreamer::source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, -1.0, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds), pipeline(pipeline)
 {
 	tf = myjpeg::allocate_transformer();
 }

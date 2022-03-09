@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_static::source_static(const std::string & id, const std::string & descr, const int width, const int height, controls *const c, const int jpeg_quality) : source(id, descr, "", width, height, nullptr, c, jpeg_quality)
+source_static::source_static(const std::string & id, const std::string & descr, const int width, const int height, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, "", width, height, nullptr, c, jpeg_quality, text_feeds)
 {
 }
 
@@ -39,10 +39,10 @@ video_frame * source_static::get_frame(const bool handle_failure, const uint64_t
 
 	memset(p, 0x20, len);
 
-	filter_add_text fat1("Hello, world!", { center_center, -1, -1 });
+	filter_add_text fat1("Hello, world!", { center_center, -1, -1 }, text_feeds);
 	fat1.apply(nullptr, this, ts, this->width, this->height, nullptr, p);
 
-	filter_add_text fat2("%c", { upper_center, -1, -1 });
+	filter_add_text fat2("%c", { upper_center, -1, -1 }, text_feeds);
 	fat2.apply(nullptr, this, ts, this->width, this->height, nullptr, p);
 
 	return new video_frame(get_meta(), jpeg_quality, ts, this->width, this->height, p, len, E_RGB);

@@ -14,7 +14,7 @@
 #include "filter.h"
 #include "schedule.h"
 
-target_new_source::target_new_source(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const std::string & new_s_id, const std::string & new_s_descr, schedule *const sched, const bool rot90) : target(id, descr, s, "", "", "", -1, interval, filters, "", "", "", -1, cfg, false, false, sched), new_s_id(new_s_id), new_s_descr(new_s_descr), rot90(rot90)
+target_new_source::target_new_source(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const std::string & new_s_id, const std::string & new_s_descr, schedule *const sched, const bool rot90, const std::map<std::string, feed *> & text_feeds) : target(id, descr, s, "", "", "", -1, interval, filters, "", "", "", -1, cfg, false, false, sched), new_s_id(new_s_id), new_s_descr(new_s_descr), rot90(rot90), text_feeds(text_feeds)
 {
 }
 
@@ -30,7 +30,7 @@ source * target_new_source::get_new_source()
 	if (!new_source) {
 		log(id, LL_INFO, "Instantiating new source %s", new_s_id.c_str());
 
-		new_source = new source(new_s_id, new_s_descr, "", -1.0, nullptr, -1, -1, LL_DEBUG, 0.1, nullptr, default_failure(), new controls(), 100);
+		new_source = new source(new_s_id, new_s_descr, "", -1.0, nullptr, -1, -1, LL_DEBUG, 0.1, nullptr, default_failure(), new controls(), 100, text_feeds);
 	}
 
 	new_source_lock.unlock();

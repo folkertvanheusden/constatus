@@ -20,25 +20,25 @@
 #include "resize.h"
 #include "controls.h"
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(nullptr), exec_failure(exec_failure), jpeg_quality(jpeg_quality)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(nullptr), exec_failure(exec_failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
 {
 	this->c = c;
 	init();
 }
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(filters), exec_failure(exec_failure), jpeg_quality(jpeg_quality)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(filters), exec_failure(exec_failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
 {
 	this->c = c;
 	init();
 }
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : interface(id, descr), width(w), height(h), max_fps(max_fps), r(nullptr), resize_w(-1), resize_h(-1), loglevel(loglevel), timeout(3.0), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), width(w), height(h), max_fps(max_fps), r(nullptr), resize_w(-1), resize_h(-1), loglevel(loglevel), timeout(3.0), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
 {
 	this->c = c;
 	init();
 }
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : interface(id, descr), max_fps(max_fps), r(r), resize_w(resize_w), resize_h(resize_h), loglevel(loglevel), timeout(timeout), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), max_fps(max_fps), r(r), resize_w(resize_w), resize_h(resize_h), loglevel(loglevel), timeout(timeout), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
 {
 	width = height = -1;
 	this->c = c;
@@ -407,7 +407,7 @@ video_frame * source::get_failure_frame()
 			draw_box(fail, lw, btr(x, lw), btr(175, lh), btr(x + 1, lw), btr(200, lh), col2);
 		}
 
-		std::string msg = unescape(failure.message, 0, nullptr, this);
+		std::string msg = unescape(failure.message, 0, nullptr, this, { });
 
 		std::vector<std::string> *parts = split(msg, "\n");
 
@@ -430,14 +430,14 @@ video_frame * source::get_failure_frame()
 
 		delete parts;
 
-		filter_add_text fat(NAME " v" VERSION, { lower_center, -1, -1 });
+		filter_add_text fat(NAME " v" VERSION, { lower_center, -1, -1 }, text_feeds);
 		fat.apply(nullptr, this, 0, lw, lh, nullptr, fail);
 
-		filter_add_text fat2("%c", { upper_center, -1, -1 });
+		filter_add_text fat2("%c", { upper_center, -1, -1 }, text_feeds);
 		fat2.apply(nullptr, this, get_us(), lw, lh, nullptr, fail);
 	}
 	else if (failure.fm == F_SIMPLE) {
-		filter_add_text fat(failure.message, failure.position);
+		filter_add_text fat(failure.message, failure.position, text_feeds);
 
 		fat.apply(nullptr, this, 0, lw, lh, nullptr, fail);
 	}

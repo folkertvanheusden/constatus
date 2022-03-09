@@ -7,12 +7,12 @@
 #include "utils.h"
 #include "controls.h"
 
-view::view(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, std::vector<filter *> *const filters, const int jpeg_quality) : source(id, descr, "", width, height, cfg->r, filters, new controls(), jpeg_quality), cfg(cfg), sources(sources)
+view::view(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, std::vector<filter *> *const filters, const int jpeg_quality) : source(id, descr, "", width, height, cfg->r, filters, new controls(), jpeg_quality, cfg->text_feeds), cfg(cfg), sources(sources)
 {
 	ct = CT_VIEW;
 }
 
-view::view(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, const int jpeg_quality) : source(id, descr, "", width, height, cfg->r, new controls(), jpeg_quality), cfg(cfg), sources(sources)
+view::view(configuration_t *const cfg, const std::string & id, const std::string & descr, const int width, const int height, const std::vector<view_src_t> & sources, const int jpeg_quality) : source(id, descr, "", width, height, cfg->r, new controls(), jpeg_quality, cfg->text_feeds), cfg(cfg), sources(sources)
 {
 	ct = CT_VIEW;
 }

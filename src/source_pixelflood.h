@@ -19,7 +19,7 @@ private:
 	uint8_t *frame_buffer;
 
 public:
-	source_pixelflood(const std::string & id, const std::string & descr, const std::string & exec_failure, const listen_adapter_t & la, const int pixel_size, const pixelflood_protocol_t pp, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality);
+	source_pixelflood(const std::string & id, const std::string & descr, const std::string & exec_failure, const listen_adapter_t & la, const int pixel_size, const pixelflood_protocol_t pp, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
 	~source_pixelflood();
 
 	void operator()() override;

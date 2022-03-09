@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_black::source_black(const std::string & id, const std::string & descr, const int width, const int height, controls *const c) : source(id, descr, "", width, height, nullptr, c, 1)
+source_black::source_black(const std::string & id, const std::string & descr, const int width, const int height, controls *const c, const std::map<std::string, feed *> & text_feeds) : source(id, descr, "", width, height, nullptr, c, 1, text_feeds)
 {
 }
 

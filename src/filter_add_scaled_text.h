@@ -10,14 +10,19 @@ class interface;
 class filter_add_scaled_text : public filter
 {
 private:
-	std::string what, font_file;
-	const int x, y, font_size, width;
+	std::string what;
+	std::string font_file;
+	const int   x;
+	const int   y;
+	const int   font_size;
+	const int   width;
 	const std::optional<rgb_t> bg;
 	const rgb_t col;
-	const bool invert;
+	const bool  invert;
+	const std::map<std::string, feed *> text_feeds;
 
 public:
-	filter_add_scaled_text(const std::string & what, const std::string & font_file, const int x, const int y, const int font_size, const int width, std::optional<rgb_t> bg, const rgb_t col, const bool invert);
+	filter_add_scaled_text(const std::string & what, const std::string & font_file, const int x, const int y, const int font_size, const int width, std::optional<rgb_t> bg, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds);
 	~filter_add_scaled_text();
 
 	bool uses_in_out() const override { return false; }

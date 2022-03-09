@@ -27,7 +27,7 @@ void source_other::crop(video_frame *const in, video_frame **const out, const cu
 	*out = new video_frame(get_meta(), jpeg_quality, in->get_ts(), cut.w, cut.h, temp, bytes, E_RGB);
 }
 
-source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, resize *const r, const int resize_w, const int resize_h, const std::optional<cut_t> & cut, const int angle) : source(id, descr, exec_failure, -1, r, resize_w, resize_h, loglevel, 86400, filters, failure, c, jpeg_quality), other(other), cut(cut), rotation_angle(angle)
+source_other::source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, resize *const r, const int resize_w, const int resize_h, const std::optional<cut_t> & cut, const int angle, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, -1, r, resize_w, resize_h, loglevel, 86400, filters, failure, c, jpeg_quality, text_feeds), other(other), cut(cut), rotation_angle(angle)
 {
 }
 

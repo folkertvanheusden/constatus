@@ -38,7 +38,7 @@ static bool xioctl(int fh, long unsigned int request, void *arg, const char *con
 	return true;
 }
 
-source_v4l::source_v4l(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_override, const int h_override, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const bool use_controls) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, nullptr, jpeg_quality), dev(dev), prefer_jpeg(prefer_jpeg), w_override(w_override), h_override(h_override), use_controls(use_controls)
+source_v4l::source_v4l(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_override, const int h_override, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const bool use_controls, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, nullptr, jpeg_quality, text_feeds), dev(dev), prefer_jpeg(prefer_jpeg), w_override(w_override), h_override(h_override), use_controls(use_controls)
 {
 	fd = -1;
 	vw = vh = -1;

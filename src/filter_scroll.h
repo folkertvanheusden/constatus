@@ -23,6 +23,7 @@ protected:
 	const std::optional<rgb_t> bg;
 	const rgb_t col;
 	const bool invert;
+	const std::map<std::string, feed *> text_feeds;
 
 	std::mutex buffer_lock;
 	std::vector<scroll_entry_t> buffer;
@@ -40,7 +41,7 @@ private:
 	void restart_process();
 
 public:
-	filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert);
+	filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds);
 	~filter_scroll();
 
 	bool uses_in_out() const override { return false; }

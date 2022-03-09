@@ -23,7 +23,7 @@ private:
 	void crop(video_frame *const in, video_frame **const out, const cut_t & cut);
 
 public:
-	source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, resize *const r, const int resize_w, const int resize_h, const std::optional<cut_t> & cut, const int rotate);
+	source_other(const std::string & id, const std::string & descr, source *const other, const std::string & exec_failure, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, resize *const r, const int resize_w, const int resize_h, const std::optional<cut_t> & cut, const int rotate, const std::map<std::string, feed *> & text_feeds);
 	~source_other();
 
 	void operator()() override;

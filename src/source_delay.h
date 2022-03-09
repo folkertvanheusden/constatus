@@ -18,7 +18,7 @@ private:
 	video_frame *prev { nullptr };
 
 public:
-	source_delay(const std::string & id, const std::string & descr, const std::string & exec_failure, source *const s, const int jpeg_quality, const int n_frames, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int ll, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c);
+	source_delay(const std::string & id, const std::string & descr, const std::string & exec_failure, source *const s, const int jpeg_quality, const int n_frames, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int ll, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const std::map<std::string, feed *> & text_feeds);
 	virtual ~source_delay();
 
 	virtual video_frame * get_frame(const bool handle_failure, const uint64_t after) override;

@@ -263,7 +263,7 @@ with_boundary:
 }
 
 
-source_http_mjpeg::source_http_mjpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & urlIn, const bool ic, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality), url(urlIn), ignore_cert(ic)
+source_http_mjpeg::source_http_mjpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & urlIn, const bool ic, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds), url(urlIn), ignore_cert(ic)
 {
 }
 
