@@ -33,7 +33,7 @@ Shows how to view multiple video streams in one view.
 
 How to produce a regular AVI file when motion is detected.
 
-* multicast.cfg
+* multicast-tx.cfg
 
 Example of the gstreamer (https://gstreamer.freedesktop.org/)
 integration. This example shows how to multicast a video stream on
