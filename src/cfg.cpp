@@ -640,6 +640,8 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 		else {
 			error_exit(false, "Feed type %s is not known", f_type.c_str());
 		}
+
+		cfg->text_feeds.insert({ f_id, f });
 	}
 }
 
