@@ -21,7 +21,7 @@ public:
 	feed();
 	virtual ~feed();
 
-	std::optional<std::string> wait_for_text(const uint64_t after, const uint64_t to);
+	std::optional<std::pair<std::string, uint64_t> > wait_for_text(const uint64_t after, const uint64_t to);
 
 	virtual void operator()() = 0;
 };

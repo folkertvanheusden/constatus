@@ -9,6 +9,7 @@
 
 using namespace libconfig;
 
+#include "feed_exec.h"
 #include "instance.h"
 #include "config.h"
 #include "error.h"
@@ -616,6 +617,30 @@ pos_t find_xy_or_pos(const Setting & cfg, const std::string & what)
 	}
 
 	return pos;
+}
+
+void load_text_feeds(configuration_t *const cfg, const Setting & in)
+{
+	size_t n_feeds = in.getLength();
+
+	for(size_t i=0; i<n_feeds; i++) {
+		const Setting & f_setting = in[i];
+
+		std::string     f_type    = cfg_str(f_setting, "type", "feed type (exec, file, mqtt)", false, "");
+		std::string     f_id      = cfg_str(f_setting, "id",   "ID of the feed - used in \"escapes\" for texts", false, "");
+
+		feed           *f         = nullptr;
+
+		if (f_type == "exec") {
+			std::string commandline = cfg_str(f_setting, "commandline", "program to invoke repeatingly (from which the output is used)", false, "");
+			int         interval    = cfg_int(f_setting, "interval",    "interval in milliseconds", true, 1000);
+
+			f = new feed_exec(commandline, interval);
+		}
+		else {
+			error_exit(false, "Feed type %s is not known", f_type.c_str());
+		}
+	}
 }
 
 std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & in)
@@ -1906,6 +1931,16 @@ bool load_configuration(configuration_t *const cfg, const bool verbose, const in
 	else {
 		fprintf(stderr, "Scaler/resizer of type \"%s\" is not known\n", resize_type.c_str());
 		return false;
+	}
+
+	log(LL_INFO, "Configuring text feeds...");
+	try {
+		const Setting & feeds = root["text-feeds"];
+
+		load_text_feeds(cfg, feeds);
+	}
+	catch(SettingNotFoundException & snfe) {
+		log(LL_INFO, " no maintenance-items set");
 	}
 
 	log(LL_INFO, "Configuring maintenance settings...");

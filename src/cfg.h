@@ -1,7 +1,9 @@
 // (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
 #pragma once
 
+#include <map>
 #include <mutex>
+#include <string>
 #include <vector>
 
 #include "failure.h"
@@ -10,6 +12,7 @@
 #include "utils.h"
 
 class cleaner;
+class feed;
 class instance;
 class interface;
 class resize;
@@ -17,27 +20,29 @@ class view;
 
 typedef struct
 {
-	std::string search_path;
+	std::string              search_path;
 
-	std::vector<instance *> instances;
+	std::vector<instance *>  instances;
 	mutable std::timed_mutex lock;
 
-	std::string cfg_file;
+	std::string              cfg_file;
 
-	resize *r;
+	resize                  *r;
 
 	std::vector<interface *> global_http_servers;
 
 	std::vector<interface *> guis;
 
 	std::string db_url, db_user, db_pass;
-	cleaner *clnr;
+	cleaner                 *clnr;
 
 	std::vector<interface *> announcers;
 
-	stats_tracker *st;
+	std::map<std::string, feed *> text_feeds;
 
-	listen_adapter_t nrpe;
+	stats_tracker           *st;
+
+	listen_adapter_t         nrpe;
 } configuration_t;
 
 class source;

@@ -10,7 +10,7 @@ feed::~feed()
 {
 }
 
-std::optional<std::string> feed::wait_for_text(const uint64_t after, const uint64_t to)
+std::optional<std::pair<std::string, uint64_t> > feed::wait_for_text(const uint64_t after, const uint64_t to)
 {
 	std::unique_lock<std::mutex> lck(lock);
 
@@ -23,5 +23,5 @@ std::optional<std::string> feed::wait_for_text(const uint64_t after, const uint6
 			return { };
 	}
 
-	return latest_text;
+	return { { latest_text, latest_ts } };
 }
