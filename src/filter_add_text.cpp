@@ -1596,7 +1596,7 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 			std::pair<uint64_t, double> val_double;
 			std::pair<uint64_t, std::string> val_string;
 
-			auto f = text_feeds.find(name.substr(1));
+			auto f = text_feeds.find(name.substr(1, name.size() - 2));
 
 			if (m && m -> get_int(name, &val_int)) {
 				work = search_replace(work, name, myformat("%d", val_int.second));

@@ -651,6 +651,8 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 			for(size_t i=0; i<n_topics; i++) {
 				std::string topic = t_setting[i].c_str();
 
+				log(LL_DEBUG, "Listening for topic \"%s\" on \"%s\"", topic.c_str(), host.c_str());
+
 				topics.push_back(topic);
 			}
 
