@@ -209,7 +209,7 @@ std::tuple<int, int, int, int> draw_text::find_text_dimensions(const FT_Face & f
 
 		int glyph_index = FT_Get_Char_Index(face, c);
 
-		if (FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER | (anti_alias ? 0 : FT_LOAD_MONOCHROME))) {
+		if (FT_Load_Glyph(face, glyph_index, 0)) {
 			n++;
 			continue;
 		}
