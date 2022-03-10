@@ -1539,12 +1539,12 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 		if (dollar2 == std::string::npos)
 			break;
 
-		std::string name = work.substr(dollar1 + 1, dollar2 - dollar1 - 1);
+		std::string name = work.substr(dollar1, dollar2 - dollar1 + 1);
 
-		if (name.substr(0, 6) == "exec:") {
+		if (name.substr(0, 6) == "$exec:") {
 			std::string replace_with_what;
 
-			FILE *fh = exec(name.substr(6, name.size() - 6));
+			FILE *fh = exec(name.substr(6, name.size() - 7));
 			if (fh) {
 				char buffer[1024] = { 0 };
 				bool fail = fgets(buffer, sizeof buffer, fh) == nullptr;
@@ -1565,10 +1565,10 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 
 			 work = search_replace(work, name, replace_with_what);
 		}
-		else if (name.substr(0, 6) == "file:") {
+		else if (name.substr(0, 6) == "$file:") {
 			std::string replace_with_what;
 
-			std::string filename = name.substr(6, name.size() - 6);
+			std::string filename = name.substr(6, name.size() - 7);
 
 			FILE *fh = fopen(filename.c_str(), "r");
 			if (fh) {
@@ -1596,7 +1596,7 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 			std::pair<uint64_t, double> val_double;
 			std::pair<uint64_t, std::string> val_string;
 
-			auto f = text_feeds.find(name);
+			auto f = text_feeds.find(name.substr(1));
 
 			if (m && m -> get_int(name, &val_int)) {
 				work = search_replace(work, name, myformat("%d", val_int.second));
@@ -1611,7 +1611,7 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 				auto feed_text = f->second->wait_for_text(get_feed_ts, 99000);
 
 				if (feed_text.has_value()) {
-					work = search_replace(work, "$" + name, feed_text.value().first);
+					work = search_replace(work, name, feed_text.value().first);
 
 					get_feed_ts = feed_text.value().second;
 				}
