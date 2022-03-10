@@ -639,6 +639,7 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 			f = new feed_exec(commandline, interval);
 		}
 		else if (f_type == "mqtt") {
+#if HAVE_LIBMOSQUITTO == 1
 			std::string host        = cfg_str(f_setting, "host", "MQTT host to connect to", false, "");
 			int         port        = cfg_int(f_setting, "port", "port number of the MQTT host", true, 1883);
 
@@ -654,6 +655,9 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 			}
 
 			f = new feed_mqtt(host, port, topics);
+#else
+			error_exit(false, "Support for MQTT feeds is not compiled-in: mosquitto library is missing");
+#endif
 		}
 		else {
 			error_exit(false, "Feed type %s is not known", f_type.c_str());
