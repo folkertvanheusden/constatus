@@ -6,6 +6,7 @@
 #include <vector>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unicode/ustring.h>
 
 class source;
 
@@ -74,3 +75,5 @@ std::string bin_to_hex(const uint8_t *const in, const size_t n);
 uint8_t *gen_random(size_t n);
 
 void handle_fps(std::atomic_bool *stop_flag, const double fps, const double frame_start);
+
+std::string substr(const UChar32 *const utf32_str, const int idx, const int n);

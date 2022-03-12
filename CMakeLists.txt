@@ -29,7 +29,6 @@ add_executable(constatus
 	src/default-stylesheet.cpp
 	src/draw.cpp
 	src/draw_text.cpp
-	src/draw_text_bitmap.cpp
 	src/draw_text_font.cpp
 	src/encoding.cpp
 	src/error.cpp

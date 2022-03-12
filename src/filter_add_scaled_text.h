@@ -1,8 +1,9 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #pragma once
 #include <stdint.h>
 #include <string>
 
+#include "draw_text.h"
 #include "filter.h"
 
 class interface;
@@ -11,7 +12,7 @@ class filter_add_scaled_text : public filter
 {
 private:
 	std::string what;
-	std::string font_file;
+	draw_text  *font { nullptr };
 	const int   x;
 	const int   y;
 	const int   font_size;

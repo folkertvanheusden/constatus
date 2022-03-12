@@ -493,9 +493,11 @@ void filter_lcdproc::network_listener()
 	log(LL_INFO, "LCDProc network listener stopped");
 }
 
-filter_lcdproc::filter_lcdproc(const std::string & adapter, const std::string & font_file, const int x, const int y, const int w, const int h, const std::optional<rgb_t> bg, const int n_col, const int n_row, const rgb_t col, const int switch_interval, const bool invert) : adapter(adapter), font_file(font_file), x(x), y(y), w(w), h(h), bg(bg), n_col(n_col), n_row(n_row), col(col), switch_interval(switch_interval), invert(invert)
+filter_lcdproc::filter_lcdproc(const std::string & adapter, const std::string & font_file, const int x, const int y, const int w, const int h, const std::optional<rgb_t> bg, const int n_col, const int n_row, const rgb_t col, const int switch_interval, const bool invert) : adapter(adapter), x(x), y(y), w(w), h(h), bg(bg), n_col(n_col), n_row(n_row), col(col), switch_interval(switch_interval), invert(invert)
 {
 	font_size = std::min(w / n_col, h / n_row);
+
+	font = new draw_text(font_file, font_size);
 
 	th = new std::thread(&filter_lcdproc::network_listener, this);
 }
@@ -506,6 +508,8 @@ filter_lcdproc::~filter_lcdproc()
 
 	th->join();
 	delete th;
+	
+	delete font;
 }
 
 void filter_lcdproc::apply(instance *const inst, interface *const specific_int, const uint64_t ts, const int w, const int h, const uint8_t *const prev, uint8_t *const in_out)
@@ -593,12 +597,13 @@ void filter_lcdproc::apply(instance *const inst, interface *const specific_int, 
 
 	lck.unlock();
 
+	int work_x = x;
 	int work_y = y;
 
 	for(int iy=0; iy<n_row; iy++) {
 		std::string row { &display[iy * n_col], size_t(n_col) };
 
-		draw_text dt(font_file, row, font_size, true, in_out, w, h, x, work_y, w - x, bg, col, invert);
+		draw_text_on_bitmap(font, row, w, h, in_out, font_size, col, bg, work_x, work_y);
 
 		work_y += font_size;
 	}

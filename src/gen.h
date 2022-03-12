@@ -12,7 +12,7 @@ typedef struct {
 } error_state_t;
 
 typedef struct {
-	int r, g, b;
+	uint8_t r, g, b;
 } rgb_t;
 
 typedef struct

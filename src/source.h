@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <thread>
 
+#include "draw_text.h"
 #include "interface.h"
 #include "error.h"
 #include "gen.h"
@@ -60,6 +61,8 @@ protected:
 	audio *a { nullptr };
 
 	const std::map<std::string, feed *> text_feeds;
+
+	draw_text *font { nullptr };
 
 	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);
 	source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds);

@@ -1,10 +1,12 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #pragma once
 
 #include <map>
 #include <mutex>
+#include <optional>
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 #include <freetype2/ft2build.h>
 #include FT_FREETYPE_H
@@ -13,40 +15,48 @@
 
 #include "gen.h"
 
+
+typedef struct {
+	UChar32              c;
+	bool                 underline;
+	bool                 invert;
+	rgb_t                fg_color;
+	std::optional<rgb_t> bg_color;
+} text_with_attributes_t;
+
 #define DEFAULT_FONT_FILE "/usr/share/fonts/truetype/unifont/unifont.ttf"
-#define DEFAULT_PROP_FONT_FILE "/usr/share/fonts/truetype/msttcorefonts/Courier_New.ttf"
 
 extern std::mutex freetype2_lock;
 extern std::mutex fontconfig_lock;
 
-class draw_text {
+class draw_text
+{
 protected:
 	static FT_Library library;
-	static std::map<std::string, FT_Face> font_cache;
 
-	uint8_t *const target;
-	const int target_width, target_height, target_x, target_y, text_w;
-	const rgb_t col;
+	const int         font_height { 0 };
+	FT_Face           face        { 0 };
 
-	int result_w { 0 }, result_h { 0 };
-	bool error_shown { false };
+	std::optional<std::tuple<int, int, int, int> > find_text_dimensions(const UChar32 c);
 
-	void draw_character(const FT_Bitmap *const bitmap, const int output_height, const FT_Int x, const FT_Int y, uint8_t r, uint8_t g, uint8_t b, const bool invert, const bool underline, const int right_x, uint8_t *const dest, const int dest_width, const int dest_height);
-	void draw_background(const int width, const int result_h, const rgb_t & bg);
+	void draw_glyph_bitmap(const FT_Bitmap *const bitmap, const int output_height, const FT_Int x, const FT_Int y, const bool invert, const bool underline, uint8_t *const dest, const int dest_width, const int dest_height);
+
+	int draw_glyph(const UChar32 utf_character, const int output_height, const bool invert, const bool underline, const int x, const int y, uint8_t *const dest, const int dest_width, const int dest_height);
+
+	std::tuple<int, int, int, int> find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string);
+
 	std::optional<std::tuple<UChar32 *, int> > text_to_utf32(const std::string & text);
-	FT_Face load_font(const std::string & font_filename);
-	std::tuple<int, int, int, int> find_text_dimensions(const FT_Face & face, const std::tuple<UChar32 *, int> & utf_string, const bool anti_alias);
-	void draw_bitmap(const FT_Face & face, const std::tuple<UChar32 *, int> & utf_string, const std::tuple<int, int, int, int> & dimensions, const bool use_kerning, const int output_height, const bool inverse);
+
+	std::vector<text_with_attributes_t> preprocess_text(const std::string & input, const rgb_t & fg_color, const std::optional<rgb_t> & bg_color);
 
 public:
-	draw_text(const std::string & font_filename, const std::string & text, const int output_height, const bool antialias, uint8_t *const target, const int target_width, const int target_height, const int target_x, const int target_y, const int text_w, const std::optional<rgb_t> bg, const rgb_t col, const bool inverse);
+	draw_text(const std::string & font_file, const int font_height);
 	virtual ~draw_text();
 
-	std::tuple<int, int> text_final_dimensions() const { return std::make_tuple(result_w, result_h); }
+	static void init();
+	static void uninit();
 
-	static void init_fonts();
-	static void uninit_fonts();
+	void draw_string(const std::string & input, const int height, uint8_t **const grayscale_pixels, int *const width);
 };
 
-std::string substr(const UChar32 *const utf32_str, const int idx, const int n);
-std::string find_font_by_name(const std::string & font_name, const std::string & default_font_file);
+void draw_text_on_bitmap(draw_text *const font, const std::string & in, const int dest_bitmap_width, const int dest_bitmap_height, uint8_t *const dest_bitmap, const int text_height, const rgb_t & fg, const std::optional<const rgb_t> & bg, const int put_x, const int put_y);

@@ -1,9 +1,10 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #pragma once
 #include <stdint.h>
 #include <string>
 #include <vector>
 
+#include "draw_text.h"
 #include "filter.h"
 
 class interface;
@@ -46,7 +47,7 @@ class filter_lcdproc : public filter
 {
 private:
 	const std::string adapter;
-	std::string font_file;
+	draw_text  *font { nullptr };
 	const int x, y, w, h;
 	const int n_col, n_row;
 	const std::optional<rgb_t> bg;

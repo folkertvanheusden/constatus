@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	draw_text::init_fonts();
+	draw_text::init();
 
 #if HAVE_GSTREAMER == 1
 	gst_init(0, nullptr);
@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
 
 	delete cfg->st;
 
-	draw_text::uninit_fonts();
+	draw_text::uninit();
 
 #if HAVE_LIBCURL == 1
 	curl_global_cleanup();

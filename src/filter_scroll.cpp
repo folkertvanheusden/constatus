@@ -12,7 +12,6 @@
 #include "filter_scroll.h"
 #include "error.h"
 #include "utils.h"
-#include "draw_text_bitmap.h"
 #include "exec.h"
 
 void blit(uint8_t *const out, const int w, const int h, const int x, const int y, const uint8_t *const in, const int in_w, const int in_h, const int off_x, const int off_y)
@@ -41,8 +40,10 @@ void blit(uint8_t *const out, const int w, const int h, const int x, const int y
 	}
 }
 
-filter_scroll::filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) : font_file(font_file), x(x), y(y), text_w(text_w), n_lines(n_lines), font_size(font_size), exec_what(exec_what), horizontal_scroll(horizontal_scroll), bg(bg), scroll_speed(scroll_speed), col(col), invert(invert), text_feeds(text_feeds)
+filter_scroll::filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) : x(x), y(y), text_w(text_w), n_lines(n_lines), font_size(font_size), exec_what(exec_what), horizontal_scroll(horizontal_scroll), bg(bg), scroll_speed(scroll_speed), col(col), invert(invert), text_feeds(text_feeds)
 {
+	font = new draw_text(font_file, font_size);
+
 	restart_process();
 
 	start();
@@ -58,7 +59,7 @@ filter_scroll::~filter_scroll()
 	stop();
 
 	while(!buffer.empty()) {
-		delete [] buffer.at(0).bitmap;
+		free(buffer.at(0).bitmap);
 
 		buffer.erase(buffer.begin());
 	}
@@ -148,17 +149,10 @@ void filter_scroll::apply(instance *const i, interface *const specific_int, cons
 		const std::lock_guard<std::mutex> lock(buffer_lock);
 		for(auto & what : buffer) {
 			if (what.bitmap == nullptr) {
-				draw_text_bitmap dtm(font_file, unescape(what.text, ts, i, specific_int, text_feeds), font_size, true, bg, col, invert);
+				std::string text = unescape(what.text, ts, i, specific_int, text_feeds);
 
-				auto dimensions = dtm.text_final_dimensions();
-				what.w = std::get<0>(dimensions);
-				what.h = std::get<1>(dimensions);
-
-				size_t n = IMS(what.w, what.h, 3);
-
-				uint8_t *bitmap = new uint8_t[n];
-				memcpy(bitmap, dtm.get_bitmap(), n);
-				what.bitmap = bitmap;
+				font->draw_string(text, font_size, &what.bitmap, &what.w);
+				what.h = font_size;
 			}
 		}
 
@@ -195,7 +189,7 @@ void filter_scroll::apply(instance *const i, interface *const specific_int, cons
 				parts = split(text_out.c_str(), "\\n");
 
 			for(std::string cl : *parts) {
-				draw_text dt(font_file, cl, font_size, true, in_out, w, h, work_x, work_y, text_w == -1 ? w : text_w, bg, col, invert);
+				draw_text_on_bitmap(font, cl, w, h, in_out, font_size, col, bg, work_x, work_y);
 
 				work_y += font_size + 1;
 			}

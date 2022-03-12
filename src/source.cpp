@@ -58,6 +58,8 @@ source::~source()
 	join_thread(&wd_th, id, "watchdog");
 
 	join_thread(&exec_failure_th, id, "exec-failure");
+
+	delete font;
 }
 
 void source::init()
@@ -65,6 +67,8 @@ void source::init()
 	vf = nullptr;
 	user_count = 0;
 	ct = CT_SOURCE;
+
+	font = new draw_text("", 32);
 
 	if (!failure.bg_bitmap.empty()) {
 		FILE *fh = fopen(failure.bg_bitmap.c_str(), "rb");
@@ -417,13 +421,14 @@ video_frame * source::get_failure_frame()
 
 		draw_box(fail, lw, 0, work_y, lw, work_y + 32, text_bg);
 
-		draw_text dt("", myformat("Camera: %s", get_id().c_str()), 32, true, fail, lw, lh, -1, work_y, lw, text_bg, { 255, 255, 255 }, false);
+		draw_text_on_bitmap(font, "Camera: " + get_id(), lw, lh, fail, 32, { 255, 255, 255 }, text_bg, -1, work_y);
+
 		work_y += 32;
 
 		for(auto s : *parts) {
 			draw_box(fail, lw, 0, work_y, lw, work_y + 32, text_bg);
 
-			draw_text dt("", s, 32, true, fail, lw, lh, -1, work_y, lw, text_bg, { 255, 255, 255 }, false);
+			draw_text_on_bitmap(font, s, lw, lh, fail, 32, { 255, 255, 255 }, text_bg, -1, work_y);
 
 			work_y += 32;
 		}

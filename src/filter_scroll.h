@@ -1,23 +1,25 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
 #pragma once
 #include <atomic>
 #include <stdint.h>
 #include <string>
 
+#include "draw_text.h"
 #include "filter.h"
 #include "cfg.h"
 
 typedef struct
 {
 	std::string text;
-	const uint8_t *bitmap;
+	uint8_t *bitmap;
 	int w, h;
 } scroll_entry_t;
 
 class filter_scroll : public filter
 {
 protected:
-	std::string what, font_file;
+	std::string what;
+	draw_text *font { nullptr };
 	const int x, y, text_w, n_lines, font_size;
 	const bool horizontal_scroll;
 	const std::optional<rgb_t> bg;
