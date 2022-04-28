@@ -30,7 +30,7 @@ source * target_new_source::get_new_source()
 	if (!new_source) {
 		log(id, LL_INFO, "Instantiating new source %s", new_s_id.c_str());
 
-		new_source = new source(new_s_id, new_s_descr, "", -1.0, nullptr, -1, -1, LL_DEBUG, 0.1, nullptr, default_failure(), new controls(), 100, text_feeds);
+		new_source = new source(new_s_id, new_s_descr, "", -1.0, nullptr, -1, -1, LL_DEBUG, 0.1, nullptr, default_failure(), new controls(), 100, text_feeds, false);
 	}
 
 	new_source_lock.unlock();

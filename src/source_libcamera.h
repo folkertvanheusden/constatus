@@ -34,7 +34,7 @@ protected:
 	void request_completed(libcamera::Request *request);
 
 public:
-	source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c, const int rotate_angle, const std::map<std::string, feed *> & text_feeds);
+	source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c, const int rotate_angle, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio);
 	virtual ~source_libcamera();
 
 	static void list_devices();

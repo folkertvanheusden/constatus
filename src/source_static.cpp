@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_static::source_static(const std::string & id, const std::string & descr, const int width, const int height, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, "", width, height, nullptr, c, jpeg_quality, text_feeds)
+source_static::source_static(const std::string & id, const std::string & descr, const int width, const int height, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, "", width, height, nullptr, c, jpeg_quality, text_feeds, keep_aspectratio)
 {
 }
 

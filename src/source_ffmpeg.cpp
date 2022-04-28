@@ -23,7 +23,7 @@ extern "C" {
 
 static bool v = false;
 
-source_ffmpeg::source_ffmpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & url, const bool tcp, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds), url(url), tcp(tcp)
+source_ffmpeg::source_ffmpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & url, const bool tcp, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds, keep_aspectratio), url(url), tcp(tcp)
 {
 	v = loglevel >= LL_DEBUG;
 }
@@ -241,7 +241,7 @@ void source_ffmpeg::operator()()
 					}
 
 					if (need_scale())
-						set_scaled_frame(pixels, codec_ctx -> width, codec_ctx -> height);
+						set_scaled_frame(pixels, codec_ctx -> width, codec_ctx -> height, keep_aspectratio);
 					else
 						set_frame(E_RGB, pixels, IMS(codec_ctx -> width, codec_ctx -> height, 3));
 

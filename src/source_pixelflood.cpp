@@ -421,7 +421,7 @@ void * tcp_connection_thread(void *p)
 	return nullptr;
 }
 
-source_pixelflood::source_pixelflood(const std::string & id, const std::string & descr, const std::string & exec_failure, const listen_adapter_t & la, const int pixel_size_in, const pixelflood_protocol_t pp, const double max_fps, const int w_in, const int h_in, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, w_in * pixel_size_in, h_in * pixel_size_in, loglevel, filters, failure, c, jpeg_quality, text_feeds), la(la), pixel_size(pixel_size_in), pp(pp)
+source_pixelflood::source_pixelflood(const std::string & id, const std::string & descr, const std::string & exec_failure, const listen_adapter_t & la, const int pixel_size_in, const pixelflood_protocol_t pp, const double max_fps, const int w_in, const int h_in, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, exec_failure, max_fps, w_in * pixel_size_in, h_in * pixel_size_in, loglevel, filters, failure, c, jpeg_quality, text_feeds, keep_aspectratio), la(la), pixel_size(pixel_size_in), pp(pp)
 {
 	int size = width * height * 3;
 
