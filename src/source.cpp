@@ -136,7 +136,7 @@ void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const 
 	if (keep_aspectratio) {
 		out = reinterpret_cast<uint8_t *>(malloc(target_w * target_h * 3));
 
-		int perc = std::min(sourcew / resize_w, sourceh / resize_h);
+		int perc = std::min(sourcew * 100 / resize_w, sourceh * 100 / resize_h);
 
 		pos_t pos { center_center, 0, 0 };
 
