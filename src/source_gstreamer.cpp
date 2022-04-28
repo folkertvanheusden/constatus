@@ -81,7 +81,7 @@ void source_gstreamer::operator()()
 			const size_t n = IMS(width, height, 3);
 
 			if (strcmp(format, "RGB") == 0) {
-				if (needscale())
+				if (need_scale())
 					set_scaled_frame(info.data, width, height, keep_aspectratio);
 				else
 					set_frame(E_RGB, info.data, n);
@@ -90,7 +90,7 @@ void source_gstreamer::operator()()
 				uint8_t *rgb { nullptr };
 				my_jpeg.i420_to_rgb(tf, info.data, width, height, &rgb);
 
-				if (needscale())
+				if (need_scale())
 					set_scaled_frame(rgb, width, height, keep_aspectratio);
 				else
 					set_frame(E_RGB, rgb, n);
