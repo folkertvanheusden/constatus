@@ -8,7 +8,7 @@
 #include "utils.h"
 
 
-void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)
+static void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)
 {
 	feed_mqtt *fm = reinterpret_cast<feed_mqtt *>(p);
 
@@ -19,7 +19,7 @@ void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg
 	fm->set_text(text);
 }
 
-void on_connect(struct mosquitto *, void *p, int)
+static void on_connect(struct mosquitto *, void *p, int)
 {
 	feed_mqtt *fm = reinterpret_cast<feed_mqtt *>(p);
 

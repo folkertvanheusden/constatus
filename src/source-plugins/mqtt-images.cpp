@@ -32,7 +32,7 @@ typedef struct {
 	size_t   len;
 } curl_recv_t;
 
-size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp)
+static size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp)
 {
 	size_t total_size  = size * nmemb;
 	curl_recv_t       *mem = (curl_recv_t *)userp;
@@ -49,7 +49,7 @@ size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp
 	return total_size;
 }
 
-void connect_callback(struct mosquitto *mi, void *arg, int result)
+static void connect_callback(struct mosquitto *mi, void *arg, int result)
 {
 	my_data_t *md = (my_data_t *)arg;
 
@@ -60,7 +60,7 @@ void connect_callback(struct mosquitto *mi, void *arg, int result)
 		log(LL_ERR, "mosquitto_subscribe failed %d (%s)", rc, strerror(errno));
 }
 
-void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *msg, const mosquitto_property *)
+static void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *msg, const mosquitto_property *)
 {
 	my_data_t *md = (my_data_t *)arg;
 
@@ -155,7 +155,7 @@ void * pixel_thread(void *arg)
 	return NULL;
 }
 
-void * mqtt_thread(void *p)
+static void * mqtt_thread(void *p)
 {
 	struct mosquitto *mi = (struct mosquitto *)p;
 

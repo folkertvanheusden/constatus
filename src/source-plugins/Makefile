@@ -1,8 +1,8 @@
 # (C) 2017 by folkert van heusden, this file is released in the public domain
 INSTALL_PREFIX=/usr/local
 
-CFLAGS=-fPIC -Wall -pedantic -ggdb3
-CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 -std=c++17
+CFLAGS=-fPIC -Wall -pedantic -ggdb3 `pkg-config --cflags freetype2`
+CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 -std=c++17 `pkg-config --cflags freetype2`
 VERSION=0.1
 
 OBJS1=demo.o
