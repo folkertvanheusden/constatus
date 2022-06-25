@@ -165,6 +165,12 @@ void source_libcamera::operator()()
 
 			if (status == libcamera::CameraConfiguration::Status::Valid)
 				break;
+
+			if (status == libcamera::CameraConfiguration::Status::Adjusted) {
+				best_format = stream_config.pixelFormat;
+
+				break;
+			}
 		}
 
 		// try RGB
