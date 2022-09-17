@@ -49,7 +49,7 @@ size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp
 	return total_size;
 }
 
-void connect_callback(struct mosquitto *mi, void *arg, int result)
+static void connect_callback(struct mosquitto *mi, void *arg, int result)
 {
 	my_data_t *md = (my_data_t *)arg;
 
@@ -60,7 +60,7 @@ void connect_callback(struct mosquitto *mi, void *arg, int result)
 		log(LL_ERR, "mosquitto_subscribe failed %d (%s)", rc, strerror(errno));
 }
 
-void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *msg, const mosquitto_property *)
+static void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *msg, const mosquitto_property *)
 {
 	my_data_t *md = (my_data_t *)arg;
 
@@ -90,6 +90,8 @@ void on_message(struct mosquitto *, void *arg, const struct mosquitto_message *m
 
 		uint8_t *temp = nullptr;
 		bool     ok   = false;
+
+		mime_type = str_tolower(mime_type);
 
 		if (mime_type == "image/jpeg")
 			ok = my_jpeg.read_JPEG_memory(data.data, data.len, &w, &h, &temp);
@@ -162,6 +164,8 @@ void * mqtt_thread(void *p)
 	for(;;) {
 		mosquitto_loop_forever(mi, -1, 1);
 
+		log(LL_INFO, "Reconnect MQTT");
+
 		sleep(1);
 
 		mosquitto_reconnect(mi);
@@ -189,7 +193,9 @@ extern "C" void *init_plugin(source *const s, const char *const argument)
 
 	log(LL_INFO, "Connecting to MQTT host [%s]:%d", host.c_str(), port);
 
-	struct mosquitto *mi = mosquitto_new("constatus", true, md);
+	struct mosquitto *mi = mosquitto_new("plugin-constatus", true, md);
+	if (!mi)
+		log(LL_ERR, "mosquitto_new failed");
 
 	int rc = 0;
 	if ((rc = mosquitto_connect(mi, host.c_str(), port, 30)) != MOSQ_ERR_SUCCESS)
