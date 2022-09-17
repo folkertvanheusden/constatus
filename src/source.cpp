@@ -393,7 +393,7 @@ video_frame * source::get_failure_frame()
 				double rd = 0., gd = 0., bd = 0.;
 				hls_to_rgb(x / 8.0, 0.5, (y + 1) / 4.0, &rd, &gd, &bd);
 
-				rgb_t col { int(rd * 255), int(gd * 255), int(bd * 255) };
+				rgb_t col { uint8_t(rd * 255), uint8_t(gd * 255), uint8_t(bd * 255) };
 
 				draw_box(fail, lw, btr(x * stepx, lw), btr(work_y, lh), btr(x * stepx + stepx, lw), btr(work_y + hstepy, lh), col);
 			}
@@ -401,7 +401,7 @@ video_frame * source::get_failure_frame()
 
 		for(int y=0; y<256; y += stepy) {
 			int c = ((y / stepy) & 1) ? 255 : 0;
-			rgb_t col { c, c, c };
+			rgb_t col { uint8_t(c), uint8_t(c), uint8_t(c) };
 
 			draw_box(fail, lw, btr(0, lw), btr(y, lh), btr(2, lw), btr(y + stepy, lh), col);
 			draw_box(fail, lw, btr(254, lw), btr(y, lh), lw, btr(y + stepy, lh), col);
@@ -409,17 +409,17 @@ video_frame * source::get_failure_frame()
 
 		for(int x=0; x<256; x += stepx) {
 			int c = ((x / stepx) & 1) ? 255 : 0;
-			rgb_t col { c, c, c };
+			rgb_t col { uint8_t(c), uint8_t(c), uint8_t(c) };
 
 			draw_box(fail, lw, btr(x, lw), btr(0, lh), btr(x + stepx, lw), btr(2, lh), col);
 			draw_box(fail, lw, btr(x, lw), btr(254, lh), btr(x + stepx, lw), lh, col);
 		}
 
 		for(int x=0; x<256; x++) {
-			rgb_t col1 { x, x, x };
+			rgb_t col1 { uint8_t(x), uint8_t(x), uint8_t(x) };
 			draw_box(fail, lw, btr(x, lw), btr(150, lh), btr(x + 1, lw), btr(175, lh), col1);
 
-			rgb_t col2 { x ^ 255, x ^ 255, x ^ 255 };
+			rgb_t col2 { uint8_t(x ^ 255), uint8_t(x ^ 255), uint8_t(x ^ 255) };
 			draw_box(fail, lw, btr(x, lw), btr(175, lh), btr(x + 1, lw), btr(200, lh), col2);
 		}
 

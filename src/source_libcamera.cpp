@@ -142,7 +142,7 @@ void source_libcamera::operator()()
 	libcamera::StreamConfiguration & stream_config = camera_config->at(0);
 	libcamera::PixelFormat best_format = stream_config.pixelFormat;
 
-	for(;;) {
+	do {
 		// reset as validate can alter it
 		if (rotate_angle == 0) {
 		}
@@ -165,6 +165,12 @@ void source_libcamera::operator()()
 
 			if (status == libcamera::CameraConfiguration::Status::Valid)
 				break;
+
+			if (status == libcamera::CameraConfiguration::Status::Adjusted) {
+				best_format = stream_config.pixelFormat;
+
+				break;
+			}
 		}
 
 		// try RGB
@@ -238,9 +244,8 @@ void source_libcamera::operator()()
 
 		if (camera_config->validate())
 			error_exit(false, "source libcamera: configuration is unexpectedly invalid");
-
-		break;
 	}
+	while(0);
 
 	log(LL_INFO, "source libcamera: chosen format: %s", stream_config.toString().c_str());
 

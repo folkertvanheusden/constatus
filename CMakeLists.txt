@@ -13,7 +13,7 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 message("Found environment variable LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH}")
-link_directories( $ENV{LD_LIBRARY_PATH} )
+link_directories($ENV{LD_LIBRARY_PATH})
 
 add_executable(constatus
 	src/announce_upnp.cpp
@@ -274,12 +274,6 @@ pkg_check_modules(LIBCAMERA libcamera)
 target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
 target_include_directories(constatus PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
-
-pkg_check_modules(LIBCAMERA_BASE libcamera-base)
-target_link_libraries(constatus ${LIBCAMERA_BASE_LIBRARIES})
-target_include_directories(constatus PUBLIC ${LIBCAMERA_BASE_INCLUDE_DIRS})
-target_compile_options(constatus PUBLIC ${LIBCAMERA_BASE_CFLAGS_OTHER})
-
 
 if (LIBCAMERA_FOUND)
 	message("libcamera found, building list-libcamera")

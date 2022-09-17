@@ -32,7 +32,7 @@ typedef struct {
 	size_t   len;
 } curl_recv_t;
 
-size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp)
+static size_t curl_add_to_memory(void *new_data, size_t size, size_t nmemb, void *userp)
 {
 	size_t total_size  = size * nmemb;
 	curl_recv_t       *mem = (curl_recv_t *)userp;
@@ -157,7 +157,7 @@ void * pixel_thread(void *arg)
 	return NULL;
 }
 
-void * mqtt_thread(void *p)
+static void * mqtt_thread(void *p)
 {
 	struct mosquitto *mi = (struct mosquitto *)p;
 
