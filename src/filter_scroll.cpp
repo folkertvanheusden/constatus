@@ -27,7 +27,9 @@ void blit(uint8_t *const out, const int w, const int h, const int x, const int y
 
 		for(int wx=off_x; wx<in_w; wx++) {
 			int target_x = wx + x;
-			if (target_x >= w || target_x < 0)
+			if (target_x >= w)
+				break;
+			if (target_x < 0)
 				continue;
 
 			int temp_offset = out_offset + target_x * 3;
