@@ -1827,8 +1827,10 @@ void http_server::handle_http_client(http_thread_t *const ct)
 	bool auth_ok = true, is_view_proxy = false;
 	std::string cookie;
 
-	int final_w = resize_w, final_h = resize_h;
+	int    final_w   = resize_w;
+	int    final_h   = resize_h;
 	double final_fps = fps;
+	bool   acc_fps   = false;
 
 	if (!motion_compatible) {
 		auto forwarded_for = find_header(*header_lines, "X-Forwarded-For");
@@ -1878,6 +1880,8 @@ void http_server::handle_http_client(http_thread_t *const ct)
 				if (final_fps > fps && fps > 0.0)
 					final_fps = fps;
 			}
+
+			acc_fps = pars.find("acc-fps") != pars.end();
 
 			if (!s)
 				s = find_source(inst);
@@ -1932,7 +1936,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(true, ct->peer_name);
 
-		send_mjpeg_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_mjpeg_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie, acc_fps);
 
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);
@@ -1943,7 +1947,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(true, ct->peer_name);
 
-		send_theora_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_theora_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie, acc_fps);
 
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);
@@ -1954,7 +1958,7 @@ void http_server::handle_http_client(http_thread_t *const ct)
 		if (ws_privacy == false)
 			register_peer(true, ct->peer_name);
 
-		send_mpng_stream(ct->hh, s, final_fps, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
+		send_mpng_stream(ct->hh, s, final_fps, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie, acc_fps);
 
 		if (ws_privacy == false)
 			register_peer(false, ct->peer_name);

@@ -903,7 +903,7 @@ bool compare_equal_wo_case(const std::string & a, const std::string & b)
                       });
 }
 
-void handle_fps(std::atomic_bool *stop_flag, const double fps, const double frame_start)
+void handle_fps(std::atomic_bool *stop_flag, const double fps, const uint64_t frame_start)
 {
 	if (fps <= 0.)
 		return;
