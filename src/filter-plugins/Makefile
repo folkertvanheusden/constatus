@@ -2,7 +2,7 @@
 INSTALL_PREFIX=/usr/local
 
 CFLAGS=-fPIC -Wall -pedantic -ggdb3 `pkg-config --cflags opencv libmosquitto`
-CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 `pkg-config --cflags opencv libmosquitto`
+CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 `pkg-config --cflags opencv libmosquitto` -std=c++17
 VERSION=0.2
 
 OBJS1=demo.o
