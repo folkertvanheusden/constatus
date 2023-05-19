@@ -58,6 +58,8 @@ It is an NVR (network video recorder) with special features.
 
 ## compiling
 
+- last tested on Ubuntu lunar lobster (23.04)
+
 ### Debian/Ubuntu
 
 - Required:
