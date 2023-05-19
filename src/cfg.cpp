@@ -999,6 +999,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 
 		int resize_w = cfg_int(o_source, "resize-width", "resize picture width to this (-1 to disable)", true, -1);
 		int resize_h = cfg_int(o_source, "resize-height", "resize picture height to this (-1 to disable)", true, -1);
+		bool keep_aspectratio = cfg_bool(o_source, "keep-aspectratio", "resize & crop", true, false);
 
 		double timeout = cfg_float(o_source, "timeout", "how long to wait for the camera before considering it be offline (in seconds)", true, 1.0);
 
@@ -1048,7 +1049,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			std::string dev = cfg_str(o_source, "device", "linux v4l2 device", false, "/dev/video0");
 			bool prefer_jpeg = cfg_bool(o_source, "prefer-jpeg", "try to get directly JPEG from camera", true, false);
 
-			s = new source_v4l(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, use_controls, cfg->text_feeds);
+			s = new source_v4l(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, use_controls, cfg->text_feeds, keep_aspectratio);
 #else
 			error_exit(false, "'libv4l2' was not linked in");
 #endif
@@ -1083,7 +1084,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			catch(SettingNotFoundException & snfe) {
 			}
 
-			s = new source_libcamera(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, ctrls, use_controls ? new controls_software() : nullptr, rotate, cfg->text_feeds);
+			s = new source_libcamera(id, descr, exec_failure, dev, jpeg_quality, max_fps, w, h, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, prefer_jpeg, ctrls, use_controls ? new controls_software() : nullptr, rotate, cfg->text_feeds, keep_aspectratio);
 #else
 			error_exit(false, "'libcamera' is required");
 #endif
@@ -1093,30 +1094,30 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			const std::string auth = cfg_str(o_source, "http-auth", "HTTP authentication string", true, "");
 			const std::string url = cfg_str(o_source, "url", "address of JPEG-files stream", false, "");
 
-			s = new source_http_jpeg(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_http_jpeg(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "png") {
 			bool ign_cert = cfg_bool(o_source, "ignore-cert", "ignore SSL errors", true, false);
 			const std::string auth = cfg_str(o_source, "http-auth", "HTTP authentication string", true, "");
 			const std::string url = cfg_str(o_source, "url", "address of PNG-files stream", false, "");
 
-			s = new source_http_png(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_http_png(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "jpeg-file") {
 			const std::string path = cfg_str(o_source, "path", "path + file name of JPEG file to monitor", false, "");
 
-			s = new source_filesystem_jpeg(id, descr, exec_failure, path, max_fps, cfg->r, resize_w, resize_h, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_filesystem_jpeg(id, descr, exec_failure, path, max_fps, cfg->r, resize_w, resize_h, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "broken-mjpeg") {
 			const std::string url = cfg_str(o_source, "url", "address of MJPEG stream", false, "");
 			bool ign_cert = cfg_bool(o_source, "ignore-cert", "ignore SSL errors", true, false);
 
-			s = new source_http_mjpeg(id, descr, exec_failure, url, ign_cert, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_http_mjpeg(id, descr, exec_failure, url, ign_cert, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "pipewire") {
 #if HAVE_PIPEWIRE == 1
 			int pw_id = cfg_int(o_source, "pw-id", "ID of device", false, PW_ID_ANY);
-			s = new source_pipewire(id, descr, pw_id, resize_w, resize_h, jpeg_quality, use_controls ? new controls_software() : nullptr, max_fps, cfg->text_feeds);
+			s = new source_pipewire(id, descr, pw_id, resize_w, resize_h, jpeg_quality, use_controls ? new controls_software() : nullptr, max_fps, cfg->text_feeds, keep_aspectratio);
 #else
 			error_exit(false, "'pipewire' support not linked in");
 #endif
@@ -1126,7 +1127,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			const std::string url = cfg_str(o_source, "url", "address of video stream", false, "");
 			bool tcp = cfg_bool(o_source, "tcp", "use TCP for RTSP transport (instead of default UDP)", true, false);
 
-			s = new source_ffmpeg(id, descr, exec_failure, url, tcp, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_ffmpeg(id, descr, exec_failure, url, tcp, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 #else
 			error_exit(false, "'%s' requires ffmpeg", s_type.c_str());
 #endif
@@ -1137,7 +1138,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			std::string plugin_bin = cfg_str(o_source, "source-plugin-file", "filename of video data source plugin", true, "");
 			std::string plugin_arg = cfg_str(o_source, "source-plugin-parameter", "parameter for video data source plugin", true, "");
 
-			s = new source_plugin(id, descr, w, h, exec_failure, plugin_bin, plugin_arg, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_plugin(id, descr, w, h, exec_failure, plugin_bin, plugin_arg, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "delay") {
 			int n_frames = cfg_int(o_source, "n-frames", "how many frames in the past", false, 1);
@@ -1153,7 +1154,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 #if HAVE_GSTREAMER == 1
 			std::string pipeline = cfg_str(o_source, "pipeline", "gstreamer pipeline. Note: it should end with \" ! appsink name=constatus\"!", false, "");
 
-			s = new source_gstreamer(id, descr, exec_failure, pipeline, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_gstreamer(id, descr, exec_failure, pipeline, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 #else
 			error_exit(false, "'gstreamer' support is not linked in");
 #endif
@@ -1169,13 +1170,13 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			pixelflood_protocol_t pp = cfg_convert_pp(pp_str);
 			bool dgram = pp == PP_UDP_BIN || pp == PP_UDP_TXT;
 
-			s = new source_pixelflood(id, descr, exec_failure, { listen_adapter, listen_port, SOMAXCONN, dgram }, pixel_size, pp, max_fps, w, h, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_pixelflood(id, descr, exec_failure, { listen_adapter, listen_port, SOMAXCONN, dgram }, pixel_size, pp, max_fps, w, h, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "static") {
 			int w = cfg_int(o_source, "width", "width of picture", false);
 			int h = cfg_int(o_source, "height", "height of picture", false);
 
-			s = new source_static(id, descr, w, h, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds);
+			s = new source_static(id, descr, w, h, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 
 			delete source_filters;
 		}
@@ -1207,7 +1208,7 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			if (!other)
 				error_exit(false, "\"other-id\" \"%s\" is not known", o_id.c_str());
 
-			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h, cut, rotate, cfg->text_feeds);
+			s = new source_other(id, descr, other, exec_failure, loglevel, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->r, resize_w, resize_h, cut, rotate, cfg->text_feeds, keep_aspectratio);
 		}
 		else {
 			error_exit(false, "Source-type \"%s\" is not known", s_type.c_str());

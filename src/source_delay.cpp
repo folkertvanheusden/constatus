@@ -10,7 +10,7 @@
 #include "filter.h"
 #include "controls.h"
 
-source_delay::source_delay(const std::string & id, const std::string & descr, const std::string & exec_failure, source *const s, const int jpeg_quality, const int n_frames, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int ll, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, ll, timeout, filters, failure, c, jpeg_quality, text_feeds), s(s), n_frames(n_frames), max_fps(max_fps)
+source_delay::source_delay(const std::string & id, const std::string & descr, const std::string & exec_failure, source *const s, const int jpeg_quality, const int n_frames, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int ll, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, ll, timeout, filters, failure, c, jpeg_quality, text_feeds, false), s(s), n_frames(n_frames), max_fps(max_fps)
 {
 }
 

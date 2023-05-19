@@ -8,9 +8,12 @@
 #include "utils.h"
 
 
-void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)
+static void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)
 {
 	feed_mqtt *fm = reinterpret_cast<feed_mqtt *>(p);
+
+printf("%p %p\n", fm, msg);
+printf("%p %d\n", msg->payload, msg->payloadlen);
 
 	std::string text = std::string(reinterpret_cast<const char *>(msg->payload), msg->payloadlen);
 
@@ -19,7 +22,7 @@ void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg
 	fm->set_text(text);
 }
 
-void on_connect(struct mosquitto *, void *p, int)
+static void on_connect(struct mosquitto *, void *p, int)
 {
 	feed_mqtt *fm = reinterpret_cast<feed_mqtt *>(p);
 

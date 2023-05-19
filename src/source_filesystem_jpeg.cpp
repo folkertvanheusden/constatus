@@ -17,7 +17,7 @@
 #include "utils.h"
 #include "controls.h"
 
-source_filesystem_jpeg::source_filesystem_jpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & path, const double fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, fps, r, resize_w, resize_h, loglevel, -1., filters, failure, c, jpeg_quality, text_feeds), path(path)
+source_filesystem_jpeg::source_filesystem_jpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & path, const double fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, exec_failure, fps, r, resize_w, resize_h, loglevel, -1., filters, failure, c, jpeg_quality, text_feeds, keep_aspectratio), path(path)
 {
 }
 
@@ -119,7 +119,7 @@ void source_filesystem_jpeg::operator()()
 				}
 
 				if (resize)
-					set_scaled_frame(temp, dw, dh);
+					set_scaled_frame(temp, dw, dh, keep_aspectratio);
 				else
 					set_frame(E_JPEG, work, work_len);
 

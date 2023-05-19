@@ -16,7 +16,7 @@
 #include "parameters.h"
 #include "controls.h"
 
-source_libcamera::source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c, const int rotate_angle, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds), dev(dev), w_requested(w_requested), h_requested(h_requested), prefer_jpeg(prefer_jpeg), ctrls(ctrls), rotate_angle(rotate_angle)
+source_libcamera::source_libcamera(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & dev, const int jpeg_quality, const double max_fps, const int w_requested, const int h_requested, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, const bool prefer_jpeg, const std::map<std::string, parameter *> & ctrls, controls *const c, const int rotate_angle, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds, keep_aspectratio), dev(dev), w_requested(w_requested), h_requested(h_requested), prefer_jpeg(prefer_jpeg), ctrls(ctrls), rotate_angle(rotate_angle)
 {
 }
 
@@ -142,7 +142,7 @@ void source_libcamera::operator()()
 	libcamera::StreamConfiguration & stream_config = camera_config->at(0);
 	libcamera::PixelFormat best_format = stream_config.pixelFormat;
 
-	for(;;) {
+	do {
 		// reset as validate can alter it
 		if (rotate_angle == 0) {
 		}
@@ -165,6 +165,12 @@ void source_libcamera::operator()()
 
 			if (status == libcamera::CameraConfiguration::Status::Valid)
 				break;
+
+			if (status == libcamera::CameraConfiguration::Status::Adjusted) {
+				best_format = stream_config.pixelFormat;
+
+				break;
+			}
 		}
 
 		// try RGB
@@ -238,9 +244,8 @@ void source_libcamera::operator()()
 
 		if (camera_config->validate())
 			error_exit(false, "source libcamera: configuration is unexpectedly invalid");
-
-		break;
 	}
+	while(0);
 
 	log(LL_INFO, "source libcamera: chosen format: %s", stream_config.toString().c_str());
 

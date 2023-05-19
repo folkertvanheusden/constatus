@@ -20,25 +20,25 @@
 #include "resize.h"
 #include "controls.h"
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(nullptr), exec_failure(exec_failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(nullptr), exec_failure(exec_failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds), keep_aspectratio(keep_aspectratio)
 {
 	this->c = c;
 	init();
 }
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(filters), exec_failure(exec_failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const int w, const int h, resize *const r, std::vector<filter *> *const filters, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : interface(id, descr), width(w), height(h), max_fps(-1), r(r), resize_w(-1), resize_h(-1), loglevel(get_default_loglevel()), timeout(3.0), filters(filters), exec_failure(exec_failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds), keep_aspectratio(keep_aspectratio)
 {
 	this->c = c;
 	init();
 }
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), width(w), height(h), max_fps(max_fps), r(nullptr), resize_w(-1), resize_h(-1), loglevel(loglevel), timeout(3.0), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, const int w, const int h, const int loglevel, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : interface(id, descr), width(w), height(h), max_fps(max_fps), r(nullptr), resize_w(-1), resize_h(-1), loglevel(loglevel), timeout(3.0), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds), keep_aspectratio(keep_aspectratio)
 {
 	this->c = c;
 	init();
 }
 
-source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : interface(id, descr), max_fps(max_fps), r(r), resize_w(resize_w), resize_h(resize_h), loglevel(loglevel), timeout(timeout), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds)
+source::source(const std::string & id, const std::string & descr, const std::string & exec_failure, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : interface(id, descr), max_fps(max_fps), r(r), resize_w(resize_w), resize_h(resize_h), loglevel(loglevel), timeout(timeout), filters(filters), exec_failure(exec_failure), failure(failure), jpeg_quality(jpeg_quality), text_feeds(text_feeds), keep_aspectratio(keep_aspectratio)
 {
 	width = height = -1;
 	this->c = c;
@@ -124,7 +124,7 @@ void source::set_frame(const encoding_t pe, const uint8_t *const data, const siz
 	lck.unlock();
 }
 
-void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const int sourceh)
+void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const int sourceh, const bool keep_aspectratio)
 {
 	uint64_t use_ts = get_us();
 
@@ -132,7 +132,19 @@ void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const 
         int target_h = resize_h != -1 ? resize_h : sourceh;
 
         uint8_t *out = nullptr;
-        r -> do_resize(sourcew, sourceh, in, target_w, target_h, &out);
+
+	if (keep_aspectratio) {
+		out = reinterpret_cast<uint8_t *>(malloc(target_w * target_h * 3));
+
+		int perc = std::min(sourcew * 100 / resize_w, sourceh * 100 / resize_h);
+
+		pos_t pos { center_center, 0, 0 };
+
+		picture_in_picture(r, out, target_w, target_h, in, sourcew, sourceh, perc, pos);
+	}
+	else {
+		r -> do_resize(sourcew, sourceh, in, target_w, target_h, &out);
+	}
 
 	std::unique_lock<std::mutex> lck(lock);
 
@@ -381,7 +393,7 @@ video_frame * source::get_failure_frame()
 				double rd = 0., gd = 0., bd = 0.;
 				hls_to_rgb(x / 8.0, 0.5, (y + 1) / 4.0, &rd, &gd, &bd);
 
-				rgb_t col { int(rd * 255), int(gd * 255), int(bd * 255) };
+				rgb_t col { uint8_t(rd * 255), uint8_t(gd * 255), uint8_t(bd * 255) };
 
 				draw_box(fail, lw, btr(x * stepx, lw), btr(work_y, lh), btr(x * stepx + stepx, lw), btr(work_y + hstepy, lh), col);
 			}
@@ -389,7 +401,7 @@ video_frame * source::get_failure_frame()
 
 		for(int y=0; y<256; y += stepy) {
 			int c = ((y / stepy) & 1) ? 255 : 0;
-			rgb_t col { c, c, c };
+			rgb_t col { uint8_t(c), uint8_t(c), uint8_t(c) };
 
 			draw_box(fail, lw, btr(0, lw), btr(y, lh), btr(2, lw), btr(y + stepy, lh), col);
 			draw_box(fail, lw, btr(254, lw), btr(y, lh), lw, btr(y + stepy, lh), col);
@@ -397,17 +409,17 @@ video_frame * source::get_failure_frame()
 
 		for(int x=0; x<256; x += stepx) {
 			int c = ((x / stepx) & 1) ? 255 : 0;
-			rgb_t col { c, c, c };
+			rgb_t col { uint8_t(c), uint8_t(c), uint8_t(c) };
 
 			draw_box(fail, lw, btr(x, lw), btr(0, lh), btr(x + stepx, lw), btr(2, lh), col);
 			draw_box(fail, lw, btr(x, lw), btr(254, lh), btr(x + stepx, lw), lh, col);
 		}
 
 		for(int x=0; x<256; x++) {
-			rgb_t col1 { x, x, x };
+			rgb_t col1 { uint8_t(x), uint8_t(x), uint8_t(x) };
 			draw_box(fail, lw, btr(x, lw), btr(150, lh), btr(x + 1, lw), btr(175, lh), col1);
 
-			rgb_t col2 { x ^ 255, x ^ 255, x ^ 255 };
+			rgb_t col2 { uint8_t(x ^ 255), uint8_t(x ^ 255), uint8_t(x ^ 255) };
 			draw_box(fail, lw, btr(x, lw), btr(175, lh), btr(x + 1, lw), btr(200, lh), col2);
 		}
 

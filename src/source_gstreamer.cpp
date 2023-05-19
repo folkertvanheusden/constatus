@@ -8,7 +8,7 @@
 #include "picio.h"
 #include "controls.h"
 
-source_gstreamer::source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, -1.0, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds), pipeline(pipeline)
+source_gstreamer::source_gstreamer(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & pipeline, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, exec_failure, -1.0, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds, keep_aspectratio), pipeline(pipeline)
 {
 	tf = myjpeg::allocate_transformer();
 }
@@ -80,13 +80,20 @@ void source_gstreamer::operator()()
 
 			const size_t n = IMS(width, height, 3);
 
-			if (strcmp(format, "RGB") == 0)
-				set_frame(E_RGB, info.data, n);
+			if (strcmp(format, "RGB") == 0) {
+				if (need_scale())
+					set_scaled_frame(info.data, width, height, keep_aspectratio);
+				else
+					set_frame(E_RGB, info.data, n);
+			}
 			else {
 				uint8_t *rgb { nullptr };
 				my_jpeg.i420_to_rgb(tf, info.data, width, height, &rgb);
 
-				set_frame(E_RGB, rgb, n);
+				if (need_scale())
+					set_scaled_frame(rgb, width, height, keep_aspectratio);
+				else
+					set_frame(E_RGB, rgb, n);
 
 				free(rgb);
 			}

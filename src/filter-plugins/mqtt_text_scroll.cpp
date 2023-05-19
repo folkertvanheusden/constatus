@@ -1,10 +1,11 @@
-// (C) 2020 by folkert van heusden, this file is released in the public domain
+// (C) 2020-2023 by folkert van heusden, this file is released in the public domain
 #include <algorithm>
 #include <mosquitto.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <string>
 #include <string.h>
+#include <unistd.h>
 #include <cairo/cairo.h>
 
 #include "cairo.h"
@@ -28,8 +29,12 @@ void * thread(void *p)
 {
 	struct mosquitto *mi = (struct mosquitto *)p;
 
-	for(;;)
-		mosquitto_loop(mi, 11000, 1);
+	for(;;) {
+		if (mosquitto_loop(mi, 11000, 1)) {
+			sleep(1);
+			mosquitto_reconnect(mi);
+		}
+	}
 }
 
 void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)

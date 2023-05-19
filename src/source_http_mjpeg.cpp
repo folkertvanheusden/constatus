@@ -104,6 +104,7 @@ typedef struct
 	double timeout;
 	myjpeg *j;
 	int resize_w, resize_h;
+	bool keep_aspectratio;
 } work_data_t;
 
 #if HAVE_LIBCURL == 1
@@ -221,7 +222,7 @@ process:
 				int dw, dh;
 				unsigned char *temp = NULL;
 				if (w -> j -> read_JPEG_memory(w -> data, w -> req_len, &dw, &dh, &temp))
-					w -> s -> set_scaled_frame(temp, dw, dh);
+					w -> s -> set_scaled_frame(temp, dw, dh, w->keep_aspectratio);
 				free(temp);
 			}
 			else {
@@ -262,8 +263,7 @@ with_boundary:
 	return full_size;
 }
 
-
-source_http_mjpeg::source_http_mjpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & urlIn, const bool ic, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds), url(urlIn), ignore_cert(ic)
+source_http_mjpeg::source_http_mjpeg(const std::string & id, const std::string & descr, const std::string & exec_failure, const std::string & urlIn, const bool ic, const double max_fps, resize *const r, const int resize_w, const int resize_h, const int loglevel, const double timeout, std::vector<filter *> *const filters, const failure_t & failure, controls *const c, const int jpeg_quality, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, exec_failure, max_fps, r, resize_w, resize_h, loglevel, timeout, filters, failure, c, jpeg_quality, text_feeds, keep_aspectratio), url(urlIn), ignore_cert(ic)
 {
 }
 

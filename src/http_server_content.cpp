@@ -26,7 +26,7 @@
 #include "view_all.h"
 #include "http_content_theora.h"
 
-void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
+void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie, const bool acc_fps)
 {
 	bool first = true;
 
@@ -40,7 +40,10 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag;) {
 		uint64_t before_ts = get_us();
 
-		video_frame *pvf = s -> get_frame(handle_failure, prev);
+		video_frame *pvf = fps > 0 && acc_fps ? s->get_frame_to(handle_failure, prev, 1000000 / fps) : s->get_frame(handle_failure, prev);
+
+		if (!pvf && prev_frame)
+			pvf = prev_frame->duplicate(E_RGB);
 
 		if (pvf) {
 			prev = pvf->get_ts();
@@ -164,7 +167,7 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 	delete prev_frame;
 }
 
-void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
+void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int quality, bool get, int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie, const bool acc_fps)
 {
 #if HAVE_THEORA == 1
 	const int w = s->get_width();
@@ -204,7 +207,10 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag && !stop;) {
 		uint64_t before_ts = get_us();
 
-		video_frame *pvf = s->get_frame(handle_failure, prev);
+		video_frame *pvf = fps > 0 && acc_fps ? s->get_frame_to(handle_failure, prev, 1000000 / fps) : s->get_frame(handle_failure, prev);
+
+		if (!pvf && prev_frame)
+			pvf = prev_frame->duplicate(E_RGB);
 
 		if (pvf) {
 			prev = pvf->get_ts();
@@ -251,7 +257,7 @@ void http_server::send_theora_stream(h_handle_t & hh, source *s, double fps, int
 #endif
 }
 
-void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool get, const int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie)
+void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool get, const int time_limit, const std::vector<filter *> *const filters, resize *const r, const int resize_w, const int resize_h, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, stats_tracker *const st, const std::string & cookie, const bool acc_fps)
 {
 	bool first = true;
 
@@ -262,7 +268,10 @@ void http_server::send_mpng_stream(h_handle_t & hh, source *s, double fps, bool 
 	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag;) {
 		uint64_t before_ts = get_us();
 
-		video_frame *pvf = s -> get_frame(handle_failure, prev);
+		video_frame *pvf = fps > 0 && acc_fps ? s->get_frame_to(handle_failure, prev, 1000000 / fps) : s->get_frame(handle_failure, prev);
+
+		if (!pvf && prev_frame)
+			pvf = prev_frame->duplicate(E_RGB);
 
 		if (pvf) {
 			source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
