@@ -133,7 +133,7 @@ void source_libcamera::operator()()
 
 	const uint64_t interval = max_fps > 0.0 ? 1.0 / max_fps * 1000.0 * 1000.0 : 0;
 
-	libcamera::StreamRoles roles{ libcamera::VideoRecording };
+	libcamera::StreamRoles roles{ libcamera::StreamRole::VideoRecording };
 	std::unique_ptr<libcamera::CameraConfiguration> camera_config = camera->generateConfiguration(roles);
 
 	if (!camera_config.get() || camera_config->size() == 0)

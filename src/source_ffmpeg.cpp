@@ -86,7 +86,7 @@ void source_ffmpeg::operator()()
 		AVFormatContext *output_ctx = NULL, *format_ctx = NULL;
 		AVStream *stream = NULL;
 		AVPacket packet;
-		AVCodec *codec = NULL;
+		const AVCodec *codec = NULL;
 		uint8_t *pixels = NULL;
 		SwsContext *img_convert_ctx = NULL;
 		int size = 0, size2 = 0;

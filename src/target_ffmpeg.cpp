@@ -109,7 +109,7 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
 }
 
 /* Add an output stream. */
-static bool add_stream(OutputStream *ost, AVFormatContext *oc, AVCodec **codec, enum AVCodecID codec_id, int fps, int bitrate, int w, int h)
+static bool add_stream(OutputStream *ost, AVFormatContext *oc, const AVCodec **codec, enum AVCodecID codec_id, int fps, int bitrate, int w, int h)
 {
 	AVCodecContext *c;
 	int i;
@@ -416,7 +416,7 @@ static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
 	return picture;
 }
 
-static bool open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
+static bool open_video(AVFormatContext *oc, const AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
 	AVCodecContext *c = ost->enc;
 	AVDictionary *opt = nullptr;
@@ -642,9 +642,9 @@ void target_ffmpeg::operator()()
 
 	for(;!local_stop_flag;) {
 		OutputStream video_st = { 0 }, audio_st = { 0 };
-		AVOutputFormat *fmt = nullptr;
+		const AVOutputFormat *fmt = nullptr;
 		AVFormatContext *oc = nullptr;
-		AVCodec *audio_codec = nullptr, *video_codec = nullptr;
+		const AVCodec *audio_codec = nullptr, *video_codec = nullptr;
 		int ret = -1;
 		int have_video = 0, have_audio = 0;
 		int encode_video = 0, encode_audio = 0;
