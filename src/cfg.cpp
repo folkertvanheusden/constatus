@@ -379,7 +379,14 @@ double cfg_float(const Setting & cfg, const char *const key, const char *descr, 
 	}
 
 	catch(const SettingTypeException & ste) {
-		error_exit(false, "Expected a float value for \"%s\" (%s) at line %d but got something else (did you forget to add \".0\"?)", key, descr, cfg.getSourceLine());
+		try {
+			int temp = cfg.lookup(key);
+
+			v = temp;
+		}
+		catch(const SettingTypeException & ste) {
+			error_exit(false, "Expected a float value for \"%s\" (%s) at line %d but got something else", key, descr, cfg.getSourceLine());
+		}
 	}
 
 	if (dp)
@@ -572,10 +579,19 @@ std::optional<rgb_t> get_color(const Setting & cfg, const std::string & prefix =
 bool find_interval_or_fps(const Setting & cfg, double *const interval, const std::string & fps_name, double *const fps)
 {
 	bool have_interval = cfg.lookupValue("interval", *interval);
+
 	bool have_fps = cfg.lookupValue(fps_name.c_str(), *fps);
 
-	if (!have_interval && !have_fps)
+	int temp_fps_i = *fps;
+	bool have_fps_i = cfg.lookupValue(fps_name.c_str(), temp_fps_i);
+
+	if (!have_interval && !have_fps && !have_fps_i)
 		return false;
+
+	if (!have_interval && !have_fps && have_fps_i) {
+		*fps = temp_fps_i;
+		have_fps = true;
+	}
 
 	if (have_interval && have_fps)
 		return false;
@@ -1257,7 +1273,7 @@ stream_plugin_t * load_stream_plugin(const Setting & in)
 
 void interval_fps_error(const char *const name, const char *what, const char *id)
 {
-	error_exit(false, "Interval/%s %s not set or invalid (e.g. 0) for target (%s). Make sure that you use a float-value for the fps/interval, e.g. 13.0 instead of 13", name, what, id);
+	error_exit(false, "Interval/%s %s not set or invalid (e.g. 0) for target (%s).", name, what, id);
 }
 
 schedule *load_scheduler(const Setting & sched_obj)
