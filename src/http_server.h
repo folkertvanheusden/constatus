@@ -61,6 +61,7 @@ private:
 	const int max_cookie_age;
 	const std::string motd_file;
 	const bool ws_privacy;
+	const std::string notify_viewer_script;
 
 	http_cookies *c { nullptr };
 
@@ -133,7 +134,7 @@ private:
 	void publish_motion_detected(void *ws, const std::string & subject);
 
 public:
-	http_server(configuration_t *const cfg, http_auth *const auth, instance *const limit_to, const std::string & id, const std::string & descr, const listen_adapter_t & la, const double fps, const int quality, const int time_limit, const std::vector<filter *> *const f, const int resize_w, const int resize_h, source *const motion_compatible, const bool allow_admin, const bool archive_access, const std::string & snapshot_dir, const bool with_subdirs, const bool is_rest, instance *const views, const bool handle_failure, const ssl_pars_t *const sp, const std::string & stylesheet, const int websocket_port, const std::string & websocket_url, const int max_cookie_age, const std::string & motd_file, const bool ws_privacy);
+	http_server(configuration_t *const cfg, http_auth *const auth, instance *const limit_to, const std::string & id, const std::string & descr, const listen_adapter_t & la, const double fps, const int quality, const int time_limit, const std::vector<filter *> *const f, const int resize_w, const int resize_h, source *const motion_compatible, const bool allow_admin, const bool archive_access, const std::string & snapshot_dir, const bool with_subdirs, const bool is_rest, instance *const views, const bool handle_failure, const ssl_pars_t *const sp, const std::string & stylesheet, const int websocket_port, const std::string & websocket_url, const int max_cookie_age, const std::string & motd_file, const bool ws_privacy, const std::string & notify_viewer_script);
 	virtual ~http_server();
 
 	static void mjpeg_stream_url(configuration_t *const cfg, const std::string & id, std::string *const img_url, std::string *const page_url);

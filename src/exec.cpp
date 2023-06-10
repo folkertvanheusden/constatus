@@ -115,3 +115,16 @@ void exec_with_pty(const std::string & command, int *const fd, pid_t *const pid)
 
 	close(fd_slave);
 }
+
+void fire_and_forget(const std::string & command, const std::string & argument)
+{
+	pid_t pid = fork();
+
+	if (pid == 0) {
+		if (execlp("/bin/sh", "/bin/sh", "-c", argument.empty() ? command.c_str() : (command + " " + argument).c_str(), (void *)nullptr) == -1)
+			error_exit(true, "Error while starting '/bin/sh -c \"%s\"'", command.c_str());
+	}
+	else if (pid == -1) {
+		log(LL_ERR, "fork() failed (%s)", strerror(errno));
+	}
+}

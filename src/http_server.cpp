@@ -778,7 +778,7 @@ void http_server::register_peer(const bool is_register, const std::string & peer
 {
 #if HAVE_WEBSOCKETPP == 1
 	ws_server *pws = static_cast<ws_server *>(ws);
-	if (pws) {
+	if (pws && ws_privacy == false) {
 		json_t *json = json_object();
 
 		if (is_register)
@@ -797,6 +797,9 @@ void http_server::register_peer(const bool is_register, const std::string & peer
 		pws->push(msg, peer_name + "|register");
 	}
 #endif
+
+	if (notify_viewer_script.empty() == false)
+		fire_and_forget(notify_viewer_script, myformat("%d", is_register));
 }
 
 void http_server::send_stylesheet(http_thread_t *const ct, const std::string & cookie)
@@ -1933,35 +1936,29 @@ void http_server::handle_http_client(http_thread_t *const ct)
 	else if ((path == "stream.mjpeg" || motion_compatible) && s) {
 		ct->is_stream = true;
 
-		if (ws_privacy == false)
-			register_peer(true, ct->peer_name);
+		register_peer(true, ct->peer_name);
 
 		send_mjpeg_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie, acc_fps);
 
-		if (ws_privacy == false)
-			register_peer(false, ct->peer_name);
+		register_peer(false, ct->peer_name);
 	}
 	else if (path == "stream.ogg" && s) {
 		ct->is_stream = true;
 
-		if (ws_privacy == false)
-			register_peer(true, ct->peer_name);
+		register_peer(true, ct->peer_name);
 
 		send_theora_stream(ct->hh, s, final_fps, quality, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie, acc_fps);
 
-		if (ws_privacy == false)
-			register_peer(false, ct->peer_name);
+		register_peer(false, ct->peer_name);
 	}
 	else if (path == "stream.mpng" && s) {
 		ct->is_stream = true;
 
-		if (ws_privacy == false)
-			register_peer(true, ct->peer_name);
+		register_peer(true, ct->peer_name);
 
 		send_mpng_stream(ct->hh, s, final_fps, get_or_post, time_limit, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie, acc_fps);
 
-		if (ws_privacy == false)
-			register_peer(false, ct->peer_name);
+		register_peer(false, ct->peer_name);
 	}
 	else if (path == "image.png" && s)
 		send_png_frame(ct->hh, s, get_or_post, filters, cfg->r, final_w, final_h, cfg, is_view_proxy, handle_failure, &ct->st, cookie);
@@ -2116,7 +2113,7 @@ void http_server::register_trigger_notifier(instance *const inst, const bool is_
 	}
 }
 
-http_server::http_server(configuration_t *const cfg, http_auth *const auth, instance *const limit_to, const std::string & id, const std::string & descr, const listen_adapter_t & la, const double fps, const int quality, const int time_limit, const std::vector<filter *> *const f, const int resize_w, const int resize_h, source *const motion_compatible, const bool allow_admin, const bool archive_acces, const std::string & snapshot_dir, const bool with_subdirs, const bool is_rest, instance  *const views, const bool handle_failure, const ssl_pars_t *const sp, const std::string & stylesheet, const int websocket_port, const std::string & websocket_url, const int max_cookie_age, const std::string & motd_file, const bool ws_privacy) : cfg(cfg), la(la), auth(auth), interface(id, descr), fps(fps), quality(quality), time_limit(time_limit), filters(f), resize_w(resize_w), resize_h(resize_h), motion_compatible(motion_compatible), allow_admin(allow_admin), archive_acces(archive_acces), snapshot_dir(snapshot_dir), with_subdirs(with_subdirs), is_rest(is_rest), views(views), limit_to(limit_to), handle_failure(handle_failure), stylesheet(stylesheet), websocket_url(websocket_url), max_cookie_age(max_cookie_age), motd_file(motd_file), ws_privacy(ws_privacy)
+http_server::http_server(configuration_t *const cfg, http_auth *const auth, instance *const limit_to, const std::string & id, const std::string & descr, const listen_adapter_t & la, const double fps, const int quality, const int time_limit, const std::vector<filter *> *const f, const int resize_w, const int resize_h, source *const motion_compatible, const bool allow_admin, const bool archive_acces, const std::string & snapshot_dir, const bool with_subdirs, const bool is_rest, instance  *const views, const bool handle_failure, const ssl_pars_t *const sp, const std::string & stylesheet, const int websocket_port, const std::string & websocket_url, const int max_cookie_age, const std::string & motd_file, const bool ws_privacy, const std::string & notify_viewer_script) : cfg(cfg), la(la), auth(auth), interface(id, descr), fps(fps), quality(quality), time_limit(time_limit), filters(f), resize_w(resize_w), resize_h(resize_h), motion_compatible(motion_compatible), allow_admin(allow_admin), archive_acces(archive_acces), snapshot_dir(snapshot_dir), with_subdirs(with_subdirs), is_rest(is_rest), views(views), limit_to(limit_to), handle_failure(handle_failure), stylesheet(stylesheet), websocket_url(websocket_url), max_cookie_age(max_cookie_age), motd_file(motd_file), ws_privacy(ws_privacy), notify_viewer_script(notify_viewer_script)
 {
 	ct = CT_HTTPSERVER;
 

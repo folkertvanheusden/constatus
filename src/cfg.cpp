@@ -1846,6 +1846,8 @@ std::vector<interface *> load_http_servers(configuration_t *const cfg, instance 
 		std::string key_file = cfg_str(server, "key-file", "key-file for https; setting this sets this server-instance to be an https instance", true, "");
 		std::string cert_file = cfg_str(server, "certificate-file", "certificate-file for https; setting this sets this server-instance to be an https instance", true, "");
 
+		std::string notify_viewer_script = cfg_str(server, "notify-viewer-script", "script to invoke when a viewer starts to watch (parameter \"1\") or stops watching (\"0\")", true, "");
+
 		std::vector<filter *> *http_filters = nullptr;
 		try {
 			const Setting & f = server.lookup("filters");
@@ -1878,7 +1880,7 @@ std::vector<interface *> load_http_servers(configuration_t *const cfg, instance 
 
 		int max_cookie_age = cfg_int(server, "max-cookie-age", "maximum age of an HTTP cookie (in seconds)", true, 1800);
 
-		interface *h = new http_server(cfg, auth, ci, id, descr, { listen_adapter, listen_port, SOMAXCONN, false }, fps, jpeg_quality, time_limit, http_filters, resize_w, resize_h, motion_compatible ? s : nullptr, allow_admin, archive_access, snapshot_dir, with_subdirs, is_rest, views, handle_failure, ssl_enabled ? &sp : nullptr, stylesheet, websocket_port, websocket_url, max_cookie_age, motd, ws_privacy);
+		interface *h = new http_server(cfg, auth, ci, id, descr, { listen_adapter, listen_port, SOMAXCONN, false }, fps, jpeg_quality, time_limit, http_filters, resize_w, resize_h, motion_compatible ? s : nullptr, allow_admin, archive_access, snapshot_dir, with_subdirs, is_rest, views, handle_failure, ssl_enabled ? &sp : nullptr, stylesheet, websocket_port, websocket_url, max_cookie_age, motd, ws_privacy, notify_viewer_script);
 
 		if (ci)
 			ci -> interfaces.push_back(h);
