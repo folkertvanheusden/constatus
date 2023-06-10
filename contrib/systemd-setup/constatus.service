@@ -2,13 +2,7 @@
 Description = constatus
 
 ## Use the following to ensure constatus starts after the network is up.
-## See below for adding UV4L dependencies.
 After = network.target
-
-## Optional:  Use the following to ensure constatus starts after the UV4L
-## services are running for the cameras.
-## (UV4L installation: https://www.linux-projects.org/uv4l/installation/)
-#After = network.target uv4l_raspicam.service uv4l_uvc.service
 
 [Service]
 Type=simple
@@ -16,21 +10,13 @@ Type=simple
 # A globally-writable directory
 WorkingDirectory = /tmp
 
-## This library is needed when using raspicam and UV4L.
-## On Rasbian it is installed by the "uv4l" package.
-## (UV4L installation: https://www.linux-projects.org/uv4l/installation/)
-## Change if the path differs.
-Environment="LD_PRELOAD=/usr/lib/uv4l/uv4lext/armv6l/libuv4lext.so"
-
-ExecStart = /usr/local/bin/constatus -c /etc/constatus/constatus.cfg
+ExecStart = /usr/local/bin/constatus -c /etc/constatus/constatus.cfg -S
 
 # Send STDOUT/STDERR to journal, view it with "journalctl"
 StandardOutput = journal
 StandardError = inherit
 
 ## Optional: run as specific user (otherwise will run as root).
-##           On Raspian, if apache/nginx is installed, it's likely best
-##           to run as www-data
 #User=www-data
 #Group=www-data
 
