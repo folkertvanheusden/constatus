@@ -78,7 +78,7 @@ void * init_filter(const char *const parameter)
 	if (!fh)
 		error_exit(true, "%s failed to read", file.c_str());
 
-	read_PNG_file_rgba(fh, &p->w, &p->h, &p->pixels);
+	read_PNG_file_rgba(true, fh, &p->w, &p->h, &p->pixels);
 
 	fclose(fh);
 
