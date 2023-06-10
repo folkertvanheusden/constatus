@@ -2,7 +2,7 @@ Name:       constatus
 Version:    5.0
 Release:    0
 Summary:    Video monitoring and streaming program
-License:    AL2.0
+License:    MIT
 Source0:    %{name}-%{version}.tgz
 URL:        https://vanheusden.com/constatus/
 BuildRequires: libconfig-devel
@@ -94,5 +94,5 @@ install -m 644 stylesheet.css %{buildroot}/usr/share/constatus/stylesheet.css
 /usr/share/constatus/examples/README.md
 
 %changelog
-* Sun Oct 10 2021 Folkert van Heusden <mail@vanheusden.com>
+* Sat Jun 10 2023 Folkert van Heusden <mail@vanheusden.com>
 -

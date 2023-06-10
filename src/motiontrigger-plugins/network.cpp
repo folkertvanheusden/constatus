@@ -1,4 +1,4 @@
-// (C) 2021 by folkert van heusden, this file is released under the Apache License v2.0
+// (C) 2021-2023 by folkert van heusden, this file is released under the MIT license
 #include <algorithm>
 #include <atomic>
 #include <pthread.h>

@@ -215,4 +215,4 @@ This program contains the "Cruft Regular Font", found to be in the public domain
 
 
 
-(C) 2017-2022 by Folkert van Heusden <mail@vanheusden.com>, Constatus is released under Apache License v2.0
+(C) 2017-2023 by Folkert van Heusden <mail@vanheusden.com>, Constatus is released under the MIT license

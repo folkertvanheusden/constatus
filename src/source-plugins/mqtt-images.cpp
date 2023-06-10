@@ -1,4 +1,4 @@
-// (C) 2022 by folkert van heusden, apache license v2.0
+// (C) 2022-2023 by folkert van heusden, MIT license
 #include <atomic>
 #include <mosquitto.h>
 #include <stdint.h>

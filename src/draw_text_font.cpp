@@ -1,4 +1,4 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2023 by folkert van heusden, released under the MIT license
 
 unsigned char cruft_ttf[] = {
   0x00, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x80, 0x00, 0x03, 0x00, 0x20,

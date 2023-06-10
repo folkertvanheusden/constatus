@@ -1,4 +1,4 @@
-// (C) 2017-2022 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2023 by folkert van heusden, released under the MIT license
 // with code from https://stackoverflow.com/questions/39536746/ffmpeg-leak-while-reading-image-files
 #include "config.h"
 #if HAVE_FFMPEG == 1

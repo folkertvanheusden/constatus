@@ -1,4 +1,4 @@
-// (C) 2017-2021 by folkert van heusden, released under Apache License v2.0
+// (C) 2017-2023 by folkert van heusden, released under the MIT license
 #include "config.h"
 #if HAVE_LIBV4L2 == 1
 #include <errno.h>

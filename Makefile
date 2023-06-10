@@ -1,8 +1,8 @@
-# (C) 2017-2021 by Folkert van Heusden, released under Apache License 2.0
+# (C) 2017-2023 by Folkert van Heusden, released under MIT license
 
 NAME="constatus"
 PREFIX=/usr
-VERSION="4.6"
+VERSION="5.0"
 
 constatus:
 	mkdir -p build && cd build && cmake .. && make

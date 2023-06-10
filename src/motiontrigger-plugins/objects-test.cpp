@@ -1,4 +1,4 @@
-// (C) 2021 by folkert van heusden, license: Apache License v2.0
+// (C) 2021-2023 by folkert van heusden, license: MIT
 #include <stack>
 #include <stdint.h>
 #include <stdio.h>
