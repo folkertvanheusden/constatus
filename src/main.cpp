@@ -258,13 +258,14 @@ void write_pid_file(const char *const pid_file)
 void version()
 {
 	printf(NAME " " VERSION "\n");
-	printf("(C) 2017-2021 by Folkert van Heusden\n\n");
+	printf("(C) 2017-2023 by Folkert van Heusden\n\n");
 }
 
 void help()
 {
 	printf("-c x   select configuration file\n");
 	printf("-f     fork into the background.\n");
+	printf("-S     run from systemd (e.g. do not wait for terminate).\n");
 	printf("       when not forking, then the program can be stopped by pressing enter.\n");
 	printf("-p x   file to write PID to\n");
 	printf("-v     enable verbose mode\n");
@@ -280,7 +281,7 @@ void help()
 int main(int argc, char *argv[])
 {
 	const char *pid_file = NULL;
-	bool do_fork = false, verbose = false;
+	bool do_fork = false, verbose = false, from_systemd = false;
 	int ll = LL_INFO;
 
 #if HAVE_PIPEWIRE == 1
@@ -293,7 +294,7 @@ int main(int argc, char *argv[])
 	cfg->search_path = "./";
 
 	int c = -1;
-	while((c = getopt(argc, argv, "c:p:fhvV")) != -1) {
+	while((c = getopt(argc, argv, "Sc:p:fhvV")) != -1) {
 		switch(c) {
 			case 'c': {
 				cfg->cfg_file = optarg;
@@ -304,6 +305,10 @@ int main(int argc, char *argv[])
 
 				break;
 			}
+
+			case 'S':
+				  from_systemd = true;
+				  break;
 
 			case 'p':
 				pid_file = optarg;
@@ -545,6 +550,16 @@ int main(int argc, char *argv[])
 		// in a signal handler
 		while(!terminate)
 			usleep(101000);
+	}
+	else if (from_systemd) {
+		printf("Running...\n");
+		fflush(nullptr);
+
+		while(!terminate) {
+			cfg->st->track_cpu_usage();
+
+			usleep(101000);
+		}
 	}
 	else {
 		printf("Press enter to terminate\n");
