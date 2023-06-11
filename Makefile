@@ -2,7 +2,7 @@
 
 NAME="constatus"
 PREFIX=/usr
-VERSION="5.0"
+VERSION="6.0"
 
 constatus:
 	mkdir -p build && cd build && cmake .. && make

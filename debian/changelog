@@ -1,7 +1,5 @@
-constatus (4.5-0+nmu0) unstable; urgency=low
+constatus (6.0-0) unstable; urgency=low
 
   * New upstream release.
-  * NMU
-  * Closes: #959979
 
- -- Folkert van Heusden <mail@vanheusden.com>  Thu, 30 Jul 2020 13:13:13 +0200
+ -- Folkert van Heusden <mail@vanheusden.com>  Sun, 11 Jun 2023 10:18:00 +0200
