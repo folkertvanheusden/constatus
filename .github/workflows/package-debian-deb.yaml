@@ -1,0 +1,8 @@
+on: push
+
+jobs:
+  build-debs:
+    runs-on: debian-latest
+    steps:
+      - name: Build Debian packages
+        uses: jtdor/build-deb-action@v1.7.0
