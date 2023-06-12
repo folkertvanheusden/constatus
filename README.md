@@ -103,6 +103,47 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - libmosquitto-dev            - for obtaining text that can be placed as an overlay/scroll text
 
 
+RPM systems:
+
+ - turbojpeg-devel
+   libconfig-devel
+   fontconfig-devel
+   freetype-devel
+   libicu-devel
+   libpng-devel
+   libcurl-devel
+   jansson-devel
+   boost-devel
+   openssl-devel
+   libtheora-devel
+   libcamera-devel
+   libv4l-devel
+   netpbm-devel
+   exiv2-devel
+   frei0r-devel
+   pam-devel
+   gstreamer1-devel
+   gstreamer1-plugins-base-devel
+   websocketpp-devel
+   SDL2-devel
+   rygel-devel
+   glib2-devel
+   libxml2-devel
+   libgee-devel
+   gupnp-av-devel
+   libupnp-devel
+   ImageMagick-c++-devel
+   libavformat-free-devel
+   libswresample-free-devel
+   libswscale-free-devel
+   libavcodec-free-devel
+   libavutil-free-devel
+   libatomic_ops-devel
+   pipewire-devel
+   mosquitto-devel
+   alsa-lib-devel
+   mysql-connector-net-devel
+
 libgwavi is since version 4.3 not used anymore; you can remove it from your computer if you ony installed it for constatus.
 
 
