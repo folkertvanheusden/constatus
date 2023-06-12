@@ -349,6 +349,7 @@ target_include_directories(constatus PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(constatus "-Wl,--export-dynamic -latomic")
 
 install(TARGETS constatus DESTINATION bin)
+install(TARGETS list-libcamera DESTINATION bin)
 install(FILES man/constatus.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
 install(FILES constatus.cfg DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)
