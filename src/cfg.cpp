@@ -53,6 +53,9 @@ using namespace libconfig;
 #if HAVE_FFMPEG == 1
 #include "target_ffmpeg.h"
 #endif
+#if HAVE_USBGADGET == 1
+#include "target_usb_gadget.h"
+#endif
 #if HAVE_GSTREAMER == 1
 #include "target_gstreamer.h"
 #endif
@@ -1354,6 +1357,13 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		std::string cmd = cfg_str(in, "cmd", "Command to send the frames to", false, "");
 
 		t = new target_extpipe(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, cmd, cfg, false, handle_failure, sched);
+	}
+	else if (format == "usb-gadget") {
+#if HAVE_USBGADGET == 1
+		t = new target_usbgadget(id, descr, s, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched);
+#else
+		error_exit(false, "'usb-gadget' support is not linked in");
+#endif
 	}
 	else if (format == "ffmpeg") {
 #if HAVE_FFMPEG == 1

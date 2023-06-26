@@ -119,6 +119,7 @@ add_executable(constatus
 	src/target_pipewire.cpp
 	src/target_pixelflood.cpp
 	src/target_plugin.cpp
+	src/target_usb_gadget.cpp
 	src/target_vnc.cpp
 	src/utils.cpp
 	src/v4l2_loopback.cpp
@@ -259,6 +260,11 @@ pkg_check_modules(IMAGICK ImageMagick++)
 target_link_libraries(constatus ${IMAGICK_LIBRARIES})
 target_include_directories(constatus PUBLIC ${IMAGICK_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${IMAGICK_CFLAGS_OTHER})
+
+pkg_check_modules(USBGADGET libusbgx)
+target_link_libraries(constatus ${USBGADGET_LIBRARIES})
+target_include_directories(constatus PUBLIC ${USBGADGET_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${USBGADGET_CFLAGS_OTHER})
 
 pkg_check_modules(THEORA theoraenc)
 target_link_libraries(constatus ${THEORA_LIBRARIES})
