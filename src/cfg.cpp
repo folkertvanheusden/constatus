@@ -1360,7 +1360,10 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 	}
 	else if (format == "usb-gadget") {
 #if HAVE_USBGADGET == 1
-		t = new target_usbgadget(id, descr, s, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched);
+		int width  = cfg_int(in, "w", "width of usb-gadget target",  false, 1920);
+		int height = cfg_int(in, "h", "height of usb-gadget target", false, 1080);
+
+		t = new target_usbgadget(id, descr, s, width, height, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched);
 #else
 		error_exit(false, "'usb-gadget' support is not linked in");
 #endif

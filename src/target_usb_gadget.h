@@ -23,17 +23,20 @@ class schedule;
 class target_usbgadget : public target
 {
 private:
-	const int quality     { 0 };
+	const int fixed_width  { -1 };
+	const int fixed_height { -1 };
 
-        usbg_state  *ug_state { nullptr };
-        usbg_gadget *g        { nullptr };
-        usbg_config *c        { nullptr };
-        usbg_function *f_uvc  { nullptr };
+	const int quality      { 0 };
+
+        usbg_state  *ug_state  { nullptr };
+        usbg_gadget *g         { nullptr };
+        usbg_config *c         { nullptr };
+        usbg_function *f_uvc   { nullptr };
 
 	std::optional<std::string> setup();
 
 public:
-	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
+	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
 	virtual ~target_usbgadget();
 
 	void operator()() override;

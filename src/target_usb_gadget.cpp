@@ -96,7 +96,7 @@ static std::optional<std::string> udc_find_video_device(const char *udc, const c
 	return dev;
 }
 
-target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), quality(quality)
+target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality)
 {
 }
 
@@ -130,8 +130,8 @@ std::optional<std::string> target_usbgadget::setup()
 	usbg_f_uvc_frame_attrs uvc_frame_attrs { 0 };
 	uvc_frame_attrs.bFrameIndex     = 1;
 	uvc_frame_attrs.dwFrameInterval = interval * 1000000;
-	uvc_frame_attrs.wHeight         = s->get_height();
-	uvc_frame_attrs.wWidth          = s->get_width();
+	uvc_frame_attrs.wHeight         = fixed_height;
+	uvc_frame_attrs.wWidth          = fixed_width;
 
 	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
 
@@ -254,7 +254,7 @@ void target_usbgadget::operator()()
 				log(id, LL_DEBUG, "Using %u buffers", reqbuf.count);
 
 				for(unsigned i=0; i<reqbuf.count; i++) {
-					uint8_t *buffer = reinterpret_cast<uint8_t *>(calloc(pvf->get_w() * 3, pvf->get_h()));
+					uint8_t *buffer = reinterpret_cast<uint8_t *>(calloc(fixed_width * 3, fixed_height));
 
 					buffers.push_back(buffer);
 				}
@@ -273,17 +273,30 @@ void target_usbgadget::operator()()
 
 			const bool allow_store = sched == nullptr || (sched && sched->is_on());
 
-			if (allow_store) {
-				std::tuple<uint8_t *, size_t> frame = pvf->get_data_and_len(E_RGB);
+			if (allow_store && pvf->get_w() != -1) {
+				size_t n_bytes = fixed_width * 3 * fixed_height;
 
-				memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
+				if (pvf->get_w() != fixed_width || pvf->get_h() != fixed_height) {
+					auto temp_pvf = pvf->do_resize(cfg->r, fixed_width, fixed_height);
+
+					auto frame = temp_pvf->get_data_and_len(E_RGB);  // TODO YUYV or MJPEG
+
+					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
+
+					delete temp_pvf;
+				}
+				else {
+					auto frame = pvf->get_data_and_len(E_RGB);  // TODO YUYV or MJPEG
+
+					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
+				}
 
 				v4l2_buffer buf { 0 };
 
 				buf.type      = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 				buf.memory    = V4L2_MEMORY_USERPTR;
 				buf.m.userptr = reinterpret_cast<unsigned long int>(buffers[buffer_nr]);
-				buf.length    = std::get<1>(frame);
+				buf.length    = n_bytes;
 				buf.index     = buffer_nr;
 
 				buffer_nr = (buffer_nr + 1) % nbufs;
