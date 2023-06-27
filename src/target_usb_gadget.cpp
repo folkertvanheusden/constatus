@@ -64,25 +64,21 @@ void target_usbgadget::setup()
 	uvc_frame_attrs.wHeight         = s->get_height();
 	uvc_frame_attrs.wWidth          = s->get_width();
 
-	usbg_f_uvc_frame_attrs uvc_frame_attrs_array[] { uvc_frame_attrs };
+	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
 
-	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] = { &uvc_frame_attrs_array[0], nullptr };
-
-	usbg_f_uvc_frame_attrs *uvc_frame_uncompressed_attrs[] = { &uvc_frame_attrs_array[0], nullptr };
+	usbg_f_uvc_frame_attrs *uvc_frame_uncompressed_attrs[] { &uvc_frame_attrs, nullptr };
 
 	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
 	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
 	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
-	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 0;
+	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
 
 	usbg_f_uvc_format_attrs uvc_format_attrs_uncompressed { 0 };
 	uvc_format_attrs_uncompressed.frames             = uvc_frame_uncompressed_attrs;
 	uvc_format_attrs_uncompressed.format             = "uncompressed/u";
-	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 0;
+	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 1;
 
-	usbg_f_uvc_format_attrs uvc_format_attrs_array[] { uvc_format_attrs_mjpeg, uvc_format_attrs_uncompressed };
-
-	usbg_f_uvc_format_attrs *uvc_format_attrs[] = { &uvc_format_attrs_array[0], &uvc_format_attrs_array[1], nullptr };
+	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
 
 	usbg_f_uvc_attrs uvc_attrs = {
 		.formats = uvc_format_attrs,
