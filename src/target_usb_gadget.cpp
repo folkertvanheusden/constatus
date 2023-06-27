@@ -3,12 +3,18 @@
 #include "config.h"
 
 #if HAVE_USBGADGET == 1
+#include <fcntl.h>
 #include <glob.h>
 #include <math.h>
 #include <string.h>
 #include <unistd.h>
 
+#include <linux/videodev2.h>
 #include <linux/usb/ch9.h>
+
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+
 #include <usbg/usbg.h>
 #include <usbg/function/uvc.h>
 
@@ -202,6 +208,11 @@ void target_usbgadget::operator()()
 	std::string name;
 	unsigned f_nr = 0;
 
+	int fd = -1;
+	std::vector<uint8_t *> buffers;
+	int buffer_nr = 0;
+	int nbufs = 4;
+
 	bool setup_performed = false;
 
 	video_frame *prev_frame = nullptr;
@@ -220,10 +231,33 @@ void target_usbgadget::operator()()
 
 				auto dev_name = setup();
 
+				fd = -1;
+
 				if (dev_name.has_value())
-					printf("%s\n", dev_name.value().c_str());
-				else
-					printf("NAME NOT KOWN\n");
+					fd = open(dev_name.value().c_str(), O_RDWR);
+
+				if (fd == -1) {
+					log(id, LL_ERR, "Cannot open UVC (usb gadget) device (%s): %s", dev_name.has_value() ? dev_name.value().c_str() : "?", strerror(errno));
+					break;
+				}
+
+				v4l2_requestbuffers reqbuf { 0 };
+				reqbuf.count        = nbufs;
+				reqbuf.type         = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+				reqbuf.memory       = V4L2_MEMORY_USERPTR;
+
+				if (ioctl(fd, VIDIOC_REQBUFS, &reqbuf) == -1) {
+					log(id, LL_ERR, "VIDIOC_REQBUFS %d failed: %s", nbufs, strerror(errno));
+					break;
+				}
+
+				log(id, LL_DEBUG, "Using %u buffers", reqbuf.count);
+
+				for(unsigned i=0; i<reqbuf.count; i++) {
+					uint8_t *buffer = reinterpret_cast<uint8_t *>(calloc(pvf->get_w() * 3, pvf->get_h()));
+
+					buffers.push_back(buffer);
+				}
 			}
 
 			prev_ts = pvf->get_ts();
@@ -240,7 +274,23 @@ void target_usbgadget::operator()()
 			const bool allow_store = sched == nullptr || (sched && sched->is_on());
 
 			if (allow_store) {
-				// TODO bool rc = send_frame(pvf->get_data(E_RGB), pvf->get_w(), pvf->get_h());
+				std::tuple<uint8_t *, size_t> frame = pvf->get_data_and_len(E_RGB);
+
+				memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
+
+				v4l2_buffer buf { 0 };
+
+				buf.type      = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+				buf.memory    = V4L2_MEMORY_USERPTR;
+				buf.m.userptr = reinterpret_cast<unsigned long int>(buffers[buffer_nr]);
+				buf.length    = std::get<1>(frame);
+				buf.index     = buffer_nr;
+
+				buffer_nr = (buffer_nr + 1) % nbufs;
+
+				if (ioctl(fd, VIDIOC_QBUF, &buf) == -1) {
+					log(id, LL_ERR, "VIDIOC_QBUF failed");
+				}
 			}
 
 			delete prev_frame;
@@ -257,6 +307,12 @@ void target_usbgadget::operator()()
 	s -> stop();
 
 	usbg_cleanup(ug_state);
+
+	for(auto & b : buffers)
+		free(b);
+
+	if (fd != -1)
+		close(fd);
 
 	log(id, LL_INFO, "stopping");
 }
