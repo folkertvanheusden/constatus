@@ -133,21 +133,22 @@ std::optional<std::string> target_usbgadget::setup()
 	uvc_frame_attrs.wHeight         = fixed_height;
 	uvc_frame_attrs.wWidth          = fixed_width;
 
-	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
+//	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
 
 	usbg_f_uvc_frame_attrs *uvc_frame_uncompressed_attrs[] { &uvc_frame_attrs, nullptr };
 
-	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
-	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
-	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
-	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
+//	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
+//	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
+//	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
+//	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
 
 	usbg_f_uvc_format_attrs uvc_format_attrs_uncompressed { 0 };
 	uvc_format_attrs_uncompressed.frames             = uvc_frame_uncompressed_attrs;
 	uvc_format_attrs_uncompressed.format             = "uncompressed/u";
 	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 1;
 
-	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
+//	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
+	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_uncompressed, nullptr };
 
 	usbg_f_uvc_attrs uvc_attrs = {
 		.formats = uvc_format_attrs,
@@ -274,19 +275,23 @@ void target_usbgadget::operator()()
 			const bool allow_store = sched == nullptr || (sched && sched->is_on());
 
 			if (allow_store && pvf->get_w() != -1) {
-				size_t n_bytes = fixed_width * 3 * fixed_height;
+				size_t n_bytes = 0;
 
 				if (pvf->get_w() != fixed_width || pvf->get_h() != fixed_height) {
 					auto temp_pvf = pvf->do_resize(cfg->r, fixed_width, fixed_height);
 
-					auto frame = temp_pvf->get_data_and_len(E_RGB);  // TODO YUYV or MJPEG
+					auto frame = temp_pvf->get_data_and_len(E_YUYV);
+
+					n_bytes = std::get<1>(frame);
 
 					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
 
 					delete temp_pvf;
 				}
 				else {
-					auto frame = pvf->get_data_and_len(E_RGB);  // TODO YUYV or MJPEG
+					auto frame = pvf->get_data_and_len(E_YUYV);
+
+					n_bytes = std::get<1>(frame);
 
 					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
 				}
