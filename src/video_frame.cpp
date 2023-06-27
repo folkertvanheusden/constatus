@@ -131,6 +131,22 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 		return rc.first;
 	}
 
+	if (new_e == E_YUYV) {
+		auto it = data.find(E_RGB);
+
+		if (it == data.end())
+			it = gen_encoding(E_RGB);
+
+		uint8_t *frame_yuyv { nullptr};
+		rgb_to_yuy2(it->second.first, w, h, &frame_yuyv);
+
+		std::pair<uint8_t *, size_t> d { frame_yuyv, w * h * 2 };
+		auto rc = data.emplace(E_YUYV, d);
+		assert(rc.second);
+
+		return rc.first;
+	}
+
 	return data.end();
 }
 
