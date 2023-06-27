@@ -4,6 +4,9 @@
 #include "config.h"
 
 #if HAVE_USBGADGET == 1
+#include <optional>
+#include <string>
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -27,7 +30,7 @@ private:
         usbg_config *c        { nullptr };
         usbg_function *f_uvc  { nullptr };
 
-	void setup();
+	std::optional<std::string> setup();
 
 public:
 	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
