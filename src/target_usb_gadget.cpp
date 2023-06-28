@@ -1,16 +1,19 @@
 // (C) 2023 by folkert van heusden, released under the MIT license
 // The 'setup()' method is based on libusbgx/examples/gadget-uvc.c from https://github.com/linux-usb-gadgets/libusbgx/ (GPL-v2).
+// Some of the other code is frrom https://github.com/peterbay/uvc-gadget
 #include "config.h"
 
 #if HAVE_USBGADGET == 1
 #include <fcntl.h>
 #include <glob.h>
 #include <math.h>
+#include <poll.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <linux/videodev2.h>
 #include <linux/usb/ch9.h>
+#include <linux/usb/video.h>
 
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -30,6 +33,35 @@
 #include "resize.h"
 #include "schedule.h"
 
+
+#define UVC_INTF_CONTROL                0
+#define UVC_INTF_STREAMING              1
+
+#define UVC_EVENT_FIRST        (V4L2_EVENT_PRIVATE_START + 0)
+#define UVC_EVENT_CONNECT      (V4L2_EVENT_PRIVATE_START + 0)
+#define UVC_EVENT_DISCONNECT   (V4L2_EVENT_PRIVATE_START + 1)
+#define UVC_EVENT_STREAMON     (V4L2_EVENT_PRIVATE_START + 2)
+#define UVC_EVENT_STREAMOFF    (V4L2_EVENT_PRIVATE_START + 3)
+#define UVC_EVENT_SETUP	       (V4L2_EVENT_PRIVATE_START + 4)
+#define UVC_EVENT_DATA         (V4L2_EVENT_PRIVATE_START + 5)
+#define UVC_EVENT_LAST         (V4L2_EVENT_PRIVATE_START + 5)
+
+struct uvc_request_data
+{
+        __s32 length;
+        __u8 data[60];
+};
+
+struct uvc_event
+{
+        union {
+                enum usb_device_speed speed;
+                struct usb_ctrlrequest req;
+                struct uvc_request_data data;
+        };
+};
+
+#define UVCIOC_SEND_RESPONSE _IOW('U', 1, struct uvc_request_data)
 
 #define VENDOR  0x1d6b
 #define PRODUCT 0x0104
@@ -188,12 +220,77 @@ std::optional<std::string> target_usbgadget::setup()
 	}
 
 	usbg_ret = usbg_error(usbg_enable_gadget(g, DEFAULT_UDC));
-	if (usbg_ret != USBG_SUCCESS) {
+	// USBG_ERROR_BUSY: already enabled
+	if (usbg_ret != USBG_SUCCESS && usbg_ret != USBG_ERROR_BUSY) {
 		log(id, LL_ERR, "Error on USB enabling gadget: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
 		return { };
 	}
 
 	return udc_find_video_device(usbg_get_udc_name(usbg_get_gadget_udc(g)), (function_name + ".uvc").c_str());
+}
+
+void target_usbgadget::process_event(const int fd)
+{
+	v4l2_event       v4l2_event { 0 };
+	uvc_event       *uvc_event  { reinterpret_cast<struct uvc_event *>(&v4l2_event.u.data) };
+
+	uvc_request_data resp       { 0 };
+	resp.length = -EL2HLT;
+
+	if (ioctl(fd, VIDIOC_DQEVENT, &v4l2_event) == -1) {
+		log(id, LL_ERR, "VIDIOC_DQEVENT failed: %s", strerror(errno));
+		return;
+	}
+
+	if (v4l2_event.type == UVC_EVENT_CONNECT)
+		log(id, LL_INFO, "UVC_EVENT_CONNECT");
+	else if (v4l2_event.type == UVC_EVENT_DISCONNECT)
+		log(id, LL_INFO, "UVC_EVENT_DISCONNECT");
+	else if (v4l2_event.type == UVC_EVENT_SETUP) {
+		log(id, LL_INFO, "UVC_EVENT_SETUP");
+
+		resp.length = -EL2HLT;
+
+		struct usb_ctrlrequest *ctrl = &uvc_event->req;
+
+		if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_CLASS && (ctrl->bRequestType & USB_RECIP_MASK) == USB_RECIP_INTERFACE) {
+			uint8_t type = ctrl->wIndex & 0xff;
+			uint8_t interface = ctrl->wIndex >> 8;
+			uint8_t control = ctrl->wValue >> 8;
+			uint8_t length = ctrl->wLength;
+
+			printf("%d %d %d %d\n", type, interface, control, length);
+
+			if (type == UVC_INTF_CONTROL) {
+				if (interface == 0) {
+					if (control == UVC_VC_REQUEST_ERROR_CODE_CONTROL) {
+						resp.data[0] = 0;
+						resp.length = 1;
+					}
+					else {
+						printf("control %u not expected\n", control);
+					}
+				}
+				else {
+					printf("interface %u not expected\n", interface);
+				}
+			}
+			else if (type == UVC_INTF_STREAMING) {
+				printf("UVC_INTF_STREAMING %d\n", control);
+			}
+			else {
+				printf("type %u not expected\n", type);
+			}
+		}
+		else {
+			printf("requesttype %x not expected\n", ctrl->bRequestType);
+		}
+
+		ioctl(fd, UVCIOC_SEND_RESPONSE, &resp);
+	}
+	else {
+		printf("UVC_EVENT %x not expected\n", v4l2_event.type);
+	}
 }
 
 void target_usbgadget::operator()()
@@ -218,11 +315,17 @@ void target_usbgadget::operator()()
 
 	video_frame *prev_frame = nullptr;
 
+	pollfd fds[] = { { -1, POLLIN | POLLPRI | POLLERR, 0 } };
+
 	for(;!local_stop_flag;) {
 		pauseCheck();
+
 		st->track_fps();
 
 		uint64_t before_ts = get_us();
+
+		if (fd != -1 && poll(fds, 1, 0) > 0)
+			process_event(fd);
 
 		video_frame *pvf = s->get_frame(handle_failure, prev_ts);
 
@@ -242,6 +345,31 @@ void target_usbgadget::operator()()
 					break;
 				}
 
+				fds[0].fd = fd;
+
+				v4l2_capability cap { 0 };
+				if (ioctl(fd, VIDIOC_QUERYCAP, &cap) == -1) {
+					log(id, LL_ERR, "VIDIOC_QUERYCAP for %s failed: %s", dev_name.value().c_str(), strerror(errno));
+					break;
+				}
+
+				if ((cap.capabilities & V4L2_CAP_VIDEO_OUTPUT) == 0) {
+					log(id, LL_ERR, "%s is not a video output device: %s", dev_name.value().c_str(), strerror(errno));
+					break;
+				}
+
+				for(int i=UVC_EVENT_FIRST; i<=UVC_EVENT_LAST; i++) {
+					v4l2_event_subscription sub { 0 };
+					sub.type = i;
+
+					if (ioctl(fd, VIDIOC_SUBSCRIBE_EVENT, &sub) == -1) {
+						log(id, LL_ERR, "Cannot VIDIOC_SUBSCRIBE_EVENT::%x", sub.type);
+						break;
+					}
+				}
+
+				log(id, LL_DEBUG, "Device %s is on card %s on bus %s", dev_name.value().c_str(), cap.card, cap.bus_info);
+
 				v4l2_requestbuffers reqbuf { 0 };
 				reqbuf.count        = nbufs;
 				reqbuf.type         = V4L2_BUF_TYPE_VIDEO_OUTPUT;
@@ -258,6 +386,12 @@ void target_usbgadget::operator()()
 					uint8_t *buffer = reinterpret_cast<uint8_t *>(calloc(fixed_width * 3, fixed_height));
 
 					buffers.push_back(buffer);
+				}
+
+				int type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+				if (ioctl(fd, VIDIOC_STREAMON, &type) == -1) {
+					log(id, LL_ERR, "VIDIOC_STREAMON failed: %s", strerror(errno));
+					break;
 				}
 			}
 
