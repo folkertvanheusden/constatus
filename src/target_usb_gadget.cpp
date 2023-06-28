@@ -1,6 +1,6 @@
 // (C) 2023 by folkert van heusden, released under the MIT license
 // The 'setup()' method is based on libusbgx/examples/gadget-uvc.c from https://github.com/linux-usb-gadgets/libusbgx/ (GPL-v2).
-// Some of the other code is frrom https://github.com/peterbay/uvc-gadget
+// Some of the other code is from https://github.com/peterbay/uvc-gadget
 #include "config.h"
 
 #if HAVE_USBGADGET == 1
@@ -33,35 +33,7 @@
 #include "resize.h"
 #include "schedule.h"
 
-
-#define UVC_INTF_CONTROL                0
-#define UVC_INTF_STREAMING              1
-
-#define UVC_EVENT_FIRST        (V4L2_EVENT_PRIVATE_START + 0)
-#define UVC_EVENT_CONNECT      (V4L2_EVENT_PRIVATE_START + 0)
-#define UVC_EVENT_DISCONNECT   (V4L2_EVENT_PRIVATE_START + 1)
-#define UVC_EVENT_STREAMON     (V4L2_EVENT_PRIVATE_START + 2)
-#define UVC_EVENT_STREAMOFF    (V4L2_EVENT_PRIVATE_START + 3)
-#define UVC_EVENT_SETUP	       (V4L2_EVENT_PRIVATE_START + 4)
-#define UVC_EVENT_DATA         (V4L2_EVENT_PRIVATE_START + 5)
-#define UVC_EVENT_LAST         (V4L2_EVENT_PRIVATE_START + 5)
-
-struct uvc_request_data
-{
-        __s32 length;
-        __u8 data[60];
-};
-
-struct uvc_event
-{
-        union {
-                enum usb_device_speed speed;
-                struct usb_ctrlrequest req;
-                struct uvc_request_data data;
-        };
-};
-
-#define UVCIOC_SEND_RESPONSE _IOW('U', 1, struct uvc_request_data)
+#include "uvc-gadget/uvc-gadget.h"
 
 #define VENDOR  0x1d6b
 #define PRODUCT 0x0104
@@ -229,6 +201,439 @@ std::optional<std::string> target_usbgadget::setup()
 	return udc_find_video_device(usbg_get_udc_name(usbg_get_gadget_udc(g)), (function_name + ".uvc").c_str());
 }
 
+static unsigned int get_frame_size(int pixelformat, int width, int height)
+{
+	switch (pixelformat) {
+		case V4L2_PIX_FMT_YUYV:
+			return width * height * 2;
+
+		case V4L2_PIX_FMT_MJPEG:
+			return width * height;
+	}
+
+	return 0;
+}
+
+static int uvc_get_frame_format(struct uvc_frame_format ** frame_format, unsigned int iFormat, unsigned int iFrame)
+{
+	for(int i = 0; i <= last_format_index; i++) {
+		if (uvc_frame_format[i].bFormatIndex == iFormat && uvc_frame_format[i].bFrameIndex == iFrame) {
+			*frame_format = &uvc_frame_format[i];
+
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static int uvc_get_frame_format_index(int format_index, enum uvc_frame_format_getter getter)
+{
+	int index = -1;
+	int value;
+	int i;
+
+	for (i = 0; i <= last_format_index; i++) {
+		if (format_index == -1 || format_index == (int) uvc_frame_format[i].bFormatIndex) {
+			switch (getter) {
+				case FORMAT_INDEX_MIN:
+				case FORMAT_INDEX_MAX:
+					value = uvc_frame_format[i].bFormatIndex;
+					break;
+
+				case FRAME_INDEX_MIN:
+				case FRAME_INDEX_MAX:
+					value = uvc_frame_format[i].bFrameIndex;
+					break;
+			}
+
+			if (index == -1) {
+				index = value;
+			}
+			else {
+				switch (getter) {
+					case FORMAT_INDEX_MIN:
+					case FRAME_INDEX_MIN:
+						if (value < index) {
+							index = value;
+						}
+						break;
+
+					case FORMAT_INDEX_MAX:
+					case FRAME_INDEX_MAX:
+						if (value > index) {
+							index = value;
+						}
+						break;
+				}
+			}
+		}
+	}
+
+	return index;
+}
+
+static const char * uvc_request_code_name(unsigned int uvc_control)
+{
+	switch (uvc_control) {
+		case UVC_RC_UNDEFINED:
+			return "RC_UNDEFINED";
+
+		case UVC_SET_CUR:
+			return "SET_CUR";
+
+		case UVC_GET_CUR:
+			return "GET_CUR";
+
+		case UVC_GET_MIN:
+			return "GET_MIN";
+
+		case UVC_GET_MAX:
+			return "GET_MAX";
+
+		case UVC_GET_RES:
+			return "GET_RES";
+
+		case UVC_GET_LEN:
+			return "GET_LEN";
+
+		case UVC_GET_INFO:
+			return "GET_INFO";
+
+		case UVC_GET_DEF:
+			return "GET_DEF";
+
+		default:
+			return "UNKNOWN";
+	}
+}
+
+static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum stream_control_action action, int iformat, int iframe)
+{
+	int format_first;
+	int format_last;
+	int frame_first;
+	int frame_last;
+	int format_frame_first;
+	int format_frame_last;
+	unsigned int frame_interval;
+	unsigned int dwMaxPayloadTransferSize;
+
+	switch (action) {
+		case STREAM_CONTROL_INIT:
+			printf("UVC: Streaming control: action: INIT\n");
+			break;
+
+		case STREAM_CONTROL_MIN:
+			printf("UVC: Streaming control: action: GET MIN\n");
+			break;
+
+		case STREAM_CONTROL_MAX:
+			printf("UVC: Streaming control: action: GET MAX\n");
+			break;
+
+		case STREAM_CONTROL_SET:
+			printf("UVC: Streaming control: action: SET, format: %d, frame: %d\n", iformat, iframe);
+			break;
+
+	}
+
+	format_first = uvc_get_frame_format_index(-1, FORMAT_INDEX_MIN);
+	format_last = uvc_get_frame_format_index(-1, FORMAT_INDEX_MAX);
+
+	frame_first = uvc_get_frame_format_index(-1, FRAME_INDEX_MIN);
+	frame_last = uvc_get_frame_format_index(-1, FRAME_INDEX_MAX);
+
+	if (action == STREAM_CONTROL_MIN) {
+		iformat = format_first;
+		iframe = frame_first;
+
+	} else if (action == STREAM_CONTROL_MAX) {
+		iformat = format_last;
+		iframe = frame_last;
+
+	} else {
+		iformat = clamp(iformat, format_first, format_last);
+
+		format_frame_first = uvc_get_frame_format_index(iformat, FRAME_INDEX_MIN);
+		format_frame_last = uvc_get_frame_format_index(iformat, FRAME_INDEX_MAX);
+
+		iframe = clamp(iframe, format_frame_first, format_frame_last);
+	}
+
+	struct uvc_frame_format * frame_format;
+	uvc_get_frame_format(&frame_format, iformat, iframe);
+
+	// uvc_dump_frame_format(frame_format, "FRAME");
+
+	if (frame_format->dwDefaultFrameInterval >= 100000) {
+		frame_interval = frame_format->dwDefaultFrameInterval;
+	} else {
+		frame_interval = 400000;
+	}
+
+	dwMaxPayloadTransferSize = streaming_maxpacket;
+	if (streaming_maxpacket > 1024 && streaming_maxpacket % 1024 != 0) {
+		dwMaxPayloadTransferSize -= (streaming_maxpacket / 1024) * 128;
+	}
+
+	memset(ctrl, 0, sizeof * ctrl);
+	ctrl->bmHint                   = 1;
+	ctrl->bFormatIndex             = iformat;
+	ctrl->bFrameIndex              = iframe;
+	ctrl->dwMaxVideoFrameSize      = get_frame_size(frame_format->video_format, frame_format->wWidth, frame_format->wHeight);
+	ctrl->dwMaxPayloadTransferSize = dwMaxPayloadTransferSize;
+	ctrl->dwFrameInterval          = frame_interval;
+	ctrl->bmFramingInfo            = 3;
+	ctrl->bMinVersion              = format_first;
+	ctrl->bMaxVersion              = format_last;
+	ctrl->bPreferedVersion         = format_last;
+
+	// dump_uvc_streaming_control(ctrl);
+
+	if (uvc_dev.control == UVC_VS_COMMIT_CONTROL && action == STREAM_CONTROL_SET) {
+		// TODO set 'source' parameters
+	}
+}
+
+static void uvc_events_process_streaming(uint8_t req, uint8_t cs, struct uvc_request_data * resp)
+{
+//	printf("UVC: Streaming request CS: %s, REQ: %s\n", uvc_vs_interface_control_name(cs), uvc_request_code_name(req));
+
+	if (cs != UVC_VS_PROBE_CONTROL && cs != UVC_VS_COMMIT_CONTROL)
+		return;
+
+	struct uvc_streaming_control * ctrl = (struct uvc_streaming_control *) &resp->data;
+	struct uvc_streaming_control * target = (cs == UVC_VS_PROBE_CONTROL) ? &(uvc_dev.probe) : &(uvc_dev.commit);
+
+	int ctrl_length = sizeof * ctrl;
+	resp->length = ctrl_length;
+
+	switch (req) {
+		case UVC_SET_CUR:
+			uvc_dev.control = cs;
+			resp->length = ctrl_length;
+			break;
+
+		case UVC_GET_MAX:
+			uvc_fill_streaming_control(ctrl, STREAM_CONTROL_MAX, 0, 0);
+			break;
+
+		case UVC_GET_CUR:
+			memcpy(ctrl, target, ctrl_length);
+			break;
+
+		case UVC_GET_MIN:
+		case UVC_GET_DEF:
+			uvc_fill_streaming_control(ctrl, STREAM_CONTROL_MIN, 0, 0);
+			break;
+
+		case UVC_GET_RES:
+			CLEAR(ctrl);
+			break;
+
+		case UVC_GET_LEN:
+			resp->data[0] = 0x00;
+			resp->data[1] = ctrl_length;
+			resp->length = 2;
+			break;
+
+		case UVC_GET_INFO:
+			resp->data[0] = (uint8_t)(UVC_CONTROL_CAP_GET | UVC_CONTROL_CAP_SET);
+			resp->length = 1;
+			break;
+	}
+}
+
+static void uvc_interface_control(unsigned int interface, uint8_t req, uint8_t cs, uint8_t len, struct uvc_request_data * resp)
+{
+	int i;
+	bool found = false;
+	const char * request_code_name = uvc_request_code_name(req);
+	const char * interface_name = (interface == UVC_VC_INPUT_TERMINAL) ? "INPUT_TERMINAL" : "PROCESSING_UNIT";
+
+	for (i = 0; i < control_mapping_size; i++) {
+		if (control_mapping[i].type == interface && control_mapping[i].uvc == cs) {
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		printf("UVC: %s - %s - %02x - UNSUPPORTED\n", interface_name, request_code_name, cs);
+		resp->length = -EL2HLT;
+		uvc_dev.request_error_code = REQEC_INVALID_CONTROL;
+		return;
+	}
+
+	if (!control_mapping[i].enabled) {
+		printf("UVC: %s - %s - %s - DISABLED\n", interface_name, request_code_name,
+				control_mapping[i].uvc_name);
+		resp->length = -EL2HLT;
+		uvc_dev.request_error_code = REQEC_INVALID_CONTROL;
+		return;
+	}
+
+	printf("UVC: %s - %s - %s\n", interface_name, request_code_name, control_mapping[i].uvc_name);
+
+	switch (req) {
+		case UVC_SET_CUR:
+			resp->data[0] = 0x0;
+			resp->length = len;
+			uvc_dev.control_interface = interface;
+			uvc_dev.control_type = cs;
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		case UVC_GET_MIN:
+			resp->length = 4;
+			memcpy(&resp->data[0], &control_mapping[i].minimum, resp->length);
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		case UVC_GET_MAX:
+			resp->length = 4;
+			memcpy(&resp->data[0], &control_mapping[i].maximum, resp->length);
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		case UVC_GET_CUR:
+			resp->length = 4;
+			memcpy(&resp->data[0], &control_mapping[i].value, resp->length);
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		case UVC_GET_INFO:
+			resp->data[0] = (uint8_t)(UVC_CONTROL_CAP_GET | UVC_CONTROL_CAP_SET);
+			resp->length = 1;
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		case UVC_GET_DEF:
+			resp->length = 4;
+			memcpy(&resp->data[0], &control_mapping[i].default_value, resp->length);
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		case UVC_GET_RES:
+			resp->length = 4;
+			memcpy(&resp->data[0], &control_mapping[i].step, resp->length);
+			uvc_dev.request_error_code = REQEC_NO_ERROR;
+			break;
+
+		default:
+			resp->length = -EL2HLT;
+			uvc_dev.request_error_code = REQEC_INVALID_REQUEST;
+			break;
+
+	}
+	return;
+}
+
+static void uvc_events_process_class(struct usb_ctrlrequest * ctrl, struct uvc_request_data * resp)
+{
+	uint8_t type      = ctrl->wIndex & 0xff;
+	uint8_t interface = ctrl->wIndex >> 8;
+	uint8_t control   = ctrl->wValue >> 8;
+	uint8_t length    = ctrl->wLength;
+
+	if ((ctrl->bRequestType & USB_RECIP_MASK) != USB_RECIP_INTERFACE)
+		return;
+
+	switch (type) {
+		case UVC_INTF_CONTROL:
+			switch (interface) {
+				case 0:
+					if (control == UVC_VC_REQUEST_ERROR_CODE_CONTROL) {
+						resp->data[0] = uvc_dev.request_error_code;
+						resp->length = 1;
+					}
+					break;
+
+				case 1:
+					uvc_interface_control(UVC_VC_INPUT_TERMINAL, ctrl->bRequest, control, length, resp);
+					break;
+
+				case 2:
+					uvc_interface_control(UVC_VC_PROCESSING_UNIT, ctrl->bRequest, control, length, resp);
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+		case UVC_INTF_STREAMING:
+			uvc_events_process_streaming(ctrl->bRequest, control, resp);
+			break;
+
+		default:
+			break;
+	}
+}
+
+static void uvc_events_process_setup(struct usb_ctrlrequest * ctrl, struct uvc_request_data * resp)
+{
+	uvc_dev.control = 0;
+
+	if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_CLASS)
+		uvc_events_process_class(ctrl, resp);
+
+	if (ioctl(uvc_dev.fd, UVCIOC_SEND_RESPONSE, resp) == -1)
+		log(LL_ERR, "UVCIOC_SEND_RESPONSE failed: %s (%d)", strerror(errno), errno);
+}
+
+static void uvc_events_process_data_control(struct uvc_request_data * data, struct uvc_streaming_control * target)
+{
+	uvc_streaming_control *ctrl    = (struct uvc_streaming_control *) &data->data;
+	unsigned int           iformat = (unsigned int) ctrl->bFormatIndex;
+	unsigned int           iframe  = (unsigned int) ctrl->bFrameIndex;
+
+	uvc_fill_streaming_control(target, STREAM_CONTROL_SET, iformat, iframe);
+}
+
+static void uvc_events_process_data(struct uvc_request_data * data)
+{
+	// printf("UVC: Control %s, length: %d\n", uvc_vs_interface_control_name(uvc_dev.control), data->length);
+
+	switch (uvc_dev.control) {
+		case UVC_VS_PROBE_CONTROL:
+			uvc_events_process_data_control(data, &(uvc_dev.probe));
+			break;
+
+		case UVC_VS_COMMIT_CONTROL:
+			uvc_events_process_data_control(data, &(uvc_dev.commit));
+			break;
+
+		case UVC_VS_CONTROL_UNDEFINED:
+			if (data->length > 0 && data->length <= 4) {
+				for(int i = 0; i < control_mapping_size; i++) {
+					if (control_mapping[i].type == uvc_dev.control_interface && control_mapping[i].uvc == uvc_dev.control_type && control_mapping[i].enabled) {
+						control_mapping[i].value = 0x00000000;
+						control_mapping[i].length = data->length;
+						memcpy(&control_mapping[i].value, data->data, data->length);
+						// TODO v4l2_set_ctrl(control_mapping[i]);
+					}
+				}
+			}
+			break;
+
+		default:
+			printf("UVC: Setting unknown control, length = %d\n", data->length);
+			break;
+	}
+}
+
+static void uvc_handle_streamon_event()
+{
+	// ok
+}
+
+static void uvc_handle_streamoff_event()
+{
+	// ok
+}
+
 void target_usbgadget::process_event(const int fd)
 {
 	v4l2_event       v4l2_event { 0 };
@@ -242,54 +647,37 @@ void target_usbgadget::process_event(const int fd)
 		return;
 	}
 
-	if (v4l2_event.type == UVC_EVENT_CONNECT)
-		log(id, LL_INFO, "UVC_EVENT_CONNECT");
-	else if (v4l2_event.type == UVC_EVENT_DISCONNECT)
-		log(id, LL_INFO, "UVC_EVENT_DISCONNECT");
-	else if (v4l2_event.type == UVC_EVENT_SETUP) {
-		log(id, LL_INFO, "UVC_EVENT_SETUP");
+	resp.length = -EL2HLT;
 
-		resp.length = -EL2HLT;
+	switch(v4l2_event.type) {
+		case UVC_EVENT_CONNECT:
+			log(id, LL_INFO, "%s: UVC_EVENT_CONNECT\n", uvc_dev.device_type_name);
+			break;
 
-		struct usb_ctrlrequest *ctrl = &uvc_event->req;
+		case UVC_EVENT_DISCONNECT:
+			log(id, LL_INFO, "%s: UVC_EVENT_DISCONNECT\n", uvc_dev.device_type_name);
+			local_stop_flag = true;
+			break;
 
-		if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_CLASS && (ctrl->bRequestType & USB_RECIP_MASK) == USB_RECIP_INTERFACE) {
-			uint8_t type = ctrl->wIndex & 0xff;
-			uint8_t interface = ctrl->wIndex >> 8;
-			uint8_t control = ctrl->wValue >> 8;
-			uint8_t length = ctrl->wLength;
+		case UVC_EVENT_SETUP:
+			uvc_events_process_setup(&uvc_event->req, &resp);
+			break;
 
-			printf("%d %d %d %d\n", type, interface, control, length);
+		case UVC_EVENT_DATA:
+			uvc_events_process_data(&uvc_event->data);
+			break;
 
-			if (type == UVC_INTF_CONTROL) {
-				if (interface == 0) {
-					if (control == UVC_VC_REQUEST_ERROR_CODE_CONTROL) {
-						resp.data[0] = 0;
-						resp.length = 1;
-					}
-					else {
-						printf("control %u not expected\n", control);
-					}
-				}
-				else {
-					printf("interface %u not expected\n", interface);
-				}
-			}
-			else if (type == UVC_INTF_STREAMING) {
-				printf("UVC_INTF_STREAMING %d\n", control);
-			}
-			else {
-				printf("type %u not expected\n", type);
-			}
-		}
-		else {
-			printf("requesttype %x not expected\n", ctrl->bRequestType);
-		}
+		case UVC_EVENT_STREAMON:
+			uvc_handle_streamon_event();
+			break;
 
-		ioctl(fd, UVCIOC_SEND_RESPONSE, &resp);
-	}
-	else {
-		printf("UVC_EVENT %x not expected\n", v4l2_event.type);
+		case UVC_EVENT_STREAMOFF:
+			uvc_handle_streamoff_event();
+			break;
+
+		default:
+			log(id, LL_FATAL, "Unhandled case in target_usbgadget::process_event %u", v4l2_event.type);
+			break;
 	}
 }
 
@@ -346,6 +734,8 @@ void target_usbgadget::operator()()
 				}
 
 				fds[0].fd = fd;
+
+				uvc_dev.fd = fd;
 
 				v4l2_capability cap { 0 };
 				if (ioctl(fd, VIDIOC_QUERYCAP, &cap) == -1) {
