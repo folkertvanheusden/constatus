@@ -137,22 +137,21 @@ std::optional<std::string> target_usbgadget::setup()
 	uvc_frame_attrs.wHeight         = fixed_height;
 	uvc_frame_attrs.wWidth          = fixed_width;
 
-//	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
+	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
 
 	usbg_f_uvc_frame_attrs *uvc_frame_uncompressed_attrs[] { &uvc_frame_attrs, nullptr };
 
-//	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
-//	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
-//	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
-//	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
+	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
+	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
+	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
+	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
 
 	usbg_f_uvc_format_attrs uvc_format_attrs_uncompressed { 0 };
 	uvc_format_attrs_uncompressed.frames             = uvc_frame_uncompressed_attrs;
 	uvc_format_attrs_uncompressed.format             = "uncompressed/u";
 	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 1;
 
-//	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
-	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_uncompressed, nullptr };
+	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
 
 	usbg_f_uvc_attrs uvc_attrs = {
 		.formats = uvc_format_attrs,
@@ -308,6 +307,31 @@ static const char * uvc_request_code_name(unsigned int uvc_control)
 	}
 }
 
+static void dump_uvc_streaming_control(struct uvc_streaming_control * ctrl)
+{
+	log(LL_INFO, "DUMP: uvc_streaming_control: format: %d, frame: %d, frame interval: %d",
+			ctrl->bFormatIndex,
+			ctrl->bFrameIndex,
+			ctrl->dwFrameInterval
+	      );
+
+	log(LL_INFO, "DUMP: uvc_streaming_control2: min version %d, max version %d", ctrl->bMinVersion, ctrl->bMaxVersion);
+}
+
+static void uvc_dump_frame_format(struct uvc_frame_format * frame_format, const char * title)
+{
+	log(LL_INFO, "%s: format: %d, frame: %d, resolution: %dx%d, frame_interval: %d,  bitrate: [%d, %d]\n",
+			title,
+			frame_format->bFormatIndex,
+			frame_format->bFrameIndex,
+			frame_format->wWidth,
+			frame_format->wHeight,
+			frame_format->dwDefaultFrameInterval,
+			frame_format->dwMinBitRate,
+			frame_format->dwMaxBitRate
+	      );
+}
+
 static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum stream_control_action action, int iformat, int iframe)
 {
 	int format_first;
@@ -364,7 +388,7 @@ static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum
 	struct uvc_frame_format * frame_format;
 	uvc_get_frame_format(&frame_format, iformat, iframe);
 
-	// uvc_dump_frame_format(frame_format, "FRAME");
+	uvc_dump_frame_format(frame_format, "FRAME");
 
 	if (frame_format->dwDefaultFrameInterval >= 100000) {
 		frame_interval = frame_format->dwDefaultFrameInterval;
@@ -389,7 +413,7 @@ static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum
 	ctrl->bMaxVersion              = format_last;
 	ctrl->bPreferedVersion         = format_last;
 
-	// dump_uvc_streaming_control(ctrl);
+	dump_uvc_streaming_control(ctrl);
 
 	if (uvc_dev.control == UVC_VS_COMMIT_CONTROL && action == STREAM_CONTROL_SET) {
 		// TODO set 'source' parameters
@@ -398,7 +422,7 @@ static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum
 
 static void uvc_events_process_streaming(uint8_t req, uint8_t cs, struct uvc_request_data * resp)
 {
-//	printf("UVC: Streaming request CS: %s, REQ: %s\n", uvc_vs_interface_control_name(cs), uvc_request_code_name(req));
+	printf("UVC: Streaming request CS: _s, REQ: %s\n", /*uvc_vs_interface_control_name(cs), */ uvc_request_code_name(req));
 
 	if (cs != UVC_VS_PROBE_CONTROL && cs != UVC_VS_COMMIT_CONTROL)
 		return;
@@ -542,6 +566,8 @@ static void uvc_events_process_class(struct usb_ctrlrequest * ctrl, struct uvc_r
 
 	switch (type) {
 		case UVC_INTF_CONTROL:
+			printf("UVC_INTF_CONTROL %d\n", interface);
+
 			switch (interface) {
 				case 0:
 					if (control == UVC_VC_REQUEST_ERROR_CODE_CONTROL) {
@@ -564,6 +590,8 @@ static void uvc_events_process_class(struct usb_ctrlrequest * ctrl, struct uvc_r
 			break;
 
 		case UVC_INTF_STREAMING:
+			printf("UVC_INTF_STREAMING\n");
+
 			uvc_events_process_streaming(ctrl->bRequest, control, resp);
 			break;
 
@@ -624,8 +652,16 @@ static void uvc_events_process_data(struct uvc_request_data * data)
 	}
 }
 
-static void uvc_handle_streamon_event()
+static void uvc_handle_streamon_event(const int fd)
 {
+	v4l2_format v { 0 };
+	v.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+
+	if (ioctl(fd, VIDIOC_G_FMT, &v))
+		log(LL_ERR, "VIDIOC_G_FMT failed: %s", strerror(errno));
+
+	printf("dim: %dx%d\n", v.fmt.pix.width, v.fmt.pix.height);
+	printf("pixelformat: %c%c%c%c\n", v.fmt.pix.pixelformat >> 24, v.fmt.pix.pixelformat >> 16, v.fmt.pix.pixelformat >> 8, v.fmt.pix.pixelformat);
 	// ok
 }
 
@@ -668,7 +704,7 @@ void target_usbgadget::process_event(const int fd)
 			break;
 
 		case UVC_EVENT_STREAMON:
-			uvc_handle_streamon_event();
+			uvc_handle_streamon_event(fd);
 			break;
 
 		case UVC_EVENT_STREAMOFF:
@@ -735,13 +771,34 @@ void target_usbgadget::operator()()
 
 				fds[0].fd = fd;
 
+				// TODO
 				uvc_dev.fd = fd;
+
+				uvc_frame_format[0].defined = true;
+				uvc_frame_format[0].usb_speed = USB_SPEED_HIGH;
+				uvc_frame_format[0].video_format = V4L2_PIX_FMT_YUYV;
+				uvc_frame_format[0].format_name = "YUYV";
+				uvc_frame_format[0].bFormatIndex = 1;
+				uvc_frame_format[0].bFrameIndex = 1;
+				uvc_frame_format[0].dwDefaultFrameInterval = interval * 1000000;
+				uvc_frame_format[0].dwMaxVideoFrameBufferSize = fixed_width * 2 * fixed_height;
+				uvc_frame_format[0].dwMaxBitRate = fixed_width * 2 * fixed_height * 8;
+				uvc_frame_format[0].dwMinBitRate = 1;
+				uvc_frame_format[0].wHeight = fixed_height;
+				uvc_frame_format[0].wWidth = fixed_width;
+				uvc_frame_format[0].bmCapabilities = 0;
+				uvc_frame_format[0].dwFrameInterval = interval * 1000000;
+				last_format_index = 1;
 
 				v4l2_capability cap { 0 };
 				if (ioctl(fd, VIDIOC_QUERYCAP, &cap) == -1) {
 					log(id, LL_ERR, "VIDIOC_QUERYCAP for %s failed: %s", dev_name.value().c_str(), strerror(errno));
 					break;
 				}
+
+				printf("driver: %s\n",   cap.driver);
+				printf("card: %s\n",     cap.card);
+				printf("bus_info: %s\n", cap.bus_info);
 
 				if ((cap.capabilities & V4L2_CAP_VIDEO_OUTPUT) == 0) {
 					log(id, LL_ERR, "%s is not a video output device: %s", dev_name.value().c_str(), strerror(errno));
