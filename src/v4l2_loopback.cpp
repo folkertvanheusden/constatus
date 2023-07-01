@@ -56,8 +56,7 @@ void v4l2_loopback::operator()()
 	}
 
 	// setup video for proper format
-	struct v4l2_format v;
-	memset(&v, 0x00, sizeof v);
+	v4l2_format v { 0 };
 	v.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 
 	if (ioctl(v4l2sink, VIDIOC_G_FMT, &v)) {

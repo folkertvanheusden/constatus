@@ -153,7 +153,7 @@ std::optional<std::string> target_usbgadget::setup()
 	uvc_format_attrs_uncompressed.format             = "uncompressed/u";
 	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 1;
 
-	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
+	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_uncompressed, &uvc_format_attrs_mjpeg, nullptr };
 
 	usbg_f_uvc_attrs uvc_attrs = {
 		.formats = uvc_format_attrs,
@@ -212,6 +212,8 @@ static unsigned int get_frame_size(int pixelformat, int width, int height)
 			return width * height;
 	}
 
+	printf("**** get_frame_size FAILED\n");
+
 	return 0;
 }
 
@@ -224,6 +226,8 @@ static int uvc_get_frame_format(struct uvc_frame_format ** frame_format, unsigne
 			return 0;
 		}
 	}
+
+	printf("**** uvc_get_frame_format FAILED\n");
 
 	return -1;
 }
@@ -334,6 +338,67 @@ static void uvc_dump_frame_format(struct uvc_frame_format * frame_format, const 
 	      );
 }
 
+static int v4l2_get_format(struct v4l2_device * dev)
+{
+    struct v4l2_format fmt { 0 };
+
+    fmt.type = dev->buffer_type;
+
+    int ret = ioctl(dev->fd, VIDIOC_G_FMT, &fmt);
+    if (ret < 0) {
+        return ret;
+    }
+
+    printf("%s: Getting current format: %c%c%c%c %ux%u\n",
+        dev->device_type_name, pixfmtstr(fmt.fmt.pix.pixelformat),
+        fmt.fmt.pix.width, fmt.fmt.pix.height);
+
+    return 0;
+}
+
+static int v4l2_set_format(struct v4l2_device * dev, struct v4l2_format * fmt)
+{
+    int ret;
+
+    ret = ioctl(dev->fd, VIDIOC_S_FMT, fmt);
+    if (ret < 0) {
+        printf("%s: Unable to set format %s (%d).\n",
+            dev->device_type_name, strerror(errno), errno);
+        return ret;
+    }
+
+    printf("%s: Setting format to: %c%c%c%c %ux%u\n",
+        dev->device_type_name, pixfmtstr(fmt->fmt.pix.pixelformat),
+        fmt->fmt.pix.width, fmt->fmt.pix.height);
+
+    return 0;
+}
+
+static int v4l2_apply_format(struct v4l2_device * dev, unsigned int pixelformat, unsigned int width, unsigned int height)
+{
+    struct v4l2_format fmt { 0 };
+    int ret = -EINVAL;
+
+    if (dev->is_streaming || !dev->fd)
+        return ret;
+
+    fmt.type                = dev->buffer_type;
+    fmt.fmt.pix.width       = width;
+    fmt.fmt.pix.height      = height;
+    fmt.fmt.pix.sizeimage   = get_frame_size(pixelformat, width, height);
+    fmt.fmt.pix.pixelformat = pixelformat;
+    fmt.fmt.pix.field       = V4L2_FIELD_ANY;
+    printf("buffer_type %d width %d height %d sizeimage %d pixelformat: %c%c%c%c\n", fmt.type, width, height, fmt.fmt.pix.sizeimage, fmt.fmt.pix.pixelformat >> 24, fmt.fmt.pix.pixelformat >> 16, fmt.fmt.pix.pixelformat >> 8, fmt.fmt.pix.pixelformat);
+
+    ret = v4l2_set_format(dev, &fmt);
+    if (ret < 0) {
+	    printf("888888888888888888888888888888888888888 v4l2_set_format failed\n");
+        return ret;
+    }
+
+    return v4l2_get_format(dev);
+}
+
 static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum stream_control_action action, int iformat, int iframe)
 {
 	int format_first;
@@ -419,6 +484,8 @@ static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum
 
 	if (uvc_dev.control == UVC_VS_COMMIT_CONTROL && action == STREAM_CONTROL_SET) {
 		// TODO set 'source' parameters
+
+		v4l2_apply_format(&uvc_dev, frame_format->video_format, frame_format->wWidth, frame_format->wHeight);
 	}
 }
 
@@ -426,8 +493,10 @@ static void uvc_events_process_streaming(uint8_t req, uint8_t cs, struct uvc_req
 {
 	printf("uvc_events_process_streaming UVC: streaming request CS: _s, REQ: %s\n", /*uvc_vs_interface_control_name(cs), */ uvc_request_code_name(req));
 
-	if (cs != UVC_VS_PROBE_CONTROL && cs != UVC_VS_COMMIT_CONTROL)
+	if (cs != UVC_VS_PROBE_CONTROL && cs != UVC_VS_COMMIT_CONTROL) {
+		printf("Nope\n");
 		return;
+	}
 
 	struct uvc_streaming_control * ctrl = (struct uvc_streaming_control *) &resp->data;
 	struct uvc_streaming_control * target = (cs == UVC_VS_PROBE_CONTROL) ? &(uvc_dev.probe) : &(uvc_dev.commit);
@@ -750,9 +819,10 @@ void target_usbgadget::operator()()
 	int fd = -1;
 	std::vector<uint8_t *> buffers;
 	int buffer_nr = 0;
-	int nbufs = 4;
+	int nbufs = 1;
 
 	bool setup_performed = false;
+	bool first_frame     = true;
 
 	video_frame *prev_frame = nullptr;
 
@@ -790,6 +860,12 @@ void target_usbgadget::operator()()
 
 				// TODO
 				uvc_dev.fd = fd;
+				    uvc_dev.device_type      = DEVICE_TYPE_UVC;
+    uvc_dev.device_type_name = "DEVICE_UVC";
+    uvc_dev.buffer_type      = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+    uvc_dev.memory_type      = V4L2_MEMORY_USERPTR;
+    uvc_dev.nbufs            = nbufs;
+
 
 				uvc_frame_format[0].defined = true;
 				uvc_frame_format[0].usb_speed = USB_SPEED_HIGH;
@@ -800,7 +876,7 @@ void target_usbgadget::operator()()
 				uvc_frame_format[0].dwDefaultFrameInterval = interval * 1000000;
 				uvc_frame_format[0].dwMaxVideoFrameBufferSize = fixed_width * 2 * fixed_height;
 				uvc_frame_format[0].dwMaxBitRate = fixed_width * 2 * fixed_height * 8;
-				uvc_frame_format[0].dwMinBitRate = 1;
+				uvc_frame_format[0].dwMinBitRate = uvc_frame_format[0].dwMaxBitRate;
 				uvc_frame_format[0].wHeight = fixed_height;
 				uvc_frame_format[0].wWidth = fixed_width;
 				uvc_frame_format[0].bmCapabilities = 0;
@@ -835,29 +911,24 @@ void target_usbgadget::operator()()
 				}
 
 				log(id, LL_DEBUG, "Device %s is on card %s on bus %s", dev_name.value().c_str(), cap.card, cap.bus_info);
-
+#if 1
 				v4l2_requestbuffers reqbuf { 0 };
 				reqbuf.count        = nbufs;
 				reqbuf.type         = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 				reqbuf.memory       = V4L2_MEMORY_USERPTR;
 
 				if (ioctl(fd, VIDIOC_REQBUFS, &reqbuf) == -1) {
-					log(id, LL_ERR, "VIDIOC_REQBUFS %d failed: %s", nbufs, strerror(errno));
+					log(id, LL_ERR, "VIDIOC_REQBUFS(request) %d failed: %s", nbufs, strerror(errno));
 					break;
 				}
 
 				log(id, LL_DEBUG, "Using %u buffers", reqbuf.count);
+#endif
 
-				for(unsigned i=0; i<reqbuf.count; i++) {
+				for(unsigned i=0; i<nbufs/*reqbuf.count*/; i++) {
 					uint8_t *buffer = reinterpret_cast<uint8_t *>(calloc(fixed_width * 3, fixed_height));
 
 					buffers.push_back(buffer);
-				}
-
-				int type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-				if (ioctl(fd, VIDIOC_STREAMON, &type) == -1) {
-					log(id, LL_ERR, "VIDIOC_STREAMON failed: %s", strerror(errno));
-					break;
 				}
 			}
 
@@ -896,19 +967,43 @@ void target_usbgadget::operator()()
 					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
 				}
 
+#if 0
+				printf("%d\n", write(fd, buffers[buffer_nr], 320 * 240 * 2));
+#else
+#if 0
+				v4l2_buffer dqbuf { 0 };
+				dqbuf.type      = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+				dqbuf.memory    = V4L2_MEMORY_USERPTR;
+				dqbuf.index     = buffer_nr;
+
+				if (ioctl(fd, VIDIOC_DQBUF, &dqbuf) == -1)
+					printf("Unable to dequeue buffer: %s (%d)\n", strerror(errno), errno);
+#endif
 				v4l2_buffer buf { 0 };
 
 				buf.type      = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 				buf.memory    = V4L2_MEMORY_USERPTR;
-				buf.m.userptr = reinterpret_cast<unsigned long int>(buffers[buffer_nr]);
+				buf.m.userptr = reinterpret_cast<unsigned long int>(buffers[buffer_nr]); // niet nodig, direct std::get-etc
+				printf("%x\n", buffers[buffer_nr]);
 				buf.length    = n_bytes;
-				buf.index     = buffer_nr;
 				buf.bytesused = n_bytes;
-
-				buffer_nr = (buffer_nr + 1) % nbufs;
+				// timestamp = 0: send asap
 
 				if (ioctl(fd, VIDIOC_QBUF, &buf) == -1)
-					log(id, LL_ERR, "VIDIOC_QBUF failed: %s", strerror(errno));
+					log(id, LL_ERR, "VIDIOC_QBUF failed: %s, flags: %x, sequence: %u, %d bytes", strerror(errno), buf.flags, buf.sequence, n_bytes);
+				else
+					log(id, LL_ERR, "VIDIOC_QBUF succeeded, flags: %x, sequence: %u, %d bytes", buf.flags, buf.sequence, n_bytes);
+#endif
+
+				if (first_frame) {
+					first_frame = false;
+
+					int type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+					if (ioctl(fd, VIDIOC_STREAMON, &type) == -1) {
+						log(id, LL_ERR, "VIDIOC_STREAMON failed: %s", strerror(errno));
+						break;
+					}
+				}
 			}
 
 			delete prev_frame;
@@ -925,6 +1020,14 @@ void target_usbgadget::operator()()
 	s -> stop();
 
 	usbg_cleanup(ug_state);
+
+	// release buffers
+	v4l2_requestbuffers reqbuf { 0 };
+	reqbuf.type         = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+	reqbuf.memory       = V4L2_MEMORY_USERPTR;
+
+	if (ioctl(fd, VIDIOC_REQBUFS, &reqbuf) == -1)
+		log(id, LL_ERR, "VIDIOC_REQBUFS(release) %d failed: %s", nbufs, strerror(errno));
 
 	for(auto & b : buffers)
 		free(b);
