@@ -38,6 +38,8 @@
 #define VENDOR  0x1d6b
 #define PRODUCT 0x0104
 
+bool stream_is_on = false;
+
 // the function "udc_find_video_device" was adapted from
 // https://gitlab.freedesktop.org/camera/uvc-gadget/-/blob/master/lib/configfs.c#L199
 // its license is "LGPL-2.1-or-later"
@@ -422,7 +424,7 @@ static void uvc_fill_streaming_control(struct uvc_streaming_control * ctrl, enum
 
 static void uvc_events_process_streaming(uint8_t req, uint8_t cs, struct uvc_request_data * resp)
 {
-	printf("UVC: Streaming request CS: _s, REQ: %s\n", /*uvc_vs_interface_control_name(cs), */ uvc_request_code_name(req));
+	printf("uvc_events_process_streaming UVC: streaming request CS: _s, REQ: %s\n", /*uvc_vs_interface_control_name(cs), */ uvc_request_code_name(req));
 
 	if (cs != UVC_VS_PROBE_CONTROL && cs != UVC_VS_COMMIT_CONTROL)
 		return;
@@ -498,7 +500,7 @@ static void uvc_interface_control(unsigned int interface, uint8_t req, uint8_t c
 		return;
 	}
 
-	printf("UVC: %s - %s - %s\n", interface_name, request_code_name, control_mapping[i].uvc_name);
+	printf("uvc_interface_control UVC: %s - %s - %s\n", interface_name, request_code_name, control_mapping[i].uvc_name);
 
 	switch (req) {
 		case UVC_SET_CUR:
@@ -622,21 +624,25 @@ static void uvc_events_process_data_control(struct uvc_request_data * data, stru
 
 static void uvc_events_process_data(struct uvc_request_data * data)
 {
-	// printf("UVC: Control %s, length: %d\n", uvc_vs_interface_control_name(uvc_dev.control), data->length);
+	//printf("UVC: Control %s, length: %d\n", uvc_vs_interface_control_name(uvc_dev.control), data->length);
 
 	switch (uvc_dev.control) {
 		case UVC_VS_PROBE_CONTROL:
+			printf("++++++++++++++++++++++++++++++++++++++++++++++++ probe control ++++++++++++++++++++++++\n");
 			uvc_events_process_data_control(data, &(uvc_dev.probe));
 			break;
 
 		case UVC_VS_COMMIT_CONTROL:
+			printf("++++++++++++++++++++++++++++++++++++++++++++++++ commit control ++++++++++++++++++++++++\n");
 			uvc_events_process_data_control(data, &(uvc_dev.commit));
 			break;
 
 		case UVC_VS_CONTROL_UNDEFINED:
+			printf("++++++++++++++++++++++++++++++++++++++++++++++++ DAAR ++++++++++++++++++++++++\n");
 			if (data->length > 0 && data->length <= 4) {
 				for(int i = 0; i < control_mapping_size; i++) {
 					if (control_mapping[i].type == uvc_dev.control_interface && control_mapping[i].uvc == uvc_dev.control_type && control_mapping[i].enabled) {
+						printf("++++++++++++++++++++++++++++++++++++++++++++++++ hier ++++++++++++++++++++++++\n");
 						control_mapping[i].value = 0x00000000;
 						control_mapping[i].length = data->length;
 						memcpy(&control_mapping[i].value, data->data, data->length);
@@ -705,6 +711,7 @@ void target_usbgadget::process_event(const int fd)
 
 		case UVC_EVENT_STREAMON:
 			uvc_handle_streamon_event(fd);
+			stream_is_on = true;
 			break;
 
 		case UVC_EVENT_STREAMOFF:
@@ -715,6 +722,16 @@ void target_usbgadget::process_event(const int fd)
 			log(id, LL_FATAL, "Unhandled case in target_usbgadget::process_event %u", v4l2_event.type);
 			break;
 	}
+}
+
+static void configfs_get_uvc_settings()
+{
+	for(int i = 0; i <= last_format_index; i++)
+		uvc_dump_frame_format(&uvc_frame_format[i], "CONFIGFS: UVC");
+
+	printf("CONFIGFS: STREAMING maxburst:  %d\n", streaming_maxburst);
+	printf("CONFIGFS: STREAMING maxpacket: %d\n", streaming_maxpacket);
+	printf("CONFIGFS: STREAMING interval:  %d\n", streaming_interval);
 }
 
 void target_usbgadget::operator()()
@@ -788,7 +805,9 @@ void target_usbgadget::operator()()
 				uvc_frame_format[0].wWidth = fixed_width;
 				uvc_frame_format[0].bmCapabilities = 0;
 				uvc_frame_format[0].dwFrameInterval = interval * 1000000;
-				last_format_index = 1;
+				last_format_index = 0;
+
+				configfs_get_uvc_settings();
 
 				v4l2_capability cap { 0 };
 				if (ioctl(fd, VIDIOC_QUERYCAP, &cap) == -1) {
@@ -855,7 +874,7 @@ void target_usbgadget::operator()()
 
 			const bool allow_store = sched == nullptr || (sched && sched->is_on());
 
-			if (allow_store && pvf->get_w() != -1) {
+			if (allow_store && pvf->get_w() != -1 && stream_is_on) {
 				size_t n_bytes = 0;
 
 				if (pvf->get_w() != fixed_width || pvf->get_h() != fixed_height) {
@@ -884,12 +903,12 @@ void target_usbgadget::operator()()
 				buf.m.userptr = reinterpret_cast<unsigned long int>(buffers[buffer_nr]);
 				buf.length    = n_bytes;
 				buf.index     = buffer_nr;
+				buf.bytesused = n_bytes;
 
 				buffer_nr = (buffer_nr + 1) % nbufs;
 
-				if (ioctl(fd, VIDIOC_QBUF, &buf) == -1) {
-					log(id, LL_ERR, "VIDIOC_QBUF failed");
-				}
+				if (ioctl(fd, VIDIOC_QBUF, &buf) == -1)
+					log(id, LL_ERR, "VIDIOC_QBUF failed: %s", strerror(errno));
 			}
 
 			delete prev_frame;
