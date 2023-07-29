@@ -114,6 +114,7 @@ add_executable(constatus
 	src/target_extpipe.cpp
 	src/target_ffmpeg.cpp
 	src/target_gstreamer.cpp
+	src/target_gwavi.cpp
 	src/target_jpeg.cpp
 	src/target_new_source.cpp
 	src/target_pipewire.cpp
@@ -145,6 +146,11 @@ pkg_check_modules(JANSSON REQUIRED jansson)
 target_link_libraries(constatus ${JANSSON_LIBRARIES})
 target_include_directories(constatus PUBLIC ${JANSSON_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${JANSSON_CFLAGS_OTHER})
+
+pkg_check_modules(LIBGWAVI libgwavi)
+target_link_libraries(constatus ${LIBGWAVI_LIBRARIES})
+target_include_directories(constatus PUBLIC ${LIBGWAVI_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${LIBGWAVI_CFLAGS_OTHER})
 
 pkg_check_modules(LIBAVFORMAT libavformat)
 target_link_libraries(constatus ${LIBAVFORMAT_LIBRARIES})
