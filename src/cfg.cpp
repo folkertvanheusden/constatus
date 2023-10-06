@@ -62,6 +62,9 @@ using namespace libconfig;
 #if HAVE_PIPEWIRE == 1
 #include "target_pipewire.h"
 #endif
+#if HAVE_LIBGWAVI == 1
+#include "target_gwavi.h"
+#endif
 #include "target_jpeg.h"
 #include "target_plugin.h"
 #include "target_extpipe.h"
@@ -1351,6 +1354,13 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		t = new target_avi(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, override_fps, cfg, false, handle_failure, sched);
 #else
 		error_exit(false, "'avi' requires gstreamer");
+#endif
+	}
+	else if (format == "gwavi") {
+#if HAVE_LIBGWAVI == 1
+		t = new target_gwavi(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, override_fps, cfg, false, handle_failure, sched);
+#else
+		error_exit(false, "'gwavi' requires libgwavi");
 #endif
 	}
 	else if (format == "extpipe") {
