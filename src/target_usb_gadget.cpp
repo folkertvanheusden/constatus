@@ -39,14 +39,6 @@ struct my_video_source : public video_source {
 	unsigned pixelformat { 0 };
 };
 
-struct uvc_stream
-{
-        struct video_source *src;
-        struct uvc_device *uvc;
-
-        struct events *events;
-};
-
 static void my_fill_buffer(video_source *s, video_buffer *buf)
 {
         my_video_source *src = reinterpret_cast<my_video_source *>(s);
@@ -90,6 +82,26 @@ static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
         if (src->pixelformat != v4l2_fourcc('Y', 'U', 'Y', 'V'))
                 return -EINVAL;
 
+        return 0;
+}
+
+static int my_source_set_frame_rate(struct video_source *s __attribute__((unused)), unsigned int fps __attribute__((unused)))
+{
+        return 0;
+}
+
+static int my_source_free_buffers(struct video_source *s __attribute__((unused)))
+{
+        return 0;
+}
+
+static int my_source_stream_on(struct video_source *s __attribute__((unused)))
+{
+        return 0;
+}
+
+static int my_source_stream_off(struct video_source *s __attribute__((unused)))
+{
         return 0;
 }
 
@@ -138,34 +150,35 @@ void target_usbgadget::operator()()
 	}
 
 	struct events events { 0 };
+	events_init(&events);
+
 	uvc_stream_set_event_handler(stream, &events);
 
 	video_source_ops source_ops = {
 		.destroy = nullptr,
 		.set_format = my_source_set_format,
-		.set_frame_rate = nullptr,
+		.set_frame_rate = my_source_set_frame_rate,
 		.alloc_buffers = nullptr,
 		.export_buffers = nullptr,
-		.free_buffers = nullptr,
-		.stream_on = nullptr,
-		.stream_off = nullptr,
+		.free_buffers = my_source_free_buffers,
+		.stream_on = my_source_stream_on,
+		.stream_off = my_source_stream_off,
 		.queue_buffer = nullptr,
 		.fill_buffer = my_fill_buffer,
 	};
 
 	struct my_video_source source_settings;
-
-	source_settings.ops          = &source_ops,
-	source_settings.events       = &events,
-	source_settings.handler      = nullptr,
-	source_settings.handler_data = nullptr,
+	source_settings.ops          = &source_ops;
+	source_settings.events       = &events;
+	source_settings.handler      = nullptr;
+	source_settings.handler_data = nullptr;
 	source_settings.type         = VIDEO_SOURCE_STATIC;
 	source_settings.s            = s;
 
 	uvc_stream_set_video_source(stream, &source_settings);
 
-	uvc_set_config(stream->uvc, fc);
-	//uvc_stream_init_uvc(stream, fc);
+	source_settings.events       = &events;
+	uvc_stream_init_uvc(stream, fc);
 
 	events_loop(&events);
 #if 0
