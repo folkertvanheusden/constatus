@@ -8,10 +8,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "uvc-gadget/include/uvcgadget/configfs.h"
-#include "uvc-gadget/include/uvcgadget/events.h"
-#include "uvc-gadget/include/uvcgadget/stream.h"
-#include "uvc-gadget/include/uvcgadget/video-source.h"
+extern "C" {
+#include "uvcgadget/configfs.h"
+#include "uvcgadget/events.h"
+#include "uvcgadget/stream.h"
+#include "uvcgadget/video-source.h"
+}
 
 #include "error.h"
 #include "exec.h"

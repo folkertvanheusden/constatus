@@ -126,6 +126,9 @@ add_executable(constatus
 	src/uvc-gadget/lib/configfs.c
 	src/uvc-gadget/lib/events.c
 	src/uvc-gadget/lib/stream.c
+	src/uvc-gadget/lib/uvc.c
+	src/uvc-gadget/lib/v4l2.c
+	src/uvc-gadget/lib/video-buffers.c
 	src/uvc-gadget/lib/video-source.c
 	src/v4l2_loopback.cpp
 	src/video_frame.cpp
@@ -145,7 +148,8 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
 target_link_libraries(constatus Threads::Threads)
 
-target_include_directories(constatus PUBLIC src/uvc-gadget/include)
+target_include_directories(constatus PUBLIC ${CMAKE_SOURCE_DIR}/src/uvc-gadget/include)
+target_include_directories(constatus PUBLIC ${CMAKE_SOURCE_DIR}/src/uvc-gadget/include/uvcgadget)
 
 include(FindPkgConfig)
 
