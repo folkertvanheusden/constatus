@@ -133,8 +133,7 @@ void source_libcamera::operator()()
 
 	const uint64_t interval = max_fps > 0.0 ? 1.0 / max_fps * 1000.0 * 1000.0 : 0;
 
-	libcamera::StreamRoles roles{ libcamera::StreamRole::VideoRecording };
-	std::unique_ptr<libcamera::CameraConfiguration> camera_config = camera->generateConfiguration(roles);
+	std::unique_ptr<libcamera::CameraConfiguration> camera_config = camera->generateConfiguration({ libcamera::StreamRole::VideoRecording });
 
 	if (!camera_config.get() || camera_config->size() == 0)
 		error_exit(false, "The device \"%s\" cannot produce a video stream that Constatus can use", dev.c_str());
@@ -147,11 +146,11 @@ void source_libcamera::operator()()
 		if (rotate_angle == 0) {
 		}
 		else if (rotate_angle == 90)
-			camera_config->transform = libcamera::Transform::Rot90;
+			camera_config->orientation = libcamera::Orientation::Rotate90;
 		else if (rotate_angle == 180)
-			camera_config->transform = libcamera::Transform::Rot180;
+			camera_config->orientation = libcamera::Orientation::Rotate180;
 		else if (rotate_angle == 270)
-			camera_config->transform = libcamera::Transform::Rot270;
+			camera_config->orientation = libcamera::Orientation::Rotate270;
 		else
 			error_exit(false, "Can only rotate in steps of 90 degrees (not %d, libcamera - %s)", rotate_angle, dev.c_str());
 
