@@ -7,11 +7,14 @@
 #include <poll.h>
 #include <string.h>
 #include <unistd.h>
+#include <linux/videodev2.h>
 
 extern "C" {
 #include "uvcgadget/configfs.h"
 #include "uvcgadget/events.h"
 #include "uvcgadget/stream.h"
+#include "uvcgadget/../../lib/uvc.h"
+#include "uvcgadget/../../lib/video-buffers.h"
 #include "uvcgadget/video-source.h"
 }
 
@@ -26,6 +29,69 @@ extern "C" {
 #include "resize.h"
 #include "schedule.h"
 #include "target_usb_gadget.h"
+
+struct my_video_source : public video_source {
+	my_video_source() {
+	}
+	source *s { nullptr };
+	int width  { 320 };
+	int height { 240 };
+	unsigned pixelformat { 0 };
+};
+
+struct uvc_stream
+{
+        struct video_source *src;
+        struct uvc_device *uvc;
+
+        struct events *events;
+};
+
+static void my_fill_buffer(video_source *s, video_buffer *buf)
+{
+        my_video_source *src = reinterpret_cast<my_video_source *>(s);
+        unsigned int bpl;
+        unsigned int i, j;
+        void *mem = buf->mem;
+
+        bpl = src->width * 2;
+        for (i = 0; i < src->height; ++i) {
+                for (j = 0; j < bpl; j += 4) {
+                        if (j < bpl * 1 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xff;
+                        else if (j < bpl * 2 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xff00;
+                        else if (j < bpl * 3 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xff0000;
+                        else if (j < bpl * 4 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xff00ff;
+                        else if (j < bpl * 5 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xffff00;
+                        else if (j < bpl * 6 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xffffff;
+                        else if (j < bpl * 7 / 8)
+                                *(unsigned int *)(mem + i*bpl + j) = 0xf0000f;
+                        else
+                                *(unsigned int *)(mem + i*bpl + j) = 0;
+                }
+        }
+
+        buf->bytesused = bpl * src->height;
+}
+
+static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
+{
+        my_video_source *src = reinterpret_cast<my_video_source *>(s);
+
+        src->width  = fmt->width;
+        src->height = fmt->height;
+        src->pixelformat = fmt->pixelformat;
+
+        if (src->pixelformat != v4l2_fourcc('Y', 'U', 'Y', 'V'))
+                return -EINVAL;
+
+        return 0;
+}
 
 
 target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched, const std::string & uvc_id) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality), uvc_id(uvc_id)
@@ -76,7 +142,7 @@ void target_usbgadget::operator()()
 
 	video_source_ops source_ops = {
 		.destroy = nullptr,
-		.set_format = nullptr,
+		.set_format = my_source_set_format,
 		.set_frame_rate = nullptr,
 		.alloc_buffers = nullptr,
 		.export_buffers = nullptr,
@@ -84,21 +150,25 @@ void target_usbgadget::operator()()
 		.stream_on = nullptr,
 		.stream_off = nullptr,
 		.queue_buffer = nullptr,
-		.fill_buffer = nullptr,
+		.fill_buffer = my_fill_buffer,
 	};
 
-	video_source source_settings = {
-		.ops = &source_ops,
-		.events = &events,
-		.handler = nullptr,
-		.handler_data = nullptr,
-		.type = VIDEO_SOURCE_STATIC,
-	};
+	struct my_video_source source_settings;
+
+	source_settings.ops          = &source_ops,
+	source_settings.events       = &events,
+	source_settings.handler      = nullptr,
+	source_settings.handler_data = nullptr,
+	source_settings.type         = VIDEO_SOURCE_STATIC;
+	source_settings.s            = s;
 
 	uvc_stream_set_video_source(stream, &source_settings);
 
-	uvc_stream_init_uvc(stream, fc);
+	uvc_set_config(stream->uvc, fc);
+	//uvc_stream_init_uvc(stream, fc);
 
+	events_loop(&events);
+#if 0
 	bool setup_performed = false;
 	bool stream_is_on    = false;
 
@@ -172,8 +242,8 @@ void target_usbgadget::operator()()
 	}
 
 	delete prev_frame;
-
 	s -> stop();
+#endif
 
         uvc_stream_delete(stream);
         video_source_destroy(&source_settings);

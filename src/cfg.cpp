@@ -53,9 +53,7 @@ using namespace libconfig;
 #if HAVE_FFMPEG == 1
 #include "target_ffmpeg.h"
 #endif
-#if HAVE_USBGADGET == 1
 #include "target_usb_gadget.h"
-#endif
 #if HAVE_GSTREAMER == 1
 #include "target_gstreamer.h"
 #endif
@@ -1369,14 +1367,12 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		t = new target_extpipe(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, cmd, cfg, false, handle_failure, sched);
 	}
 	else if (format == "usb-gadget") {
-#if HAVE_USBGADGET == 1
 		int width  = cfg_int(in, "w", "width of usb-gadget target",  false, 1920);
 		int height = cfg_int(in, "h", "height of usb-gadget target", false, 1080);
 
-		t = new target_usbgadget(id, descr, s, width, height, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched);
-#else
-		error_exit(false, "'usb-gadget' support is not linked in");
-#endif
+		std::string uvc_id = cfg_str(in, "uvc-id", "UVC ID", false, "uvc.1");
+
+		t = new target_usbgadget(id, descr, s, width, height, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched, uvc_id);
 	}
 	else if (format == "ffmpeg") {
 #if HAVE_FFMPEG == 1
