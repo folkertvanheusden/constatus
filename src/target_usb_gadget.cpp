@@ -34,41 +34,26 @@ struct my_video_source : public video_source {
 	my_video_source() {
 	}
 	source *s { nullptr };
-	int width  { 320 };
-	int height { 240 };
-	unsigned pixelformat { 0 };
+	int width  { 1280 };
+	int height { 720 };
+	unsigned pixelformat { v4l2_fourcc('Y', 'U', 'Y', 'V')  };
 };
 
 static void my_fill_buffer(video_source *s, video_buffer *buf)
 {
         my_video_source *src = reinterpret_cast<my_video_source *>(s);
-        unsigned int bpl;
-        unsigned int i, j;
         void *mem = buf->mem;
 
-        bpl = src->width * 2;
-        for (i = 0; i < src->height; ++i) {
-                for (j = 0; j < bpl; j += 4) {
-                        if (j < bpl * 1 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xff;
-                        else if (j < bpl * 2 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xff00;
-                        else if (j < bpl * 3 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xff0000;
-                        else if (j < bpl * 4 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xff00ff;
-                        else if (j < bpl * 5 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xffff00;
-                        else if (j < bpl * 6 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xffffff;
-                        else if (j < bpl * 7 / 8)
-                                *(unsigned int *)(mem + i*bpl + j) = 0xf0000f;
-                        else
-                                *(unsigned int *)(mem + i*bpl + j) = 0;
-                }
-        }
+	video_frame *pvf = src->s->get_frame(true, 0);
 
-        buf->bytesused = bpl * src->height;
+	auto frame = pvf->get_data_and_len(E_YUYV);
+	size_t n_bytes = std::get<1>(frame);
+
+	memcpy(mem, std::get<0>(frame), std::min(n_bytes, buf->size));
+
+	delete pvf;
+
+        buf->bytesused = n_bytes;
 }
 
 static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
@@ -79,8 +64,11 @@ static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
         src->height = fmt->height;
         src->pixelformat = fmt->pixelformat;
 
-        if (src->pixelformat != v4l2_fourcc('Y', 'U', 'Y', 'V'))
+        if (src->pixelformat != v4l2_fourcc('Y', 'U', 'Y', 'V')) {
+		const char *p = reinterpret_cast<const char *>(&src->pixelformat);
+		printf("INVALID FORMAT %c%c%c%c\n", p[0], p[1], p[2], p[3]);
                 return -EINVAL;
+	}
 
         return 0;
 }
@@ -169,15 +157,12 @@ void target_usbgadget::operator()()
 
 	struct my_video_source source_settings;
 	source_settings.ops          = &source_ops;
-	source_settings.events       = &events;
 	source_settings.handler      = nullptr;
 	source_settings.handler_data = nullptr;
 	source_settings.type         = VIDEO_SOURCE_STATIC;
 	source_settings.s            = s;
 
 	uvc_stream_set_video_source(stream, &source_settings);
-
-	source_settings.events       = &events;
 	uvc_stream_init_uvc(stream, fc);
 
 	events_loop(&events);
