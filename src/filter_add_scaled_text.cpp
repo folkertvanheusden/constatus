@@ -1,8 +1,8 @@
 // (C) 2017-2023 by folkert van heusden, released under the MIT license
 #include "config.h"
+#include <cstring>
 #include <stdint.h>
 #include <string>
-#include <cstring>
 #include <time.h>
 
 #include "gen.h"

@@ -9,7 +9,9 @@
 #include <unistd.h>
 
 #include "uvc-gadget/include/uvcgadget/configfs.h"
+#include "uvc-gadget/include/uvcgadget/events.h"
 #include "uvc-gadget/include/uvcgadget/stream.h"
+#include "uvc-gadget/include/uvcgadget/video-source.h"
 
 #include "error.h"
 #include "exec.h"
@@ -66,6 +68,37 @@ void target_usbgadget::operator()()
 		log(id, LL_ERR, "Failed open stream");
 		return;
 	}
+
+	struct events events { 0 };
+	uvc_stream_set_event_handler(stream, &events);
+
+	video_source_ops source_ops = {
+		.destroy = nullptr,
+		.set_format = nullptr,
+		.set_frame_rate = nullptr,
+		.alloc_buffers = nullptr,
+		.export_buffers = nullptr,
+		.free_buffers = nullptr,
+		.stream_on = nullptr,
+		.stream_off = nullptr,
+		.queue_buffer = nullptr,
+		.fill_buffer = nullptr,
+	};
+
+	video_source source_settings = {
+		.ops = &source_ops,
+		.events = &events,
+		.handler = nullptr,
+		.handler_data = nullptr,
+		.type = VIDEO_SOURCE_STATIC,
+	};
+
+	uvc_stream_set_video_source(stream, &source_settings);
+
+	uvc_stream_init_uvc(stream, fc);
+
+	bool setup_performed = false;
+	bool stream_is_on    = false;
 
 	for(;!local_stop_flag;) {
 		pauseCheck();
@@ -140,8 +173,10 @@ void target_usbgadget::operator()()
 
 	s -> stop();
 
-	uvc_stream_delete(stream);
-	configfs_free_uvc_function(fc);
+        uvc_stream_delete(stream);
+        video_source_destroy(&source_settings);
+        events_cleanup(&events);
+        configfs_free_uvc_function(fc);
 
 	log(id, LL_INFO, "stopping");
 }

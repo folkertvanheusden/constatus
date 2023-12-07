@@ -123,6 +123,10 @@ add_executable(constatus
 	src/target_usb_gadget.cpp
 	src/target_vnc.cpp
 	src/utils.cpp
+	src/uvc-gadget/lib/configfs.c
+	src/uvc-gadget/lib/events.c
+	src/uvc-gadget/lib/stream.c
+	src/uvc-gadget/lib/video-source.c
 	src/v4l2_loopback.cpp
 	src/video_frame.cpp
 	src/view_3d.cpp
@@ -140,6 +144,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
 target_link_libraries(constatus Threads::Threads)
+
+target_include_directories(constatus PUBLIC src/uvc-gadget/include)
 
 include(FindPkgConfig)
 
