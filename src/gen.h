@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <stdint.h>
+#include <string>
 
 #include "video_frame.h"
 

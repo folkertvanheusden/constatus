@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <poll.h>
 #include <signal.h>
+#include <stdexcept>
 #include <stdint.h>
 #include <string>
 #include <cstring>

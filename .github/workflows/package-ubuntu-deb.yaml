@@ -1,0 +1,11 @@
+on: push
+
+jobs:
+  build-debs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Ubuntu packages
+        uses: jtdor/build-deb-action@v1.7.0
+        with:
+          buildpackage-opts: --build=binary --no-sign
