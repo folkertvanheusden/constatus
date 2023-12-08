@@ -99,7 +99,7 @@ static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
         return 0;
 }
 
-static int my_source_set_frame_rate(struct video_source *s __attribute__((unused)), unsigned int fps __attribute__((unused)))
+static int my_source_set_frame_rate(struct video_source *s, unsigned int fps)
 {
         my_video_source *src = reinterpret_cast<my_video_source *>(s);
 
