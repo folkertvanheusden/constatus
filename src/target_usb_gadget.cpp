@@ -43,11 +43,12 @@ constexpr unsigned pf_mjpg = v4l2_fourcc('M', 'J', 'P', 'G');
 struct my_video_source : public video_source {
 	my_video_source() {
 	}
-	target_usbgadget *t { nullptr };
-	resize *r { nullptr };
-	int width  { 1280 };
-	int height { 720 };
-	unsigned pixelformat { pf_yuyv  };
+
+	target_usbgadget *t      { nullptr };
+	resize           *r      { nullptr };
+	int               width  { 1280 };
+	int               height { 720  };
+	unsigned          pixelformat { pf_yuyv  };
 };
 
 static void my_fill_buffer(video_source *s, video_buffer *buf)
@@ -264,7 +265,7 @@ std::optional<std::string> target_usbgadget::setup()
 
         usbg_ret = usbg_error(usbg_add_config_function(c, "uvc.cam", f_uvc));
 	if (usbg_ret != USBG_SUCCESS) {
-		log(id, LL_ERR, "Error on USB adding acm.GS0: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		log(id, LL_ERR, "Error on USB adding uvc.cam: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
 		return { };
 	}
 
