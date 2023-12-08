@@ -53,8 +53,10 @@ static void my_fill_buffer(video_source *s, video_buffer *buf)
         void *mem = buf->mem;
 
 	video_frame *pvf = src->t->get_prepared_frame();
-	if (!pvf)
+	if (!pvf) {
+		buf->bytesused = 0;
 		return;
+	}
 
 	size_t n_bytes = 0;
 
@@ -62,19 +64,16 @@ static void my_fill_buffer(video_source *s, video_buffer *buf)
 		auto temp_pvf = pvf->do_resize(src->r, src->width, src->height);
 		auto frame    = temp_pvf->get_data_and_len(E_YUYV);
 		n_bytes = std::min(std::get<1>(frame), buf->size);
-
 		memcpy(mem, std::get<0>(frame), n_bytes);
 
 		delete temp_pvf;
 	}
 	else {
 		auto frame = pvf->get_data_and_len(E_YUYV);
-		n_bytes = std::get<1>(frame);
+		n_bytes = std::min(std::get<1>(frame), buf->size);
 
 		memcpy(mem, std::get<0>(frame), n_bytes);
 	}
-
-	delete pvf;
 
         buf->bytesused = n_bytes;
 }
@@ -140,7 +139,7 @@ video_frame * target_usbgadget::get_prepared_frame()
 	prev_ts = pvf->get_ts();
 
 	if (filters && !filters->empty()) {
-		source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
+		source *cur_s = is_view_proxy ? reinterpret_cast<view *>(s)->get_current_source() : s;
 		instance *inst = find_instance_by_interface(cfg, cur_s);
 
 		video_frame *temp = pvf->apply_filtering(inst, cur_s, prev_frame, filters, nullptr);
@@ -178,7 +177,7 @@ void target_usbgadget::unsetup()
 
         usbg_ret = usbg_error(usbg_rm_gadget(g, USBG_RM_RECURSE));
 	if (usbg_ret != USBG_SUCCESS) {
-		log(id, LL_ERR, "Error on removing config: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		log(id, LL_ERR, "Error on removing gadget: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
 		return;
 	}
 
@@ -195,7 +194,7 @@ std::optional<std::string> target_usbgadget::setup()
 		.bMaxPacketSize0 = 64,
 		.idVendor        = VENDOR,
 		.idProduct       = PRODUCT,
-		.bcdDevice       = 0x0001, /* device version */
+		.bcdDevice       = 0x0002, /* device version */
 	};
 
 	usbg_gadget_strs g_strs { 0 };
@@ -328,14 +327,14 @@ void target_usbgadget::operator()()
 
 	events_loop(&events);
 
-	s -> stop();
-
         uvc_stream_delete(stream);
         video_source_destroy(&source_settings);
         events_cleanup(&events);
         configfs_free_uvc_function(fc);
 
 	unsetup();
+
+	s->stop();
 
 	log(id, LL_INFO, "stopping");
 }
