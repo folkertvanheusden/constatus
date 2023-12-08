@@ -1370,9 +1370,7 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		int width  = cfg_int(in, "w", "width of usb-gadget target",  false, 1920);
 		int height = cfg_int(in, "h", "height of usb-gadget target", false, 1080);
 
-		std::string uvc_id = cfg_str(in, "uvc-id", "UVC ID", false, "uvc.1");
-
-		t = new target_usbgadget(id, descr, s, width, height, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched, uvc_id);
+		t = new target_usbgadget(id, descr, s, width, height, interval, filters, override_fps, cfg, jpeg_quality, handle_failure, sched);
 	}
 	else if (format == "ffmpeg") {
 #if HAVE_FFMPEG == 1

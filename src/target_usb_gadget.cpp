@@ -1,6 +1,7 @@
 // (C) 2023 by folkert van heusden, released under the MIT license
 #include "config.h"
 
+#if HAVE_USBGADGET == 1
 #include <fcntl.h>
 #include <glob.h>
 #include <math.h>
@@ -8,6 +9,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <linux/videodev2.h>
+#include <linux/usb/ch9.h>
+#include <usbg/usbg.h>
+#include <usbg/function/uvc.h>
 
 extern "C" {
 #include "uvcgadget/configfs.h"
@@ -29,6 +33,10 @@ extern "C" {
 #include "resize.h"
 #include "schedule.h"
 #include "target_usb_gadget.h"
+
+
+#define VENDOR  0x1d6b
+#define PRODUCT 0x0104
 
 struct my_video_source : public video_source {
 	my_video_source() {
@@ -94,13 +102,104 @@ static int my_source_stream_off(struct video_source *s __attribute__((unused)))
 }
 
 
-target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched, const std::string & uvc_id) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality), uvc_id(uvc_id)
+target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality)
 {
 }
 
 target_usbgadget::~target_usbgadget()
 {
 	stop();
+}
+
+std::optional<std::string> target_usbgadget::setup()
+{
+	usbg_gadget_attrs g_attrs = {
+		.bcdUSB          = 0x0200,
+		.bDeviceClass    = USB_CLASS_PER_INTERFACE,
+		.bDeviceSubClass = 0x00,
+		.bDeviceProtocol = 0x00,
+		.bMaxPacketSize0 = 64,
+		.idVendor        = VENDOR,
+		.idProduct       = PRODUCT,
+		.bcdDevice       = 0x0001, /* device version */
+	};
+
+	usbg_gadget_strs g_strs { 0 };
+	g_strs.serial       = const_cast<char *>("1");
+	g_strs.manufacturer = const_cast<char *>("vanHeusden.com");
+	g_strs.product      = const_cast<char *>("Constatus");
+
+	usbg_config_strs c_strs = {
+		.configuration = "UVC"
+	};
+
+	usbg_f_uvc_frame_attrs uvc_frame_attrs { 0 };
+	uvc_frame_attrs.bFrameIndex     = 1;
+	uvc_frame_attrs.dwFrameInterval = interval * 1000000;
+	uvc_frame_attrs.wHeight         = fixed_height;
+	uvc_frame_attrs.wWidth          = fixed_width;
+
+	usbg_f_uvc_frame_attrs *uvc_frame_mjpeg_attrs[] { &uvc_frame_attrs, nullptr };
+
+	usbg_f_uvc_frame_attrs *uvc_frame_uncompressed_attrs[] { &uvc_frame_attrs, nullptr };
+
+	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
+	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
+	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
+	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
+
+	usbg_f_uvc_format_attrs uvc_format_attrs_uncompressed { 0 };
+	uvc_format_attrs_uncompressed.frames             = uvc_frame_uncompressed_attrs;
+	uvc_format_attrs_uncompressed.format             = "uncompressed/u";
+	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 1;
+
+	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
+
+	usbg_f_uvc_attrs uvc_attrs = {
+		.formats = uvc_format_attrs,
+	};
+
+	usbg_error usbg_ret = usbg_error(usbg_init("/sys/kernel/config", &ug_state));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on USB gadget init: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return { };
+	}
+
+	usbg_ret = usbg_error(usbg_create_gadget(ug_state, "g1", &g_attrs, &g_strs, &g));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on USB create gadget: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return { };
+	}
+
+	std::string function_name = "uvc";
+
+        usbg_ret = usbg_error(usbg_create_function(g, USBG_F_UVC, function_name.c_str(), &uvc_attrs, &f_uvc));
+        if(usbg_ret != USBG_SUCCESS)
+        {
+		log(id, LL_ERR, "Error on USB create uvc function: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return { };
+	}
+
+	usbg_ret = usbg_error(usbg_create_config(g, 1, "Constatus", nullptr, &c_strs, &c));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on USB create configuration: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return { };
+	}
+
+        usbg_ret = usbg_error(usbg_add_config_function(c, "uvc.cam", f_uvc));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on USB adding acm.GS0: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return { };
+	}
+
+	usbg_ret = usbg_error(usbg_enable_gadget(g, DEFAULT_UDC));
+	// USBG_ERROR_BUSY: already enabled
+	if (usbg_ret != USBG_SUCCESS && usbg_ret != USBG_ERROR_BUSY) {
+		log(id, LL_ERR, "Error on USB enabling gadget: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return { };
+	}
+
+	return function_name + ".uvc";
 }
 
 void target_usbgadget::operator()()
@@ -125,9 +224,13 @@ void target_usbgadget::operator()()
 
 	pollfd fds[] = { { -1, POLLIN | POLLPRI | POLLERR, 0 } };
 
-	uvc_function_config *fc = configfs_parse_uvc_function(uvc_id.c_str());
+	auto dev_name = setup();
+	if (dev_name.has_value() == false)
+		return;
+
+	uvc_function_config *fc = configfs_parse_uvc_function(dev_name.value().c_str());
 	if (!fc) {
-		log(id, LL_ERR, "Failed to parse %s", uvc_id.c_str());
+		log(id, LL_ERR, "Failed to process %s", dev_name.value().c_str());
 		return;
 	}
 
@@ -143,16 +246,16 @@ void target_usbgadget::operator()()
 	uvc_stream_set_event_handler(stream, &events);
 
 	video_source_ops source_ops = {
-		.destroy = nullptr,
-		.set_format = my_source_set_format,
+		.destroy        = nullptr,
+		.set_format     = my_source_set_format,
 		.set_frame_rate = my_source_set_frame_rate,
-		.alloc_buffers = nullptr,
+		.alloc_buffers  = nullptr,
 		.export_buffers = nullptr,
-		.free_buffers = my_source_free_buffers,
-		.stream_on = my_source_stream_on,
-		.stream_off = my_source_stream_off,
-		.queue_buffer = nullptr,
-		.fill_buffer = my_fill_buffer,
+		.free_buffers   = my_source_free_buffers,
+		.stream_on      = my_source_stream_on,
+		.stream_off     = my_source_stream_off,
+		.queue_buffer   = nullptr,
+		.fill_buffer    = my_fill_buffer,
 	};
 
 	struct my_video_source source_settings;
@@ -250,3 +353,4 @@ void target_usbgadget::operator()()
 
 	log(id, LL_INFO, "stopping");
 }
+#endif
