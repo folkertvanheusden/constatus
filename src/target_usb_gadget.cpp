@@ -27,7 +27,6 @@ extern "C" {
 #include "log.h"
 #include "picio.h"
 #include "utils.h"
-#include "source.h"
 #include "view.h"
 #include "filter.h"
 #include "resize.h"
@@ -41,7 +40,8 @@ extern "C" {
 struct my_video_source : public video_source {
 	my_video_source() {
 	}
-	source *s { nullptr };
+	target_usbgadget *t { nullptr };
+	resize *r { nullptr };
 	int width  { 1280 };
 	int height { 720 };
 	unsigned pixelformat { v4l2_fourcc('Y', 'U', 'Y', 'V')  };
@@ -52,12 +52,27 @@ static void my_fill_buffer(video_source *s, video_buffer *buf)
         my_video_source *src = reinterpret_cast<my_video_source *>(s);
         void *mem = buf->mem;
 
-	video_frame *pvf = src->s->get_frame(true, 0);
+	video_frame *pvf = src->t->get_prepared_frame();
+	if (!pvf)
+		return;
 
-	auto frame = pvf->get_data_and_len(E_YUYV);
-	size_t n_bytes = std::get<1>(frame);
+	size_t n_bytes = 0;
 
-	memcpy(mem, std::get<0>(frame), std::min(n_bytes, buf->size));
+	if (pvf->get_w() != src->width || pvf->get_h() != src->height) {
+		auto temp_pvf = pvf->do_resize(src->r, src->width, src->height);
+		auto frame    = temp_pvf->get_data_and_len(E_YUYV);
+		n_bytes = std::min(std::get<1>(frame), buf->size);
+
+		memcpy(mem, std::get<0>(frame), n_bytes);
+
+		delete temp_pvf;
+	}
+	else {
+		auto frame = pvf->get_data_and_len(E_YUYV);
+		n_bytes = std::get<1>(frame);
+
+		memcpy(mem, std::get<0>(frame), n_bytes);
+	}
 
 	delete pvf;
 
@@ -112,6 +127,39 @@ target_usbgadget::target_usbgadget(const std::string & id, const std::string & d
 target_usbgadget::~target_usbgadget()
 {
 	stop();
+
+	delete prev_frame;
+}
+
+video_frame * target_usbgadget::get_prepared_frame()
+{
+	video_frame *pvf = s->get_frame(handle_failure, prev_ts);
+	if (!pvf)
+		return nullptr;
+
+	prev_ts = pvf->get_ts();
+
+	if (filters && !filters->empty()) {
+		source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
+		instance *inst = find_instance_by_interface(cfg, cur_s);
+
+		video_frame *temp = pvf->apply_filtering(inst, cur_s, prev_frame, filters, nullptr);
+		delete pvf;
+		pvf = temp;
+	}
+
+	delete prev_frame;
+	prev_frame = pvf;
+
+	return pvf;
+
+}
+
+void target_usbgadget::stop()
+{
+	events_stop(&events);
+
+	interface::stop();
 }
 
 void target_usbgadget::unsetup()
@@ -234,22 +282,6 @@ void target_usbgadget::operator()()
 
 	s->start();
 
-	const double fps = 1.0 / interval;
-
-	uint64_t prev_ts = 0;
-	bool is_start = true;
-	std::string name;
-	unsigned f_nr = 0;
-
-	int fd = -1;
-	std::vector<uint8_t *> buffers;
-	int buffer_nr = 0;
-	int nbufs = 1;
-
-	video_frame *prev_frame = nullptr;
-
-	pollfd fds[] = { { -1, POLLIN | POLLPRI | POLLERR, 0 } };
-
 	auto dev_name = setup();
 	if (dev_name.has_value() == false)
 		return;
@@ -266,7 +298,6 @@ void target_usbgadget::operator()()
 		return;
 	}
 
-	struct events events { 0 };
 	events_init(&events);
 
 	uvc_stream_set_event_handler(stream, &events);
@@ -289,88 +320,15 @@ void target_usbgadget::operator()()
 	source_settings.handler      = nullptr;
 	source_settings.handler_data = nullptr;
 	source_settings.type         = VIDEO_SOURCE_STATIC;
-	source_settings.s            = s;
+	source_settings.t            = this;
+	source_settings.r            = cfg->r;
 
 	uvc_stream_set_video_source(stream, &source_settings);
 	uvc_stream_init_uvc(stream, fc);
 
-//	events_loop(&events);
-#if 0
-	bool setup_performed = false;
-	bool stream_is_on    = false;
+	events_loop(&events);
 
-	for(;!local_stop_flag;) {
-		pauseCheck();
-
-		st->track_fps();
-
-		uint64_t before_ts = get_us();
-
-		video_frame *pvf = s->get_frame(handle_failure, prev_ts);
-
-		if (pvf) {
-			if (setup_performed == false) {
-				setup_performed = true;
-
-				// TODO
-
-				for(unsigned i=0; i<nbufs/*reqbuf.count*/; i++) {
-					uint8_t *buffer = reinterpret_cast<uint8_t *>(calloc(fixed_width * 3, fixed_height));
-
-					buffers.push_back(buffer);
-				}
-			}
-
-			prev_ts = pvf->get_ts();
-
-			if (filters && !filters->empty()) {
-				source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
-				instance *inst = find_instance_by_interface(cfg, cur_s);
-
-				video_frame *temp = pvf->apply_filtering(inst, cur_s, prev_frame, filters, nullptr);
-				delete pvf;
-				pvf = temp;
-			}
-
-			const bool allow_store = sched == nullptr || (sched && sched->is_on());
-
-			if (allow_store && pvf->get_w() != -1 && stream_is_on) {
-				size_t n_bytes = 0;
-
-				if (pvf->get_w() != fixed_width || pvf->get_h() != fixed_height) {
-					auto temp_pvf = pvf->do_resize(cfg->r, fixed_width, fixed_height);
-
-					auto frame = temp_pvf->get_data_and_len(E_YUYV);
-
-					n_bytes = std::get<1>(frame);
-
-					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
-
-					delete temp_pvf;
-				}
-				else {
-					auto frame = pvf->get_data_and_len(E_YUYV);
-
-					n_bytes = std::get<1>(frame);
-
-					memcpy(buffers[buffer_nr], std::get<0>(frame), std::get<1>(frame));
-				}
-
-				// TODO
-			}
-
-			delete prev_frame;
-			prev_frame = pvf;
-		}
-
-		st->track_cpu_usage();
-
-		handle_fps(&local_stop_flag, fps, before_ts);
-	}
-
-	delete prev_frame;
 	s -> stop();
-#endif
 
         uvc_stream_delete(stream);
         video_source_destroy(&source_settings);

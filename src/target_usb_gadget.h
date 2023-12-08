@@ -9,7 +9,12 @@
 #include <usbg/usbg.h>
 #include <usbg/function/uvc.h>
 
+#include "source.h"
 #include "target.h"
+
+extern "C" {
+#include "uvcgadget/events.h"
+}
 
 
 class schedule;
@@ -27,12 +32,21 @@ private:
         usbg_config *c         { nullptr };
         usbg_function *f_uvc   { nullptr };
 
+	struct events events   { 0 };
+
+	video_frame *prev_frame { nullptr };
+	uint64_t prev_ts       { 0 };
+
 	std::optional<std::string> setup();
 	void                       unsetup();
 
 public:
 	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
 	virtual ~target_usbgadget();
+
+	void stop() override;
+
+	video_frame * get_prepared_frame();
 
 	void operator()() override;
 };
