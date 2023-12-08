@@ -37,6 +37,9 @@ extern "C" {
 #define VENDOR  0x1d6b
 #define PRODUCT 0x0104
 
+constexpr unsigned pf_yuyv = v4l2_fourcc('Y', 'U', 'Y', 'V');
+constexpr unsigned pf_mjpg = v4l2_fourcc('M', 'J', 'P', 'G');
+
 struct my_video_source : public video_source {
 	my_video_source() {
 	}
@@ -44,7 +47,7 @@ struct my_video_source : public video_source {
 	resize *r { nullptr };
 	int width  { 1280 };
 	int height { 720 };
-	unsigned pixelformat { v4l2_fourcc('Y', 'U', 'Y', 'V')  };
+	unsigned pixelformat { pf_yuyv  };
 };
 
 static void my_fill_buffer(video_source *s, video_buffer *buf)
@@ -62,14 +65,14 @@ static void my_fill_buffer(video_source *s, video_buffer *buf)
 
 	if (pvf->get_w() != src->width || pvf->get_h() != src->height) {
 		auto temp_pvf = pvf->do_resize(src->r, src->width, src->height);
-		auto frame    = temp_pvf->get_data_and_len(E_YUYV);
+		auto frame    = temp_pvf->get_data_and_len(src->pixelformat == pf_yuyv ? E_YUYV : E_JPEG);
 		n_bytes = std::min(std::get<1>(frame), buf->size);
 		memcpy(mem, std::get<0>(frame), n_bytes);
 
 		delete temp_pvf;
 	}
 	else {
-		auto frame = pvf->get_data_and_len(E_YUYV);
+		auto frame = pvf->get_data_and_len(src->pixelformat == pf_yuyv ? E_YUYV : E_JPEG);
 		n_bytes = std::min(std::get<1>(frame), buf->size);
 
 		memcpy(mem, std::get<0>(frame), n_bytes);
@@ -86,9 +89,9 @@ static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
         src->height = fmt->height;
         src->pixelformat = fmt->pixelformat;
 
-        if (src->pixelformat != v4l2_fourcc('Y', 'U', 'Y', 'V')) {
+        if (src->pixelformat != pf_yuyv && src->pixelformat != pf_mjpg) {
 		const char *p = reinterpret_cast<const char *>(&src->pixelformat);
-		printf("INVALID FORMAT %c%c%c%c\n", p[0], p[1], p[2], p[3]);
+		printf("UNSUPPORTED PIXEL FORMAT %c%c%c%c\n", p[0], p[1], p[2], p[3]);
                 return -EINVAL;
 	}
 
