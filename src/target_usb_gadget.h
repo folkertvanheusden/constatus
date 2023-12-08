@@ -35,18 +35,20 @@ private:
 	struct events events   { 0 };
 
 	video_frame *prev_frame { nullptr };
-	uint64_t prev_ts       { 0 };
+	uint64_t s_prev_ts     { 0 };
+	uint64_t t_prev_ts     { 0 };
 
 	std::optional<std::string> setup();
 	void                       unsetup();
 
 public:
-	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
+	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
 	virtual ~target_usbgadget();
 
 	void stop() override;
 
 	video_frame * get_prepared_frame();
+	void override_fps(const unsigned new_fps);
 
 	void operator()() override;
 };

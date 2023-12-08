@@ -101,6 +101,11 @@ static int my_source_set_format(video_source *s, v4l2_pix_format *fmt)
 
 static int my_source_set_frame_rate(struct video_source *s __attribute__((unused)), unsigned int fps __attribute__((unused)))
 {
+        my_video_source *src = reinterpret_cast<my_video_source *>(s);
+
+	if (fps)
+		src->t->override_fps(fps);
+
         return 0;
 }
 
@@ -123,7 +128,7 @@ static void my_source_destroy(struct video_source *s __attribute__((unused)))
 {
 }
 
-target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality)
+target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", -1, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality)
 {
 }
 
@@ -134,13 +139,25 @@ target_usbgadget::~target_usbgadget()
 	delete prev_frame;
 }
 
+void target_usbgadget::override_fps(const unsigned new_fps)
+{
+	interval = 1. / new_fps;
+}
+
 video_frame * target_usbgadget::get_prepared_frame()
 {
-	video_frame *pvf = s->get_frame(handle_failure, prev_ts);
+	uint64_t now_ts        = get_us();
+	uint64_t next_frame_ts = t_prev_ts + interval * 1000000;
+	if (next_frame_ts > now_ts)
+		myusleep(next_frame_ts - now_ts);
+
+	t_prev_ts = next_frame_ts;
+
+	video_frame *pvf = s->get_frame(handle_failure, s_prev_ts);
 	if (!pvf)
 		return nullptr;
 
-	prev_ts = pvf->get_ts();
+	s_prev_ts = pvf->get_ts();
 
 	if (filters && !filters->empty()) {
 		source *cur_s = is_view_proxy ? reinterpret_cast<view *>(s)->get_current_source() : s;
@@ -207,7 +224,7 @@ std::optional<std::string> target_usbgadget::setup()
 	g_strs.product      = const_cast<char *>("Constatus");
 
 	usbg_config_strs c_strs = {
-		.configuration = "UVC"
+		.configuration = const_cast<char *>("UVC")
 	};
 
 	usbg_f_uvc_frame_attrs uvc_frame_attrs { 0 };
@@ -223,12 +240,12 @@ std::optional<std::string> target_usbgadget::setup()
 	usbg_f_uvc_format_attrs uvc_format_attrs_mjpeg { 0 };
 	uvc_format_attrs_mjpeg.frames             = uvc_frame_mjpeg_attrs;
 	uvc_format_attrs_mjpeg.format             = "mjpeg/m";
-	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 1;
+	uvc_format_attrs_mjpeg.bDefaultFrameIndex = 3;
 
 	usbg_f_uvc_format_attrs uvc_format_attrs_uncompressed { 0 };
 	uvc_format_attrs_uncompressed.frames             = uvc_frame_uncompressed_attrs;
 	uvc_format_attrs_uncompressed.format             = "uncompressed/u";
-	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 1;
+	uvc_format_attrs_uncompressed.bDefaultFrameIndex = 2;
 
 	usbg_f_uvc_format_attrs *uvc_format_attrs[] { &uvc_format_attrs_mjpeg, &uvc_format_attrs_uncompressed, nullptr };
 

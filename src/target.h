@@ -20,23 +20,34 @@ std::string gen_filename(source *const s, const std::string & fmt, const std::st
 class target : public interface
 {
 protected:
-	source *const s;
-	const std::string store_path, prefix, fmt;
-	const int max_time;
-	const double interval;
+	source     *const s;
+
+	const std::string store_path;
+	const std::string prefix;
+	const std::string fmt;
+
+	const int         max_time { 0   };
+	double            interval { 0.1 };
+	const double      override_fps;  // for output-files
+
 	const std::vector<filter *> *const filters;
-	const std::string exec_start, exec_cycle, exec_end;
-	const double override_fps;
+
+	const std::string exec_start;
+	const std::string exec_cycle;
+	const std::string exec_end;
+
 	configuration_t *const cfg;
-	const bool is_view_proxy, handle_failure;
-	schedule *const sched;
+	schedule        *const sched;
+
+	const bool        is_view_proxy;
+	const bool        handle_failure;
 
 	std::vector<video_frame *> pre_record;
 
-	unsigned long current_event_nr;
+	unsigned long current_event_nr = 0;
 
 	std::thread *exec_start_th { nullptr };
-	std::thread *exec_end_th { nullptr };
+	std::thread *exec_end_th   { nullptr };
 
 	void register_file(const std::string & filename);
 
