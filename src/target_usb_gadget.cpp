@@ -101,6 +101,9 @@ static int my_source_stream_off(struct video_source *s __attribute__((unused)))
         return 0;
 }
 
+static void my_source_destroy(struct video_source *s __attribute__((unused)))
+{
+}
 
 target_usbgadget::target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched) : target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched), fixed_width(width), fixed_height(height), quality(quality)
 {
@@ -109,6 +112,29 @@ target_usbgadget::target_usbgadget(const std::string & id, const std::string & d
 target_usbgadget::~target_usbgadget()
 {
 	stop();
+}
+
+void target_usbgadget::unsetup()
+{
+	usbg_error usbg_ret = usbg_error(usbg_disable_gadget(g));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on gadget disable: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return;
+	}
+
+        usbg_ret = usbg_error(usbg_rm_config(c, USBG_RM_RECURSE));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on removing config: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return;
+	}
+
+        usbg_ret = usbg_error(usbg_rm_gadget(g, USBG_RM_RECURSE));
+	if (usbg_ret != USBG_SUCCESS) {
+		log(id, LL_ERR, "Error on removing config: %s / %s", usbg_error_name(usbg_ret), usbg_strerror(usbg_ret));
+		return;
+	}
+
+	usbg_cleanup(ug_state);
 }
 
 std::optional<std::string> target_usbgadget::setup()
@@ -246,7 +272,7 @@ void target_usbgadget::operator()()
 	uvc_stream_set_event_handler(stream, &events);
 
 	video_source_ops source_ops = {
-		.destroy        = nullptr,
+		.destroy        = my_source_destroy,
 		.set_format     = my_source_set_format,
 		.set_frame_rate = my_source_set_frame_rate,
 		.alloc_buffers  = nullptr,
@@ -268,7 +294,7 @@ void target_usbgadget::operator()()
 	uvc_stream_set_video_source(stream, &source_settings);
 	uvc_stream_init_uvc(stream, fc);
 
-	events_loop(&events);
+//	events_loop(&events);
 #if 0
 	bool setup_performed = false;
 	bool stream_is_on    = false;
@@ -350,6 +376,8 @@ void target_usbgadget::operator()()
         video_source_destroy(&source_settings);
         events_cleanup(&events);
         configfs_free_uvc_function(fc);
+
+	unsetup();
 
 	log(id, LL_INFO, "stopping");
 }

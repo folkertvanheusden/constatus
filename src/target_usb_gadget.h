@@ -28,6 +28,7 @@ private:
         usbg_function *f_uvc   { nullptr };
 
 	std::optional<std::string> setup();
+	void                       unsetup();
 
 public:
 	target_usbgadget(const std::string & id, const std::string & descr, source *const s, const int width, const int height, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int quality, const bool handle_failure, schedule *const sched);
