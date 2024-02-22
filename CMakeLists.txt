@@ -98,6 +98,7 @@ add_executable(constatus
 	src/source_ffmpeg.cpp
 	src/source_filesystem_jpeg.cpp
 	src/source_gstreamer.cpp
+	src/source_http_bmp.cpp
 	src/source_http_jpeg.cpp
 	src/source_http_mjpeg.cpp
 	src/source_http_png.cpp

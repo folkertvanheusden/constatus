@@ -23,6 +23,7 @@ using namespace libconfig;
 #if HAVE_LIBCAMERA == 1 || HAVE_LIBCAMERA2 == 1
 #include "source_libcamera.h"
 #endif
+#include "source_http_bmp.h"
 #include "source_http_mjpeg.h"
 #include "source_http_jpeg.h"
 #include "source_http_png.h"
@@ -1121,6 +1122,13 @@ source * load_source(configuration_t *const cfg, const Setting & o_source, const
 			const std::string url = cfg_str(o_source, "url", "address of PNG-files stream", false, "");
 
 			s = new source_http_png(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
+		}
+		else if (s_type == "bmp") {
+			bool ign_cert = cfg_bool(o_source, "ignore-cert", "ignore SSL errors", true, false);
+			const std::string auth = cfg_str(o_source, "http-auth", "HTTP authentication string", true, "");
+			const std::string url = cfg_str(o_source, "url", "address of BMP-files stream", false, "");
+
+			s = new source_http_bmp(id, descr, exec_failure, url, ign_cert, auth, max_fps, cfg->r, resize_w, resize_h, loglevel, timeout, source_filters, failure, use_controls ? new controls_software() : nullptr, jpeg_quality, cfg->text_feeds, keep_aspectratio);
 		}
 		else if (s_type == "jpeg-file") {
 			const std::string path = cfg_str(o_source, "path", "path + file name of JPEG file to monitor", false, "");

@@ -33,3 +33,5 @@ public:
 };
 
 extern thread_local myjpeg my_jpeg;
+
+bool read_bmp(unsigned char *in, int n_bytes_in, int *w, int *h, unsigned char **pixels);
