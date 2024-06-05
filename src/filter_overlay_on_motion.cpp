@@ -58,7 +58,7 @@ void filter_overlay_on_motion::apply(instance *const i, interface *const specifi
 		const int in_w = vf->get_w();
 		const int in_h = vf->get_h();
 
-		int perc = std::max(1, std::min(in_w * 100 / w, in_h * 100 / h));
+		int perc = std::max(1, std::min(w * 100 / in_w, h * 100 / in_h));
 
 		pos_t p { center_center, 0, 0 };
 
