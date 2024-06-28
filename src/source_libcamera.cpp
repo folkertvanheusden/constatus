@@ -44,7 +44,7 @@ void source_libcamera::request_completed(libcamera::Request *request)
 
 			if (pixelformat == libcamera::formats::MJPEG)
 				set_frame(E_JPEG, data, length);
-#ifdef __arm__  // hopefully a raspberry pi
+#if defined(__arm__) || defined(__aarch64__)  // hopefully a raspberry pi
 			else if (pixelformat == libcamera::formats::RGB888)
 				set_frame(E_BGR, data, length);
 			else if (pixelformat == libcamera::formats::BGR888)
@@ -175,7 +175,7 @@ void source_libcamera::operator()()
 		// try RGB
 		stream_config.size.width = w_requested;
 		stream_config.size.height = h_requested;
-#ifdef __arm__  // hopefully a raspberry pi
+#if defined(__arm__) || defined(__aarch64__)  // hopefully a raspberry pi
 		stream_config.pixelFormat = libcamera::formats::BGR888;
 #else
 		stream_config.pixelFormat = libcamera::formats::RGB888;
@@ -194,7 +194,7 @@ void source_libcamera::operator()()
 		// try BGR
 		stream_config.size.width = w_requested;
 		stream_config.size.height = h_requested;
-#ifdef __arm__  // hopefully a raspberry pi
+#if defined(__arm__) || defined(__aarch64__)  // hopefully a raspberry pi
 		stream_config.pixelFormat = libcamera::formats::RGB888;
 #else
 		stream_config.pixelFormat = libcamera::formats::BGR888;
