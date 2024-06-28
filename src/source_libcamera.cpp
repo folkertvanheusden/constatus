@@ -146,11 +146,11 @@ void source_libcamera::operator()()
 		if (rotate_angle == 0) {
 		}
 		else if (rotate_angle == 90)
-			camera_config->transform = libcamera::Transform::Rot90;
+			camera_config->orientation = libcamera::Orientation::Rotate90;
 		else if (rotate_angle == 180)
-			camera_config->transform = libcamera::Transform::Rot180;
+			camera_config->orientation = libcamera::Orientation::Rotate180;
 		else if (rotate_angle == 270)
-			camera_config->transform = libcamera::Transform::Rot270;
+			camera_config->orientation = libcamera::Orientation::Rotate270;
 		else
 			error_exit(false, "Can only rotate in steps of 90 degrees (not %d, libcamera - %s)", rotate_angle, dev.c_str());
 
