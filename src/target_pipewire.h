@@ -11,19 +11,19 @@ struct pmit_data
 {
 	std::string id;
 
-	struct pw_context *context { nullptr };
-        struct pw_main_loop *loop { nullptr };
-	struct pw_core *core { nullptr };
+	pw_context   *context { nullptr };
+        pw_main_loop *loop    { nullptr };
+	pw_core      *core    { nullptr };
 
-	struct pw_stream *stream { nullptr };
-	struct spa_hook stream_listener;
+	pw_stream    *stream  { nullptr };
+	spa_hook stream_listener;
 
-	struct spa_video_info_raw format;
-	int32_t stride { 0 };
+	spa_video_info_raw format;
+	int32_t       stride  { 0 };
 
-	uint32_t seq { 0 };
+	uint32_t      seq     { 0 };
 
-	source *s { nullptr };
+	source       *s       { nullptr };
 
 	std::atomic_bool playing { false };
 };
@@ -33,7 +33,7 @@ class target_pipewire : public target
 private:
 	const int quality;
 
-	struct pmit_data data;
+	pmit_data data;
 
 	std::atomic_bool playing { false };
 

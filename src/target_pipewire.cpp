@@ -2,7 +2,9 @@
 //
 // This code is based on:
 // https://github.com/PipeWire/pipewire/blob/master/src/examples/video-src.c
+
 #include "config.h"
+
 #if HAVE_PIPEWIRE == 1
 #include <unistd.h>
 
@@ -20,28 +22,28 @@
 #define BPP		3
 #define MAX_BUFFERS	64
 
-void put_frame(struct pmit_data *data, video_frame *in)
+void put_frame(pmit_data *data, video_frame *in)
 {
-	struct pw_buffer *b { nullptr };
-	struct spa_meta *m { nullptr };
-	struct spa_meta_header *h { nullptr };
-	struct spa_meta_region *mc { nullptr };
+	pw_buffer *b { nullptr };
+	spa_meta *m { nullptr };
+	spa_meta_header *h { nullptr };
+	spa_meta_region *mc { nullptr };
 
 	if ((b = pw_stream_dequeue_buffer(data->stream)) == NULL) {
 		pw_log_warn("out of buffers: %m");
 		return;
 	}
 
-	struct spa_buffer *buf = (struct spa_buffer *)b->buffer;
+	spa_buffer *buf = (spa_buffer *)b->buffer;
 	uint8_t *p = (uint8_t *)buf->datas[0].data;
 	if (p == NULL) {
 		pw_log_warn("p is NULL");
 		return;
 	}
 
-	if ((h = (struct spa_meta_header *)spa_buffer_find_meta_data(buf, SPA_META_Header, sizeof(*h)))) {
+	if ((h = (spa_meta_header *)spa_buffer_find_meta_data(buf, SPA_META_Header, sizeof(*h)))) {
 #if 0
-		struct timespec now;
+		timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		h->pts = SPA_TIMESPEC_TO_NSEC(&now); // FIXME timestamp van frame
 #else
@@ -66,7 +68,7 @@ void put_frame(struct pmit_data *data, video_frame *in)
 
 void on_stream_state_changed(void *data_in, enum pw_stream_state old, enum pw_stream_state state, const char *error)
 {
-	struct pmit_data *data = (struct pmit_data *)data_in;
+	pmit_data *data = (pmit_data *)data_in;
 
 	log(data->id, LL_INFO, "stream state: \"%s\"", pw_stream_state_as_string(state));
 
@@ -89,13 +91,13 @@ void on_stream_state_changed(void *data_in, enum pw_stream_state old, enum pw_st
 	}
 }
 
-void on_stream_param_changed(void *data_in, uint32_t id, const struct spa_pod *param)
+void on_stream_param_changed(void *data_in, uint32_t id, const spa_pod *param)
 {
-	struct pmit_data *data = (struct pmit_data *)data_in;
-	struct pw_stream *stream = data->stream;
+	pmit_data *data = (pmit_data *)data_in;
+	pw_stream *stream = data->stream;
 	uint8_t params_buffer[1024];
-	struct spa_pod_builder b = SPA_POD_BUILDER_INIT(params_buffer, sizeof(params_buffer));
-	const struct spa_pod *params[5];
+	spa_pod_builder b = SPA_POD_BUILDER_INIT(params_buffer, sizeof(params_buffer));
+	const spa_pod *params[5];
 
 	if (param == NULL || id != SPA_PARAM_Format)
 		return;
@@ -104,7 +106,7 @@ void on_stream_param_changed(void *data_in, uint32_t id, const struct spa_pod *p
 
 	data->stride = SPA_ROUND_UP_N(data->format.size.width * BPP, 4);
 
-	params[0] = (const struct spa_pod *)spa_pod_builder_add_object(&b,
+	params[0] = (const spa_pod *)spa_pod_builder_add_object(&b,
 		SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers,
 		SPA_PARAM_BUFFERS_buffers, SPA_POD_CHOICE_RANGE_Int(8, 2, MAX_BUFFERS),
 		SPA_PARAM_BUFFERS_blocks,  SPA_POD_Int(1),
@@ -112,15 +114,15 @@ void on_stream_param_changed(void *data_in, uint32_t id, const struct spa_pod *p
 		SPA_PARAM_BUFFERS_stride,  SPA_POD_Int(data->stride),
 		SPA_PARAM_BUFFERS_align,   SPA_POD_Int(16));
 
-	params[1] = (const struct spa_pod *)spa_pod_builder_add_object(&b,
+	params[1] = (const spa_pod *)spa_pod_builder_add_object(&b,
 		SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta,
 		SPA_PARAM_META_type, SPA_POD_Id(SPA_META_Header),
-		SPA_PARAM_META_size, SPA_POD_Int(sizeof(struct spa_meta_header)));
+		SPA_PARAM_META_size, SPA_POD_Int(sizeof(spa_meta_header)));
 
-	params[2] = (const struct spa_pod *)spa_pod_builder_add_object(&b,
+	params[2] = (const spa_pod *)spa_pod_builder_add_object(&b,
 		SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta,
 		SPA_PARAM_META_type, SPA_POD_Id(SPA_META_VideoCrop),
-		SPA_PARAM_META_size, SPA_POD_Int(sizeof(struct spa_meta_region)));
+		SPA_PARAM_META_size, SPA_POD_Int(sizeof(spa_meta_region)));
 
 	pw_stream_update_params(stream, params, 3);
 }
@@ -134,9 +136,9 @@ const struct pw_stream_events stream_events = {
 target_pipewire::target_pipewire(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, schedule *const sched) : 
 	target(id, descr, s, "", "", "", -1, interval, filters, "", "", "", -1, cfg, is_view_proxy, handle_failure, sched), quality(100)
 {
-	const struct spa_pod *params[1] = { nullptr };
-	uint8_t buffer[1024];
-	struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof buffer);
+	const spa_pod *params[1] = { nullptr };
+	uint8_t buffer[1024] { };
+	spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof buffer);
 
 	data.id = id;
 
@@ -156,13 +158,13 @@ target_pipewire::target_pipewire(const std::string & id, const std::string & des
 	(void)s -> get_frame(handle_failure, 0);
 	s -> stop();
 
-	struct spa_rectangle min_dim = SPA_RECTANGLE(1, 1);
-	struct spa_rectangle default_dim = SPA_RECTANGLE(uint32_t(s->get_width()), uint32_t(s->get_height()));
-	struct spa_rectangle max_dim = default_dim;
+	spa_rectangle min_dim = SPA_RECTANGLE(1, 1);
+	spa_rectangle default_dim = SPA_RECTANGLE(uint32_t(s->get_width()), uint32_t(s->get_height()));
+	spa_rectangle max_dim = default_dim;
 
-	struct spa_fraction spa_fps = SPA_FRACTION(uint32_t(interval), 1);
+	spa_fraction spa_fps = SPA_FRACTION(uint32_t(interval), 1);
 
-	params[0] = (const struct spa_pod *)spa_pod_builder_add_object(&b,
+	params[0] = (const spa_pod *)spa_pod_builder_add_object(&b,
 			SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
 			SPA_FORMAT_mediaType,       SPA_POD_Id(SPA_MEDIA_TYPE_video),
 			SPA_FORMAT_mediaSubtype,    SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
