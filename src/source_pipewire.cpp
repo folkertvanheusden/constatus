@@ -170,7 +170,6 @@ source_pipewire::source_pipewire(const std::string & id, const std::string & des
 			SPA_FORMAT_mediaSubtype,    SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
 			SPA_FORMAT_VIDEO_format,    SPA_POD_CHOICE_ENUM_Id(4,
 				SPA_VIDEO_FORMAT_RGB,
-				SPA_VIDEO_FORMAT_RGB,
 				SPA_VIDEO_FORMAT_YUY2,
 				SPA_VIDEO_FORMAT_I420),
 			SPA_FORMAT_VIDEO_size,      SPA_POD_CHOICE_RANGE_Rectangle(
