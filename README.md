@@ -83,7 +83,7 @@ You may need libboost-system-dev, see the 'FAQ' section at the bottom.
   - pkg-config
 
 - Not required (OPTIONAL!):
-  - libusbgx-dev                - for "USB gadget mode"
+  - libusbgx-dev                - for "USB gadget mode" (use the one from github)
   - libtheora-dev               - Ogg/Theora streaming
   - libcamera-dev               - libcamera still once in a while changes API so this may not always compile
   - libv4l-dev			        - USB cameras (it will complain that "libv4l2" is missing if not installed)
