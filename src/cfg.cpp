@@ -1374,12 +1374,14 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 
 		t = new target_extpipe(id, descr, s, path, prefix, fmt, jpeg_quality, restart_interval, interval, filters, exec_start, exec_cycle, exec_end, cmd, cfg, false, handle_failure, sched);
 	}
+#if HAVE_USBGADGET == 1
 	else if (format == "usb-gadget") {
 		int width  = cfg_int(in, "w", "width of usb-gadget target",  false, 1920);
 		int height = cfg_int(in, "h", "height of usb-gadget target", false, 1080);
 
 		t = new target_usbgadget(id, descr, s, width, height, interval, filters, cfg, jpeg_quality, handle_failure, sched);
 	}
+#endif
 	else if (format == "ffmpeg") {
 #if HAVE_FFMPEG == 1
 		int bitrate = cfg_int(in, "bitrate", "How many bits per second to emit. For 352x288 200000 is a sane value. This value affects the quality.", true, 200000);

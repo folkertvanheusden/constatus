@@ -1,3 +1,4 @@
 [submodule "src/uvc-gadget"]
 	path = src/uvc-gadget
-	url = https://gitlab.freedesktop.org/folkertvanheusden/uvc-gadget.git
+	url = https://gitlab.freedesktop.org/camera/uvc-gadget.git
+	branch = main
