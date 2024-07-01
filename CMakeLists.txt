@@ -98,6 +98,7 @@ add_executable(constatus
 	src/source_ffmpeg.cpp
 	src/source_filesystem_jpeg.cpp
 	src/source_gstreamer.cpp
+	src/source_http_bmp.cpp
 	src/source_http_jpeg.cpp
 	src/source_http_mjpeg.cpp
 	src/source_http_png.cpp
@@ -306,6 +307,7 @@ if (LIBCAMERA_FOUND)
 	target_include_directories(list-libcamera PUBLIC ${LIBCAMERA_INCLUDE_DIRS})
 	target_compile_options(list-libcamera PUBLIC ${LIBCAMERA_CFLAGS_OTHER})
 	target_include_directories(list-libcamera PUBLIC "${PROJECT_BINARY_DIR}")
+	install(TARGETS list-libcamera DESTINATION bin)
 else()
 	message("libcamera NOT found, list-libcamera won't be build")
 endif()
@@ -365,7 +367,6 @@ target_include_directories(constatus PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(constatus "-Wl,--export-dynamic -latomic")
 
 install(TARGETS constatus DESTINATION bin)
-install(TARGETS list-libcamera DESTINATION bin)
 install(FILES man/constatus.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
 install(FILES constatus.cfg DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)

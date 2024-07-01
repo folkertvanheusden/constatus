@@ -168,8 +168,7 @@ source_pipewire::source_pipewire(const std::string & id, const std::string & des
 			SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
 			SPA_FORMAT_mediaType,       SPA_POD_Id(SPA_MEDIA_TYPE_video),
 			SPA_FORMAT_mediaSubtype,    SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
-			SPA_FORMAT_VIDEO_format,    SPA_POD_CHOICE_ENUM_Id(4,
-				SPA_VIDEO_FORMAT_RGB,
+			SPA_FORMAT_VIDEO_format,    SPA_POD_CHOICE_ENUM_Id(3,
 				SPA_VIDEO_FORMAT_RGB,
 				SPA_VIDEO_FORMAT_YUY2,
 				SPA_VIDEO_FORMAT_I420),
@@ -183,11 +182,20 @@ source_pipewire::source_pipewire(const std::string & id, const std::string & des
 				&max_frac),
 			SPA_PARAM_BUFFERS_dataType, SPA_POD_CHOICE_FLAGS_Int((1<<SPA_DATA_MemPtr)));
 
-	pw_stream_connect(data.stream,
-			PW_DIRECTION_INPUT,
-			source_id,
-			pw_stream_flags(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS),
-			params, 1);
+	if (source_id >= 0) {
+		pw_stream_connect(data.stream,
+				PW_DIRECTION_INPUT,
+				source_id,
+				pw_stream_flags(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS),
+				params, 1);
+	}
+	else {
+		pw_stream_connect(data.stream,
+				PW_DIRECTION_INPUT,
+				source_id,
+				pw_stream_flags(PW_STREAM_FLAG_MAP_BUFFERS),
+				params, 1);
+	}
 }
 
 source_pipewire::~source_pipewire()

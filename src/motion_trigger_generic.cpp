@@ -256,14 +256,20 @@ void motion_trigger_generic::operator()()
 		const int nl3 = nl * 3;
 
 		if (et) {
-			char *meta = nullptr;
+			if (prev_frame) {
+				char *meta = nullptr;
 
-			triggered = et -> detect_motion(et -> arg, pvf->get_ts(), w, h, prev_frame->get_data(E_RGB), pvf->get_data(E_RGB), psb, &meta);
+				triggered = et -> detect_motion(et -> arg, pvf->get_ts(), w, h, prev_frame->get_data(E_RGB), pvf->get_data(E_RGB), psb, &meta);
 
-			if (meta) {
-				get_meta() -> set_string("$motion-meta$", std::pair<uint64_t, std::string>(get_us(), meta));
-				free(meta);
+				if (meta) {
+					get_meta() -> set_string("$motion-meta$", std::pair<uint64_t, std::string>(get_us(), meta));
+					free(meta);
+				}
+
+				delete prev_frame;
 			}
+
+			prev_frame = pvf->duplicate(E_RGB);
 		}
 		else if (psb || pan_tilt || !despeckle_filter.empty()) {
 			calc_diff(scratch, n_pixels, gray_cur, gray_prev);
@@ -330,7 +336,7 @@ void motion_trigger_generic::operator()()
 
 			count_frames_changed++;
 
-			if (count_frames_changed >= min_n_frames) {
+			if (count_frames_changed >= min_n_frames || et) {
 				log(id, LL_INFO, "motion detected (%f%% of the pixels changed)", cnt * 100.0 / n_pixels);
 
 				for(auto ec : event_clients)

@@ -1,3 +1,8 @@
+KEEP-ALIVE
+==========
+Blinks a dot in the upper corner if the feed is alive
+
+
 RED INVERTER
 ============
 demo is a filter in C, inverting the red channel
