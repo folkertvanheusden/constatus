@@ -13,8 +13,13 @@ int main(int argc, char *argv[])
 	}
 
 	auto cams = lcm->cameras();
-	for(auto camera : cams)
+	for(auto camera : cams) {
 		printf("libcamera device: %s\n", camera.get()->id().c_str());
+
+		printf("   resolutions:\n");
+		for(auto & stream : camera.get()->streams())
+			printf("      %s\n", stream->configuration().toString().c_str());
+	}
 
 	return 0;
 }
