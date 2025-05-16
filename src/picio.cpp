@@ -227,11 +227,11 @@ bool myjpeg::write_JPEG_memory(const meta *const m, const int ncols, const int n
 
 #if HAVE_EXIV2 == 1
 	if (m && m -> get_double("$longitude$", &longitude) && m -> get_double("$latitude$", &latitude)) {
-		Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open((const Exiv2::byte *)temp, temp_len);
+		Exiv2::Image::UniquePtr image = Exiv2::ImageFactory::open((const Exiv2::byte *)temp, temp_len);
 		Exiv2::ExifData exifData;
 
 		if (exifData.findKey(Exiv2::ExifKey("Exif.GPSInfo.GPSVersionID")) == exifData.end()) {
-			Exiv2::Value::AutoPtr value = Exiv2::Value::create(Exiv2::unsignedByte);
+			Exiv2::Value::UniquePtr value = Exiv2::Value::create(Exiv2::unsignedByte);
 			value->read("2 0 0 0");
 			exifData.add(Exiv2::ExifKey("Exif.GPSInfo.GPSVersionID"), value.get());
 
