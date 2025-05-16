@@ -20,7 +20,7 @@ void *load_library(const std::string & filename)
 {
 	void *library = dlopen(filename.c_str(), RTLD_NOW);
 	if (!library)
-		error_exit(true, "Failed opening filter plugin library %s", filename.c_str());
+		error_exit(true, "Failed opening filter plugin library %s: %s", filename.c_str(), dlerror());
 
 	return library;
 }
