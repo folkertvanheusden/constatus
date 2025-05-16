@@ -89,6 +89,12 @@ void on_process(void *userdata)
 	}
 }
 
+void on_state_changed(void *data, enum pw_stream_state old, enum pw_stream_state state, const char *error)
+{
+	printf("state: %d\n", state);
+	printf("%s\n", error);
+}
+
 void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param)
 {
         struct pmis_data *data = (struct pmis_data *)userdata;
@@ -130,8 +136,9 @@ void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param)
 
 static const struct pw_stream_events stream_events = {
         PW_VERSION_STREAM_EVENTS,
+	.state_changed = on_state_changed,
         .param_changed = on_param_changed,
-        .process = on_process,
+        .process       = on_process,
 };
 
 source_pipewire::source_pipewire(const std::string & id, const std::string & descr, const int source_id, const int width, const int height, const int quality, controls *const c, const double max_fps, const std::map<std::string, feed *> & text_feeds, const bool keep_aspectratio) : source(id, descr, "", width, height, nullptr, c, quality, text_feeds, keep_aspectratio), source_id(source_id), interval(1.0 / max_fps)
@@ -190,11 +197,7 @@ source_pipewire::source_pipewire(const std::string & id, const std::string & des
 				params, 1);
 	}
 	else {
-		pw_stream_connect(data.stream,
-				PW_DIRECTION_INPUT,
-				source_id,
-				pw_stream_flags(PW_STREAM_FLAG_MAP_BUFFERS),
-				params, 1);
+		pw_stream_connect(data.stream, PW_DIRECTION_INPUT, PW_ID_ANY, pw_stream_flags(PW_STREAM_FLAG_MAP_BUFFERS), params, 1);
 	}
 }
 
