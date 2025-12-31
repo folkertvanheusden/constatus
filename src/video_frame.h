@@ -48,6 +48,7 @@ public:
 	std::tuple<uint8_t *, size_t> get_data_and_len(const encoding_t e);
 	std::tuple<int, int> get_wh() const;
 	uint64_t get_ts() const;
+	void update_ts();
 	void keep_only_format(const encoding_t e);
 
 	video_frame *duplicate(const std::optional<encoding_t> e);

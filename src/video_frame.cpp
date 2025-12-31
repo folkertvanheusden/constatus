@@ -212,6 +212,12 @@ uint64_t video_frame::get_ts() const
 	return ts;
 }
 
+void video_frame::update_ts()
+{
+	const std::lock_guard<std::mutex> lock(m);
+	ts = get_us();
+}
+
 video_frame *video_frame::do_resize(resize *const r, const int new_w, const int new_h)
 {
 	assert(new_w > 0);
