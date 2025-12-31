@@ -28,10 +28,13 @@ void * listen_thread(void *arg)
 	for(;;) {
 		int rc = recv(a->fd, buffer, sizeof buffer, 0);
 
-		if (rc >= 0)
+		if (rc >= 0) {
 			a->triggered = get_us();
-		else
+			printf("network triggered\n");
+		}
+		else {
 			break;
+		}
 	}
 
 	return nullptr;

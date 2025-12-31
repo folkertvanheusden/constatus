@@ -42,7 +42,7 @@ void source_http_png::operator()()
 			uint8_t *work = NULL;
 			size_t work_len = 0;
 
-			if (!http_get(url, ignore_cert, auth.empty() ? NULL : auth.c_str(), loglevel == LL_DEBUG_VERBOSE, &work, &work_len, &local_stop_flag))
+			if (!http_get(url, ignore_cert, auth.empty() ? NULL : auth.c_str(), loglevel == LL_DEBUG_VERBOSE, &work, &work_len, &local_stop_flag, { }))
 			{
 				set_error("did not get a frame", false);
 				myusleep(backoff);

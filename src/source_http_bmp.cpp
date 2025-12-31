@@ -34,6 +34,11 @@ void source_http_bmp::operator()()
 	const uint64_t interval = max_fps > 0.0 ? 1.0 / max_fps * 1000.0 * 1000.0 : 0;
 	long int backoff = 101000;
 
+	uint8_t *prev_work = nullptr;
+	size_t   prev_len  = 0;
+
+	time_t   since     = 0;
+
 	for(;!local_stop_flag;)
 	{
 		uint64_t start_ts = get_us();
@@ -42,7 +47,7 @@ void source_http_bmp::operator()()
 			uint8_t *work = NULL;
 			size_t work_len = 0;
 
-			if (!http_get(url, ignore_cert, auth.empty() ? NULL : auth.c_str(), loglevel == LL_DEBUG_VERBOSE, &work, &work_len, &local_stop_flag))
+			if (!http_get(url, ignore_cert, auth.empty() ? NULL : auth.c_str(), loglevel == LL_DEBUG_VERBOSE, &work, &work_len, &local_stop_flag, since))
 			{
 				set_error("did not get a frame", false);
 				myusleep(backoff);
@@ -59,31 +64,43 @@ void source_http_bmp::operator()()
 			backoff = 101000;
 
 			if (!is_paused()) {
-				unsigned char *temp = NULL;
-				int dw = -1, dh = -1;
-
-				if (read_bmp(work, work_len, &dw, &dh, &temp) == false)
-					continue;
-
-				std::unique_lock<std::mutex> lck(lock);
-				if (resize) {
-					width = resize_w;
-					height = resize_h;
+				if (work == nullptr || (prev_work != nullptr && prev_len == work_len && memcmp(work, prev_work, work_len) == 0)) {
+					// log(id, LL_DEBUG, "fake frame");
+					fake_frame();
 				}
 				else {
-					width = dw;
-					height = dh;
+					unsigned char *temp = NULL;
+					int dw = -1, dh = -1;
+
+					since = start_ts / 1000000;
+
+					if (read_bmp(work, work_len, &dw, &dh, &temp) == false)
+						continue;
+
+					std::unique_lock<std::mutex> lck(lock);
+					if (resize) {
+						width  = resize_w;
+						height = resize_h;
+					}
+					else {
+						width  = dw;
+						height = dh;
+					}
+					lck.unlock();
+
+					if (resize)
+						set_scaled_frame(temp, dw, dh, keep_aspectratio);
+					else
+						set_frame(E_BGR, temp, dw * dh * 3);
+
+					clear_error();
+
+					free(temp);
+
+					delete [] prev_work;
+					prev_work = new uint8_t[work_len];
+					memcpy(prev_work, work, work_len);
 				}
-				lck.unlock();
-
-				if (resize)
-					set_scaled_frame(temp, dw, dh, keep_aspectratio);
-				else
-					set_frame(E_RGB, temp, dw * dh * 3);
-
-				clear_error();
-
-				free(temp);
 			}
 
 			free(work);
@@ -97,6 +114,8 @@ void source_http_bmp::operator()()
 		if (left > 0)
 			myusleep(left);
 	}
+
+	delete [] prev_work;
 
 	register_thread_end("source http bmp");
 }

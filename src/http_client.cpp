@@ -1,6 +1,7 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2024 by folkert van heusden, released under the MIT license
 #include "config.h"
 #include <atomic>
+#include <optional>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string>
@@ -49,7 +50,7 @@ static size_t curl_write_data(void *ptr, size_t size, size_t nmemb, void *ctx)
 	return n;
 }
 
-bool http_get(const std::string & url, const bool ignore_cert, const char *const auth, const bool verbose, uint8_t **const out, size_t *const out_n, std::atomic_bool *const stop_flag)
+bool http_get(const std::string & url, const bool ignore_cert, const char *const auth, const bool verbose, uint8_t **const out, size_t *const out_n, std::atomic_bool *const stop_flag, const std::optional<time_t> since)
 {
 	CURL *ch = curl_easy_init();
 	if (!ch)
@@ -119,15 +120,35 @@ bool http_get(const std::string & url, const bool ignore_cert, const char *const
 	if (curl_easy_setopt(ch, CURLOPT_TCP_KEEPINTVL, 60L))
 		error_exit(false, "curl_easy_setopt(CURLOPT_TCP_KEEPINTVL) failed: %s", error);
 
+	if (since.has_value()) {
+		curl_easy_setopt(ch, CURLOPT_TIMEVALUE, since.value());
+		curl_easy_setopt(ch, CURLOPT_TIMECONDITION, (long)CURL_TIMECOND_IFMODSINCE);
+	}
+
 	curl_easy_setopt(ch, CURLOPT_TCP_FASTOPEN, 1);
 
 	bool ok = true;
 	if (curl_easy_perform(ch)) {
 		free(data.p);
-		data.p = NULL;
+		data.p   = nullptr;
 		data.len = 0;
-		log(LL_ERR, "curl_easy_perform() failed: %s", error);
-		ok = false;
+
+		long unmet = 0;
+		if (since.has_value() && curl_easy_getinfo(ch, CURLINFO_CONDITION_UNMET, &unmet) == 0 && unmet == 1)
+			ok = true;
+		else {
+			ok = false;
+			log(LL_ERR, "curl_easy_perform() failed: %s", error);
+		}
+
+		// printf("%d %d\n", ok, unmet);
+	}
+	else {
+		long unmet = 0;
+		if (since.has_value() && curl_easy_getinfo(ch, CURLINFO_CONDITION_UNMET, &unmet) == 0 && unmet == 1) {
+		}
+		else {
+		}
 	}
 
 	curl_easy_cleanup(ch);

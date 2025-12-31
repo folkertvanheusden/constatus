@@ -82,6 +82,7 @@ public:
 	void set_frame(const encoding_t pe, const uint8_t *const data, const size_t size, const bool do_duplicate = true);
 	void set_scaled_frame(const uint8_t *const in, const int sourcew, const int sourceh, const bool keep_aspectratio);
 	void set_size(const int w, const int h);
+	void fake_frame();
 
 	virtual uint64_t get_current_ts() const;
 

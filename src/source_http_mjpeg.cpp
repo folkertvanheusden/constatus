@@ -25,6 +25,7 @@ typedef struct
 	char *boundary;
 	uint64_t latest_io;
 	stats_tracker *st;
+	std::string content_type;
 } work_header_t;
 
 static size_t write_headers(void *ptr, size_t size, size_t nmemb, void *mypt)
@@ -61,7 +62,18 @@ static size_t write_headers(void *ptr, size_t size, size_t nmemb, void *mypt)
 
 		if (em != nullptr) {
 			char *temp = strndup(ContentType, em - ContentType);
-			//printf("|%s|\n", temp);
+
+			pctx->content_type = temp;
+			auto pos = pctx->content_type.find(";");
+			if (pos != std::string::npos)
+				pctx->content_type = pctx->content_type.substr(0, pos);
+			auto pos2 = pctx->content_type.find(" ");
+			if (pos2 != std::string::npos) {
+				while(pos2 < pctx->content_type.size() && pctx->content_type.at(pos2) == ' ')
+					pos2++;
+
+				pctx->content_type = pctx->content_type.substr(pos2);
+			}
 
 			char *bs = strchr(temp, '=');
 			if (bs) {
@@ -196,7 +208,12 @@ process:
 		if (w -> first) {
 			int width = -1, height = -1;
 			unsigned char *temp = NULL;
-			bool rc = w -> j -> read_JPEG_memory(w -> data, w -> req_len, &width, &height, &temp);
+			bool rc = false;
+			if (w->headers->content_type == "image/jpeg")
+				rc = w -> j -> read_JPEG_memory(w -> data, w -> req_len, &width, &height, &temp);
+			else {
+				rc = read_bmp(w->data, w->req_len, &width, &height, &temp);
+			}
 			free(temp);
 
 			if (rc) {
@@ -221,12 +238,26 @@ process:
 			if (w -> resize_w != -1 || w -> resize_h != -1) {
 				int dw, dh;
 				unsigned char *temp = NULL;
-				if (w -> j -> read_JPEG_memory(w -> data, w -> req_len, &dw, &dh, &temp))
-					w -> s -> set_scaled_frame(temp, dw, dh, w->keep_aspectratio);
+				if (w->headers->content_type == "image/jpeg") {
+					if (w -> j -> read_JPEG_memory(w -> data, w -> req_len, &dw, &dh, &temp))
+						w -> s -> set_scaled_frame(temp, dw, dh, w->keep_aspectratio);
+				}
+				else {
+					if (read_bmp(w->data, w->req_len, &dw, &dh, &temp))
+						w -> s -> set_scaled_frame(temp, dw, dh, w->keep_aspectratio);
+				}
 				free(temp);
 			}
 			else {
-				w->s->set_frame(E_JPEG, w -> data, w -> req_len);
+				if (w->headers->content_type == "image/jpeg")
+					w->s->set_frame(E_JPEG, w -> data, w -> req_len);
+				else {
+					uint8_t *temp = nullptr;
+					int dw = 0, dh = 0;
+					if (read_bmp(w->data, w->req_len, &dw, &dh, &temp))
+						w -> s -> set_frame(E_BGR, temp, dw * dh * 3);
+					free(temp);
+				}
 				w->st->track_bw(w -> req_len);
 			}
 		}

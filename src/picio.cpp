@@ -341,6 +341,7 @@ void myjpeg::free_transformer(tjhandle h)
 }
 
 // only 24 bit BMP
+// returns BGR(!)
 bool read_bmp(unsigned char *in, int n_bytes_in, int *w, int *h, unsigned char **pixels)
 {
 	if (in[0] != 'B' || in[1] != 'M')
@@ -352,7 +353,7 @@ bool read_bmp(unsigned char *in, int n_bytes_in, int *w, int *h, unsigned char *
 	*w = in[0x12] | (in[0x13] << 8) | (in[0x14] << 8);
 	*h = in[0x16] | (in[0x17] << 8) | (in[0x18] << 8);
 
-	printf("BMP resolution: %dx%d\n", *w, *h);
+//	printf("BMP resolution: %dx%d\n", *w, *h);
 
 	*pixels = (uint8_t *)malloc(*w * *h * 3);
 	if (!*pixels)
@@ -362,12 +363,9 @@ bool read_bmp(unsigned char *in, int n_bytes_in, int *w, int *h, unsigned char *
         size_t n_pixels = *w * *h; 
         for(int y=*h - 1; y >= 0; y--) { 
                 size_t in_o = y * *w * 3 + 40 + 12 + 2;
-                for(int x=0; x<*w; x++) { 
-                        size_t in_o2 = in_o + x * 3; 
-                        (*pixels)[offset++] = in[in_o2 + 2]; 
-                        (*pixels)[offset++] = in[in_o2 + 1]; 
-                        (*pixels)[offset++] = in[in_o2 + 0]; 
-                } 
+
+                for(int x=0; x<*w * 3; x++)
+                        (*pixels)[offset++] = in[in_o++];
         } 
 
 	return true;

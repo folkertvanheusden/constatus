@@ -59,21 +59,17 @@ void draw_text::draw_glyph_bitmap(const FT_Bitmap *const bitmap, const int heigh
 
 	for(unsigned int yo=0; yo<bitmap->rows; yo++) {
 		int yu = yo + y;
-
 		if (yu < 0)
 			continue;
-
 		if (yu >= dest_height)
 			break;
 
 		for(unsigned int xo=0; xo<bitmap->width; xo++) {
 			int xu = xo + x;
-
 			if (xu >= dest_width)
 				break;
 
-			int o = yu * dest_width + xu;
-
+			int o       = yu * dest_width + xu;
 			int pixel_v = bitmap->buffer[yo * bitmap->width + xo];
 
 			if (invert)
@@ -108,7 +104,6 @@ int draw_text::draw_glyph(const UChar32 utf_character, const int output_height, 
 	FT_Select_Charmap(face, ft_encoding_unicode);
 
 	int glyph_index   = FT_Get_Char_Index(face, utf_character);
-
 	if (glyph_index == 0)
 		return 0;
 
@@ -116,11 +111,8 @@ int draw_text::draw_glyph(const UChar32 utf_character, const int output_height, 
 		return 0;
 
 	FT_GlyphSlot slot = face->glyph;
-
 	int      ascender = int(face -> glyph -> metrics.horiBearingY);
-
 	int        draw_x = x;
-
 	int        draw_y = y - slot->bitmap_top;
 
 	draw_glyph_bitmap(&slot->bitmap, output_height, draw_x, draw_y, invert, underline, dest, dest_width, dest_height);
@@ -226,6 +218,7 @@ std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string
 				break;
 
 			int escape = input.at(i + 1);
+			printf("escape '%c'\n", escape);
 
 			if (escape == '$') {  // $$ => $
 				out.push_back({ '$', invert, underline, cur_fg_color, cur_bg_color });
@@ -238,17 +231,16 @@ std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string
 			}
 			else if (escape == 'C') {  // foreground color
                                 std::string temp = substr(std::get<0>(utf_string.value()), i + 2, 6);
-
                                 hex_str_to_rgb(temp, &cur_fg_color.r, &cur_fg_color.g, &cur_fg_color.b);
 			}
 			else if (escape == 'B') {  // background color
                                 std::string temp = substr(std::get<0>(utf_string.value()), i + 2, 6);
-
 				rgb_t       temp_color { 0 };
-
                                 hex_str_to_rgb(temp, &temp_color.r, &temp_color.g, &temp_color.b);
-
 				cur_bg_color = temp_color;
+			}
+			else {
+				printf("escape '%c' not known\n", escape);
 			}
 
 			i = escape_end;
@@ -264,18 +256,14 @@ std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string
 void draw_text::draw_string(const std::string & input, const int height, uint8_t **const grayscale_pixels, int *const width)
 {
 	auto utf_string = preprocess_text(input, { 255, 255, 255 }, { });
-
 	auto dimensions = find_text_dimensions(face, utf_string);
 
 	*width          = std::get<0>(dimensions);
-
 	*grayscale_pixels = reinterpret_cast<uint8_t *>(malloc(*width * height));
 	memset(*grayscale_pixels, 0x00, *width * height);
 
 	int  n_chars    = utf_string.size();
-
 	int  x          = 0;
-
 	int ascender    = std::get<1>(dimensions) / 64;
 
 	for(int i=0; i<n_chars; i++) {

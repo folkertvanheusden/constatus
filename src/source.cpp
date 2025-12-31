@@ -106,6 +106,16 @@ void source::do_exec_failure()
 	}
 }
 
+// frame did not change but trigger an event nevertheless
+void source::fake_frame()
+{
+	std::unique_lock<std::mutex> lck(lock);
+	if (vf)
+		vf->update_ts();
+        cond.notify_all();
+        lck.unlock();
+}
+
 void source::set_frame(const encoding_t pe, const uint8_t *const data, const size_t size, const bool do_duplicate)
 {
 	uint64_t use_ts = get_us();
