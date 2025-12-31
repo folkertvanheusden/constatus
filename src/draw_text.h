@@ -29,19 +29,36 @@ typedef struct {
 extern std::mutex freetype2_lock;
 extern std::mutex fontconfig_lock;
 
+typedef struct {
+	FT_Bitmap bitmap;
+	int       horiBearingX;
+	int       bitmap_top;
+} glyph_cache_entry_t;
+
 class draw_text
 {
-protected:
-	static FT_Library library;
+public:
+	enum intensity_t { I_NORMAL, I_BOLD, I_DIM };
 
-	const int         font_height { 0 };
-	FT_Face           face        { 0 };
+protected:
+	static FT_Library    library;
+
+	int                  font_height  { 0 };
+	int                  font_width   { 0 };
+	int                  max_ascender { 0 };
+	std::vector<FT_Face> faces;
+	std::vector<std::map<int, glyph_cache_entry_t> > glyph_cache;
+	std::vector<std::map<int, glyph_cache_entry_t> > glyph_cache_italic;
+	bool                 render_mode_error { false };
+
+	int get_intensity_multiplier(const intensity_t i);
 
 	std::optional<std::tuple<int, int, int, int> > find_text_dimensions(const UChar32 c);
 
-	void draw_glyph_bitmap(const FT_Bitmap *const bitmap, const int output_height, const FT_Int x, const FT_Int y, const bool invert, const bool underline, uint8_t *const dest, const int dest_width, const int dest_height);
+	void draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t & fg, const rgb_t & bg, const bool has_color, const intensity_t intensity, const bool invert, const bool underline, const bool strikethrough, uint8_t **const result, int *const result_width, int *const result_height);
+	void draw_glyph_bitmap(const glyph_cache_entry_t *const glyph, const FT_Int x, const FT_Int y, const rgb_t & fg, const rgb_t & bg, const bool has_color, const intensity_t i, const bool invert, const bool underline, const bool strikethrough, uint8_t *const dest, const int dest_width, const int dest_height);
 
-	int draw_glyph(const UChar32 utf_character, const int output_height, const bool invert, const bool underline, const int x, const int y, uint8_t *const dest, const int dest_width, const int dest_height);
+	int draw_glyph(const UChar32 utf_character, const intensity_t i, const bool invert, const bool underline, const bool strikethrough, const bool italic, const rgb_t & fg, const rgb_t & bg, const int x, const int y, uint8_t *const dest, const int dest_width, const int dest_height);
 
 	std::tuple<int, int, int, int> find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string);
 

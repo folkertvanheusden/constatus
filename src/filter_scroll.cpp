@@ -24,7 +24,7 @@ void blit(uint8_t *const out, const int w, const int h, const int x, const int y
 			continue;
 
 		int out_offset = target_y * w * 3;
-		int in_offset  = wy * in_w;
+		int in_offset  = wy * in_w * 3;
 
 		for(int wx=off_x; wx<in_w; wx++) {
 			int target_x = wx + x;
@@ -34,13 +34,11 @@ void blit(uint8_t *const out, const int w, const int h, const int x, const int y
 				continue;
 
 			int temp_out_offset = out_offset + target_x * 3;
-			int temp_in_offset  = in_offset  + wx;
+			int temp_in_offset  = in_offset  + wx * 3;
 
-			const uint8_t c     = in[temp_in_offset];
-
-			out[temp_out_offset + 0] = c;
-			out[temp_out_offset + 1] = c;
-			out[temp_out_offset + 2] = c;
+			out[temp_out_offset + 0] = in[temp_in_offset + 0];
+			out[temp_out_offset + 1] = in[temp_in_offset + 1];
+			out[temp_out_offset + 2] = in[temp_in_offset + 2];
 		}
 	}
 }
