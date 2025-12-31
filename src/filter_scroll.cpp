@@ -43,9 +43,9 @@ void blit(uint8_t *const out, const int w, const int h, const int x, const int y
 	}
 }
 
-filter_scroll::filter_scroll(const std::string & font_file, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) : x(x), y(y), text_w(text_w), n_lines(n_lines), font_size(font_size), exec_what(exec_what), horizontal_scroll(horizontal_scroll), bg(bg), scroll_speed(scroll_speed), col(col), invert(invert), text_feeds(text_feeds)
+filter_scroll::filter_scroll(const std::vector<std::string> & font_files, const int x, const int y, const int text_w, const int n_lines, const int font_size, const std::string & exec_what, const bool horizontal_scroll, const std::optional<rgb_t> bg, const int scroll_speed, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) : x(x), y(y), text_w(text_w), n_lines(n_lines), font_size(font_size), exec_what(exec_what), horizontal_scroll(horizontal_scroll), bg(bg), scroll_speed(scroll_speed), col(col), invert(invert), text_feeds(text_feeds)
 {
-	font = new draw_text(font_file, font_size);
+	font = new draw_text(font_files, font_size);
 
 	restart_process();
 

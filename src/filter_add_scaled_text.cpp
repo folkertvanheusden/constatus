@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "draw_text.h"
 
-filter_add_scaled_text::filter_add_scaled_text(const std::string & what, const std::string & font_file, const int x, const int y, const int font_size, const int width, const std::optional<rgb_t> bg, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) :
+filter_add_scaled_text::filter_add_scaled_text(const std::string & what, const std::vector<std::string> & font_files, const int x, const int y, const int font_size, const int width, const std::optional<rgb_t> bg, const rgb_t col, const bool invert, const std::map<std::string, feed *> & text_feeds) :
 	what(what),
 	x(x), y(y),
 	font_size(font_size), width(width),
@@ -20,7 +20,7 @@ filter_add_scaled_text::filter_add_scaled_text(const std::string & what, const s
 	invert(invert),
 	text_feeds(text_feeds)
 {
-	font = new draw_text(font_file, font_size);
+	font = new draw_text(font_files, font_size);
 }
 
 filter_add_scaled_text::~filter_add_scaled_text()

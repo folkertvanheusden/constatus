@@ -19,13 +19,22 @@ std::mutex fontconfig_lock;
 
 draw_text::draw_text(const std::string & font_file, const int font_height) : font_height(font_height)
 {
+	init({ font_file });
+}
+
+draw_text::draw_text(const std::vector<std::string> & font_files, const int font_height) : font_height(font_height)
+{
+	init(font_files);
+}
+
+void draw_text::init(const std::vector<std::string> & font_files)
+{
 	FT_Init_FreeType(&draw_text::library);
 
 	// freetype2 is not thread safe
 	const std::lock_guard<std::mutex> lock(freetype2_lock);
 
-	if (font_file.empty() == false) {
-		std::vector<std::string> font_files { font_file };  // TODO allow multiple fonts to be selected ^
+	if (font_files.empty() == false && font_files.at(0).empty() == false) {
 		for(auto & cur_font_file : font_files) {
 			log(LL_INFO, "Loading font file %s", cur_font_file.c_str());
 
@@ -260,8 +269,7 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 	else {
 		if (render_mode_error == false) {
 			render_mode_error = true;
-
-			printf("PIXEL MODE %d NOT IMPLEMENTED\n", bitmap->pixel_mode);
+			log(LL_WARNING, "PIXEL MODE %d NOT IMPLEMENTED", bitmap->pixel_mode);
 		}
 	}
 
@@ -614,7 +622,7 @@ void draw_text::draw_string(const std::string & input, const int height, uint8_t
 	int  ascender   = std::get<1>(dimensions) / 64;
 
 	*width          = std::get<0>(dimensions);
-	*rgb_pixels     = reinterpret_cast<uint8_t *>(calloc(3, *width * height));
+	*rgb_pixels     = new uint8_t[3 * *width * height]();
 
 	for(int i=0; i<n_chars; i++) {
 		auto & utf_char = utf_string.at(i);

@@ -78,7 +78,7 @@ private:
 	void network_listener();
 
 public:
-	filter_lcdproc(const std::string & adapter, const std::string & font_file, const int x, const int y, const int w, const int h, const std::optional<rgb_t> bg, const int n_col, const int n_row, const rgb_t col, const int switch_interval, const bool invert);
+	filter_lcdproc(const std::string & adapter, const std::vector<std::string> & font_file, const int x, const int y, const int w, const int h, const std::optional<rgb_t> bg, const int n_col, const int n_row, const rgb_t col, const int switch_interval, const bool invert);
 	~filter_lcdproc();
 
 	bool uses_in_out() const override { return false; }

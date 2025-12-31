@@ -66,8 +66,11 @@ protected:
 
 	std::vector<text_with_attributes_t> preprocess_text(const std::string & input, const rgb_t & fg_color, const std::optional<rgb_t> & bg_color);
 
+	void init(const std::vector<std::string> & font_files);
+
 public:
-	draw_text(const std::string & font_file, const int font_height);
+	draw_text(const std::string & font_file,               const int font_height);
+	draw_text(const std::vector<std::string> & font_files, const int font_height);
 	virtual ~draw_text();
 
 	static void init();

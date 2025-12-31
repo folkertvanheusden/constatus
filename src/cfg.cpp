@@ -699,6 +699,18 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 	for(size_t i=0; i<n_f; i++) {
 		const Setting & ae = in[i];
 
+		std::vector<std::string> fonts;
+		try {
+			const Setting & s_fonts = ae.lookup("fonts");
+
+			for(int i=0; i<s_fonts.getLength(); i++) {
+				const char *const font = s_fonts[i];
+				fonts.push_back(font);
+			}
+		}
+		catch(SettingNotFoundException & snfe) {
+		}
+
 		std::string s_type = cfg_str(ae, "type", "filter-type (h-mirror, marker, etc)", false, "");
 		if (s_type == "h-mirror")
 			filters -> push_back(new filter_mirror_h());
@@ -875,7 +887,6 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 		}
 		else if (s_type == "lcdproc") {
 			std::string listen_adapter = cfg_str(ae, "listen-adapter", "network interface to listen on or 0.0.0.0 or ::1 for all", true, "0.0.0.0");
-			std::string font = cfg_str(ae, "font", "which font to use (complete filename of a .ttf font-file)", false, "");
 			int x = cfg_int(ae, "x", "x-coordinate of window", false, 0);
 			int y = cfg_int(ae, "y", "y-coordinate of window", false, 0);
 			int w = cfg_int(ae, "w", "width of window", false, 0);
@@ -893,11 +904,10 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 
 			auto bg_col = get_color(ae, "bg-");
 
-			filters -> push_back(new filter_lcdproc(listen_adapter, font, x, y, w, h, bg_col, n_col, n_row, col.value(), switch_interval, invert));
+			filters -> push_back(new filter_lcdproc(listen_adapter, fonts, x, y, w, h, bg_col, n_col, n_row, col.value(), switch_interval, invert));
 		}
 		else if (s_type == "scaled-text") {
 			std::string s_text = cfg_str(ae, "text", "what text to show", false, "");
-			std::string font = cfg_str(ae, "font", "which font to use (complete filename of a .ttf font-file)", false, "");
 			int x = cfg_int(ae, "x", "x-coordinate of text", false, 0);
 			int y = cfg_int(ae, "y", "y-coordinate of text", false, 0);
 			int fs = cfg_int(ae, "font-size", "font size (in pixels)", false, 10);
@@ -912,7 +922,7 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 
 			auto bg_col = get_color(ae, "bg-");
 
-			filters -> push_back(new filter_add_scaled_text(s_text, font, x, y, fs, w, bg_col, col.value(), invert, cfg->text_feeds));
+			filters -> push_back(new filter_add_scaled_text(s_text, fonts, x, y, fs, w, bg_col, col.value(), invert, cfg->text_feeds));
 		}
 		else if (s_type == "average") {
 			int average_n = cfg_int(ae, "average-n", "how many frames to average", false, 3);
@@ -926,7 +936,6 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 		}
 		else if (s_type == "exec-scroll") {
 			std::string exec_what = cfg_str(ae, "exec-what", "what executable/script to invoke", false, "");
-			std::string font = cfg_str(ae, "font", "which font-file to use (complete filename of a .ttf font-file)", false, "");
 			int x = cfg_int(ae, "x", "x-coordinate of text", false, 0);
 			int w = cfg_int(ae, "w", "width of text", false, -1);
 			int y = cfg_int(ae, "y", "y-coordinate of text", false, 0);
@@ -944,7 +953,7 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 
 			auto bg_col = get_color(ae, "bg-");
 
-			filters -> push_back(new filter_scroll(font, x, y, w, n_lines, fs, exec_what, h_s, bg_col, scroll_speed_h, col.value(), invert, cfg->text_feeds));
+			filters -> push_back(new filter_scroll(fonts, x, y, w, n_lines, fs, exec_what, h_s, bg_col, scroll_speed_h, col.value(), invert, cfg->text_feeds));
 		}
 		else if (s_type == "draw") {
 			int x = cfg_int(ae, "x", "x-coordinate of box", false, 0);
