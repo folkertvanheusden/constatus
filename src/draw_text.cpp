@@ -373,15 +373,15 @@ void draw_text::draw_glyph_bitmap(const glyph_cache_entry_t *const glyph, const 
 		delete [] work;
 	}
 	else {
-
 		int work_dest_x = dest_x + glyph->horiBearingX / 64;
-		int use_width   = std::min(dest_width  - work_dest_x, result_width);
+		int use_width   = std::max(0, std::min(dest_width  - work_dest_x, result_width));
 		int work_dest_y = dest_y + max_ascender / 64.0 - glyph->bitmap_top;
-		int use_height  = std::min(dest_height - work_dest_y, result_height);
+		int use_height  = std::max(0, std::min(dest_height - work_dest_y, result_height));
+
+		printf("%d,%d: %dx%d\n", work_dest_x, work_dest_y, use_width, use_height);
 
 		for(int y=0; y<use_height; y++) {
 			int temp = work_dest_y + y;
-
 			if (temp >= 0)
 				memcpy(&dest[temp * dest_width * 3 + work_dest_x * 3], &result[result_width * y * 3], use_width * 3);
 		}
@@ -458,10 +458,14 @@ int draw_text::draw_glyph(const UChar32 utf_character, const intensity_t intensi
 					uint8_t bg_r = invert ? fg.r * max / 255 : bg.r * max / 255;
 					uint8_t bg_g = invert ? fg.g * max / 255 : bg.g * max / 255;
 					uint8_t bg_b = invert ? fg.b * max / 255 : bg.b * max / 255;
-					for(int cy=0; cy<font_height; cy++) {
+
+					int work_height = std::min(dest_height - y, font_height);
+					int work_width  = std::min(dest_width  - x, font_width );
+
+					for(int cy=0; cy<work_height; cy++) {
 						int offset_y = (y + cy) * dest_width * 3;
 
-						for(int cx=0; cx<font_width; cx++) {
+						for(int cx=0; cx<work_width; cx++) {
 							int offset = offset_y + (x + cx) * 3;
 
 							dest[offset + 0] = bg_r;
@@ -469,6 +473,7 @@ int draw_text::draw_glyph(const UChar32 utf_character, const intensity_t intensi
 							dest[offset + 2] = bg_b;
 						}
 					}
+
 					draw_glyph_bitmap(&it->second, x, y, fg, bg, FT_HAS_COLOR(faces.at(face)), intensity, invert, underline, strikethrough, dest, dest_width, dest_height);
 
 					return font_width;
@@ -688,5 +693,5 @@ void draw_text_on_bitmap(draw_text *const font, const std::string & in, const in
 		}
 	}
 
-	free(bitmap);
+	delete [] bitmap;
 }
