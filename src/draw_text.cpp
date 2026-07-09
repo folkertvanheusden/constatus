@@ -378,8 +378,6 @@ void draw_text::draw_glyph_bitmap(const glyph_cache_entry_t *const glyph, const 
 		int work_dest_y = dest_y + max_ascender / 64.0 - glyph->bitmap_top;
 		int use_height  = std::max(0, std::min(dest_height - work_dest_y, result_height));
 
-		printf("%d,%d: %dx%d\n", work_dest_x, work_dest_y, use_width, use_height);
-
 		for(int y=0; y<use_height; y++) {
 			int temp = work_dest_y + y;
 			if (temp >= 0)
@@ -485,32 +483,38 @@ int draw_text::draw_glyph(const UChar32 utf_character, const intensity_t intensi
 	return 0;
 }
 
-std::tuple<int, int, int, int> draw_text::find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string)
+std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, int, int> > > draw_text::find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string)
 {
 	int    max_descender = 0;
 	int    width         = 0;
 	int    max_ascender  = 0;
 
+	std::vector<std::tuple<text_with_attributes_t, int, int> > what_and_where;
+
 	size_t str_len       = utf_string.size();
 
-	for(int n = 0; n < str_len;) {
+	for(int n = 0; n < str_len; n++) {
 		int c = utf_string.at(n).c;
-
 		int glyph_index = FT_Get_Char_Index(face, c);
+		if (FT_Load_Glyph(face, glyph_index, 0) != 0)
+			continue;
 
-		if (FT_Load_Glyph(face, glyph_index, 0) == 0) {
-			width        += face -> glyph -> metrics.horiAdvance;
+		width        += face -> glyph -> metrics.horiAdvance;
+		max_ascender  = std::max(max_ascender,  int(face -> glyph -> metrics.horiBearingY));
+		max_descender = std::max(max_descender, int(face -> glyph -> metrics.height - face -> glyph -> metrics.horiBearingY));
+	}
 
-			max_ascender  = std::max(max_ascender,  int(face -> glyph -> metrics.horiBearingY));
-			max_descender = std::max(max_descender, int(face -> glyph -> metrics.height - face -> glyph -> metrics.horiBearingY));
-		}
-
-		n++;
+	for(int n = 0; n < str_len; n++) {
+		int c = utf_string.at(n).c;
+		int glyph_index = FT_Get_Char_Index(face, c);
+		if (FT_Load_Glyph(face, glyph_index, 0) != 0)
+			continue;
+		what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, max_ascender - face->glyph->metrics.horiBearingY });
 	}
 
 	int height = (max_ascender + max_descender) / 64;
 	width /= 64;
-	return std::make_tuple(width, max_ascender, max_descender, height);
+	return std::make_tuple(width, max_ascender, max_descender, height, what_and_where);
 }
 
 std::optional<std::tuple<UChar32 *, int> > draw_text::text_to_utf32(const std::string & text)
@@ -622,18 +626,18 @@ void draw_text::draw_string(const std::string & input, const int height, uint8_t
 	//auto dimensions = find_text_dimensions(face, utf_string);  // TODO
 	auto dimensions = find_text_dimensions(faces.at(0), utf_string);  // TODO 
 
-	int  n_chars    = utf_string.size();
-	int  x          = 0;
-	int  ascender   = std::get<1>(dimensions) / 64;
+	int    n_chars    = utf_string.size();
+	double x          = 0.;
+	int    ascender   = std::get<1>(dimensions) / 64;
 
 	*width          = std::get<0>(dimensions);
 	*rgb_pixels     = new uint8_t[3 * *width * height]();
 
-	for(int i=0; i<n_chars; i++) {
-		auto & utf_char = utf_string.at(i);
+	for(auto & c: std::get<4>(dimensions)) {
+		auto & utf_char = std::get<0>(c);
 		rgb_t  bg { };
-		int advance = draw_glyph(utf_char.c, intensity_t::I_BOLD, utf_char.invert, utf_char.underline, false, false, utf_char.fg_color, utf_char.bg_color.has_value() ? utf_char.bg_color.value() : bg, x, 0, *rgb_pixels, std::get<0>(dimensions), height);
-		x += advance;
+		draw_glyph(utf_char.c, intensity_t::I_BOLD, utf_char.invert, utf_char.underline, false, false, utf_char.fg_color, utf_char.bg_color.has_value() ? utf_char.bg_color.value() : bg, int(x), std::get<2>(c) / 64, *rgb_pixels, std::get<0>(dimensions), height);
+		x += std::get<1>(c) / 64.;
 	}
 }
 

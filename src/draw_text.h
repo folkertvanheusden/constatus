@@ -60,7 +60,7 @@ protected:
 
 	int draw_glyph(const UChar32 utf_character, const intensity_t i, const bool invert, const bool underline, const bool strikethrough, const bool italic, const rgb_t & fg, const rgb_t & bg, const int x, const int y, uint8_t *const dest, const int dest_width, const int dest_height);
 
-	std::tuple<int, int, int, int> find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string);
+	std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, int, int> > > find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string);
 
 	std::optional<std::tuple<UChar32 *, int> > text_to_utf32(const std::string & text);
 
