@@ -509,7 +509,8 @@ std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, in
 		int glyph_index = FT_Get_Char_Index(face, c);
 		if (FT_Load_Glyph(face, glyph_index, 0) != 0)
 			continue;
-		what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, max_ascender - face->glyph->metrics.horiBearingY });
+		// what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, max_ascender + max_descender - face->glyph->metrics.horiBearingY });
+		what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, 0 });
 	}
 
 	int height = (max_ascender + max_descender) / 64;
