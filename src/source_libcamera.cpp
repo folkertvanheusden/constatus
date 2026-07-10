@@ -312,8 +312,8 @@ void source_libcamera::operator()()
 
 					if (id->type() == libcamera::ControlTypeFloat)
 						ctls.set(id->id(), float(atof(it->second->get_value_string().c_str())));
-					else if (id->type() == libcamera::ControlTypeString)
-						ctls.set(id->id(), it->second->get_value_string());
+//					else if (id->type() == libcamera::ControlTypeString)
+//						ctls.set(id->id(), it->second->get_value_string());
 					else if (id->type() == libcamera::ControlTypeBool)
 						ctls.set(id->id(), it->second->get_value_bool());
 					else if (id->type() == libcamera::ControlTypeInteger32 || id->type() == libcamera::ControlTypeInteger64)
