@@ -419,7 +419,7 @@ int draw_text::draw_glyph(const UChar32 utf_character, const intensity_t intensi
 
 					draw_glyph_bitmap(&it->second, x, y, fg, bg, FT_HAS_COLOR(faces.at(face)), intensity, invert, underline, strikethrough, dest, dest_width, dest_height);
 
-					return font_width;
+					return it->second.horiBearingX;
 				}
 			}
 		}
@@ -444,7 +444,7 @@ std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, in
 		if (FT_Load_Glyph(face, glyph_index, 0) != 0)
 			continue;
 
-		width        += face -> glyph -> metrics.horiAdvance;
+		width        += face->glyph->metrics.horiAdvance ? : face->glyph->linearHoriAdvance;
 		max_ascender  = std::max(max_ascender,  int(face -> glyph -> metrics.horiBearingY));
 		max_descender = std::max(max_descender, int(face -> glyph -> metrics.height - face -> glyph -> metrics.horiBearingY));
 	}
@@ -455,7 +455,10 @@ std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, in
 		if (FT_Load_Glyph(face, glyph_index, 0) != 0)
 			continue;
 		// what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, max_ascender + max_descender - face->glyph->metrics.horiBearingY });
-		what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, 0 });
+		if (face->glyph->metrics.horiAdvance)
+			what_and_where.push_back({ utf_string.at(n), face->glyph->metrics.horiAdvance, 0 });
+		else
+			what_and_where.push_back({ utf_string.at(n), face->glyph->linearHoriAdvance,   0 });
 	}
 
 	int height = (max_ascender + max_descender) / 64;
@@ -550,7 +553,7 @@ void draw_text::draw_string(const std::string & input, const int height, uint8_t
 {
 	auto utf_string = preprocess_text(input, { 255, 255, 255 }, { });
 	//auto dimensions = find_text_dimensions(face, utf_string);  // TODO
-	auto dimensions = find_text_dimensions(faces.at(0), utf_string);  // TODO 
+	auto dimensions = find_text_dimensions(faces, utf_string);  // TODO 
 
 	int    n_chars    = utf_string.size();
 	double x          = 0.;
