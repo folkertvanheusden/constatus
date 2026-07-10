@@ -10,11 +10,7 @@
 
 static void on_message(struct mosquitto *, void *p, const struct mosquitto_message *msg, const mosquitto_property *)
 {
-	feed_mqtt *fm = reinterpret_cast<feed_mqtt *>(p);
-
-printf("%p %p\n", fm, msg);
-printf("%p %d\n", msg->payload, msg->payloadlen);
-
+	feed_mqtt  *fm   = reinterpret_cast<feed_mqtt *>(p);
 	std::string text = std::string(reinterpret_cast<const char *>(msg->payload), msg->payloadlen);
 
 	log(LL_DEBUG, "Received MQTT text: %s", text.c_str());
@@ -31,7 +27,8 @@ static void on_connect(struct mosquitto *, void *p, int)
 	fm->subscribe_topics();
 }
 
-feed_mqtt::feed_mqtt(const std::string & host, const int port, const std::vector<std::string> & topics) :
+feed_mqtt::feed_mqtt(const std::string & host, const int port, const std::vector<std::string> & topics, const std::optional<int> digits) :
+	feed(digits),
 	topics(topics)
 {
 	mosquitto_lib_init();
@@ -64,11 +61,8 @@ feed_mqtt::~feed_mqtt()
 void feed_mqtt::set_text(const std::string & text)
 {
 	std::lock_guard<std::mutex> lck(lock);
-
-	latest_text = text;
-
-	latest_ts = get_us();
-
+	latest_text = limit_value(text);
+	latest_ts   = get_us();
 	cond.notify_all();
 }
 

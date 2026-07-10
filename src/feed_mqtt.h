@@ -15,7 +15,7 @@ private:
 	struct mosquitto *mqtt { nullptr };
 
 public:
-	feed_mqtt(const std::string & host, const int port, const std::vector<std::string> & topics);
+	feed_mqtt(const std::string & host, const int port, const std::vector<std::string> & topics, const std::optional<int> digits);
 	virtual ~feed_mqtt();
 
 	void set_text(const std::string & text);

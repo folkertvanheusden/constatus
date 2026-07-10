@@ -2,7 +2,8 @@
 #include "utils.h"
 
 
-feed::feed()
+feed::feed(const std::optional<int> digits) :
+	digits(digits)
 {
 }
 
@@ -24,4 +25,14 @@ std::optional<std::pair<std::string, uint64_t> > feed::wait_for_text(const uint6
 	}
 
 	return { { latest_text, latest_ts } };
+}
+
+std::string feed::limit_value(const std::string & in)
+{
+	if (digits.has_value() == false)
+		return in;
+
+	double temp = std::stof(in);
+	printf("convert %f to %d digits\n", temp, digits.value());
+	return myformat("%.*f", digits.value(), temp);
 }

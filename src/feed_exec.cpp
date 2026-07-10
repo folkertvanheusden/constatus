@@ -3,7 +3,8 @@
 #include "utils.h"
 
 
-feed_exec::feed_exec(const std::string & commandline, const int interval_ms) :
+feed_exec::feed_exec(const std::string & commandline, const int interval_ms, const std::optional<int> digits) :
+	feed(digits),
 	commandline(commandline),
 	interval_ms(interval_ms)
 {
@@ -31,10 +32,8 @@ void feed_exec::operator()()
 			std::lock_guard<std::mutex> lck(lock);
 
 			latest_text.clear();
-
 			while(!feof(fh)) {
                                 char buffer[1024] = { 0 };
-
                                 if (fgets(buffer, sizeof buffer, fh) == nullptr)
 					break;
 
@@ -45,15 +44,13 @@ void feed_exec::operator()()
 
 			if (latest_text.empty() == false) {
 				latest_ts = before_ts;
-
+				latest_text = limit_value(latest_text);
 				cond.notify_all();
 			}
 		}
 
 		uint64_t after_ts       = get_us();
-
 		int64_t  sleep_duration = interval_ms * 1000 - (after_ts - before_ts);
-
 		mysleep(sleep_duration, &stop_flag, nullptr);
 	}
 }

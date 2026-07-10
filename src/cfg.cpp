@@ -1,4 +1,4 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2026 by folkert van heusden, released under the MIT license
 #include "config.h"
 #include <dlfcn.h>
 #include <libconfig.h++>
@@ -650,13 +650,18 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 		std::string     f_type    = cfg_str(f_setting, "type", "feed type (exec, mqtt)", false, "");
 		std::string     f_id      = cfg_str(f_setting, "id",   "ID of the feed - used in \"escapes\" for texts", false, "");
 
+		std::string     digits_str = cfg_str(f_setting, "digits", "if set, treat a text as a float value and limit the number of digits", true, "");
+		std::optional<int> digits;
+		if (digits_str.empty() == false)
+			digits = std::stoi(digits_str);
+
 		feed           *f         = nullptr;
 
 		if (f_type == "exec") {
 			std::string commandline = cfg_str(f_setting, "commandline", "program to invoke repeatingly (from which the output is used)", false, "");
 			int         interval    = cfg_int(f_setting, "interval",    "interval in milliseconds", true, 1000);
 
-			f = new feed_exec(commandline, interval);
+			f = new feed_exec(commandline, interval, digits);
 		}
 		else if (f_type == "mqtt") {
 #if HAVE_LIBMOSQUITTO == 1
@@ -676,7 +681,7 @@ void load_text_feeds(configuration_t *const cfg, const Setting & in)
 				topics.push_back(topic);
 			}
 
-			f = new feed_mqtt(host, port, topics);
+			f = new feed_mqtt(host, port, topics, digits);
 #else
 			error_exit(false, "Support for MQTT feeds is not compiled-in: mosquitto library is missing");
 #endif

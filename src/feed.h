@@ -11,15 +11,18 @@
 class feed
 {
 protected:
-	std::atomic_bool        stop_flag { false   };
-	std::thread            *th        { nullptr };
-	std::condition_variable cond;
-        mutable std::mutex      lock;
-	std::string             latest_text;
-	uint64_t                latest_ts { 0       };
+	std::atomic_bool         stop_flag { false   };
+	std::thread             *th        { nullptr };
+	std::condition_variable  cond;
+        mutable std::mutex       lock;
+	std::string              latest_text;
+	uint64_t                 latest_ts { 0       };
+	const std::optional<int> digits;
+
+	std::string limit_value(const std::string & in);
 
 public:
-	feed();
+	feed(const std::optional<int> digits);
 	virtual ~feed();
 
 	std::optional<std::pair<std::string, uint64_t> > wait_for_text(const uint64_t after, const uint64_t to);
