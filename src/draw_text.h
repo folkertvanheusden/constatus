@@ -17,7 +17,7 @@
 
 
 typedef struct {
-	UChar32              c;
+	UChar                c;
 	bool                 underline;
 	bool                 invert;
 	rgb_t                fg_color;
@@ -62,7 +62,7 @@ protected:
 
 	std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, int, int> > > find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string);
 
-	std::optional<std::tuple<UChar32 *, int> > text_to_utf32(const std::string & text);
+	std::optional<std::tuple<UChar *, int> > text_to_utf32(const std::string & text);
 
 	std::vector<text_with_attributes_t> preprocess_text(const std::string & input, const rgb_t & fg_color, const std::optional<rgb_t> & bg_color);
 

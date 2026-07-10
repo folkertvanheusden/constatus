@@ -917,12 +917,18 @@ void handle_fps(std::atomic_bool *stop_flag, const double fps, const uint64_t fr
 		mysleep(sleep_left, stop_flag, nullptr);
 }
 
+std::string substr(const UChar *const utf_str, const int idx, const int n)
+{
+        std::string out;
+        for(int i=idx; i<idx + n; i++)
+                out += utf_str[i];
+        return out;
+}
+
 std::string substr(const UChar32 *const utf32_str, const int idx, const int n)
 {
         std::string out;
-
         for(int i=idx; i<idx + n; i++)
                 out += utf32_str[i];
-
         return out;
 }

@@ -1,4 +1,4 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2026 by folkert van heusden, released under the MIT license
 #include <mutex>
 #include <string>
 #include <fontconfig/fontconfig.h>
@@ -318,71 +318,15 @@ void draw_text::draw_glyph_bitmap(const glyph_cache_entry_t *const glyph, const 
 	int      result_height = 0;
 	draw_glyph_bitmap_low(&glyph->bitmap, fg, bg, has_color, intensity, invert, underline, strikethrough, &result, &result_width, &result_height);
 
-	// resize & copy to x, y
-	if (result_width + glyph->horiBearingX / 64 > font_width || result_height > font_height) {
-		const double x_scale_temp      =        font_width   / (result_width + glyph->horiBearingX / 64.);
-		const double y_scale_temp      = double(font_height) / result_height;
-		const double smallest_scale    = std::min(x_scale_temp, y_scale_temp);
-		const double scaled_bearing    = glyph->horiBearingX / 64 * smallest_scale;
-		const double scaled_bitmap_top = glyph->bitmap_top        * smallest_scale;
+	int work_dest_x = dest_x + glyph->horiBearingX / 64;
+	int use_width   = std::max(0, std::min(dest_width  - work_dest_x, result_width));
+	int work_dest_y = dest_y + max_ascender / 64.0 - glyph->bitmap_top;
+	int use_height  = std::max(0, std::min(dest_height - work_dest_y, result_height));
 
-		pixel_t *work = new pixel_t[font_width * font_height]();
-
-		for(int y=0; y<result_height; y++) {
-			int target_y     = y * smallest_scale;
-			int put_offset_y = target_y * font_width;
-			int get_offset_y = y * result_width * 3;
-
-			for(int x=0; x<result_width; x++) {
-				int target_x   = x * smallest_scale;
-				int put_offset = put_offset_y + target_x;
-				int get_offset = get_offset_y + x * 3;
-
-				work[put_offset].n++;
-				work[put_offset].r += result[get_offset + 0];
-				work[put_offset].g += result[get_offset + 1];
-				work[put_offset].b += result[get_offset + 2];
-			}
-		}
-
-		// TODO: check for out of bounds writes (x)
-		int work_dest_y = dest_y + max_ascender / 64.0 - scaled_bitmap_top;
-		int use_height  = std::min(dest_height - work_dest_y, font_height);
-
-		for(int y=0; y<use_height; y++) {
-			int yo  = y * font_width;
-			int temp = y + work_dest_y;
-			if (temp < 0)
-				continue;
-			int o   = temp * dest_width * 3 + (dest_x + scaled_bearing) * 3;
-
-			for(int x=0, i = yo; x<font_width; x++, i++, o += 3) {
-				if (work[i].n) {
-					dest[o + 0] = work[i].r / work[i].n;
-					dest[o + 1] = work[i].g / work[i].n;
-					dest[o + 2] = work[i].b / work[i].n;
-				}
-				else {
-					dest[o + 0] =
-					dest[o + 1] =
-					dest[o + 2] = 0;
-				}
-			}
-		}
-
-		delete [] work;
-	}
-	else {
-		int work_dest_x = dest_x + glyph->horiBearingX / 64;
-		int use_width   = std::max(0, std::min(dest_width  - work_dest_x, result_width));
-		int work_dest_y = dest_y + max_ascender / 64.0 - glyph->bitmap_top;
-		int use_height  = std::max(0, std::min(dest_height - work_dest_y, result_height));
-
-		for(int y=0; y<use_height; y++) {
-			int temp = work_dest_y + y;
-			if (temp >= 0)
-				memcpy(&dest[temp * dest_width * 3 + work_dest_x * 3], &result[result_width * y * 3], use_width * 3);
-		}
+	for(int y=0; y<use_height; y++) {
+		int temp = work_dest_y + y;
+		if (temp >= 0)
+			memcpy(&dest[temp * dest_width * 3 + work_dest_x * 3], &result[result_width * y * 3], use_width * 3);
 	}
 
 	delete [] result;
@@ -407,6 +351,7 @@ int draw_text::draw_glyph(const UChar32 utf_character, const intensity_t intensi
 					if (it == glyph_cache.at(face).end()) {
 						int color_choice  = face == 0 ? (color  == 0 ? 0 : FT_LOAD_COLOR | FT_LOAD_TARGET_LCD)     : (color == 0  ? FT_LOAD_COLOR | FT_LOAD_TARGET_LCD    : 0);
 						int bitmap_choice = face == 0 ? (bitmap == 0 ? FT_LOAD_NO_BITMAP : 0) : (bitmap == 0 ? 0 : FT_LOAD_NO_BITMAP);
+
 						if (FT_Load_Glyph(faces.at(face), glyph_index, bitmap_choice | color_choice))
 							continue;
 
@@ -518,7 +463,7 @@ std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, in
 	return std::make_tuple(width, max_ascender, max_descender, height, what_and_where);
 }
 
-std::optional<std::tuple<UChar32 *, int> > draw_text::text_to_utf32(const std::string & text)
+std::optional<std::tuple<UChar *, int> > draw_text::text_to_utf32(const std::string & text)
 {
 	// FreeType uses Unicode as glyph index; so we have to convert string from UTF8 to Unicode(UTF32)
 	int        utf16_buf_size = text.size() + 1;  // +1 for the last '\0'
@@ -528,7 +473,6 @@ std::optional<std::tuple<UChar32 *, int> > draw_text::text_to_utf32(const std::s
 	int32_t    numSub         = 0;
 
 	u_strFromUTF8WithSub(utf16_str, utf16_buf_size, &utf16_length, text.c_str(), text.size(), 0xfffd, &numSub, &err);
-
 	if (err != U_ZERO_ERROR) {
 		log(LL_DEBUG, "u_strFromUTF8() failed: %s", u_errorName(err));
 
@@ -537,31 +481,12 @@ std::optional<std::tuple<UChar32 *, int> > draw_text::text_to_utf32(const std::s
 		return { };
 	}
 
-	int      utf32_len    = utf16_length;
-	int utf32_buf_size    = utf16_length + 1;  // +1 for the last '\0'
-
-	UChar32 *utf32_str    = new UChar32[utf32_buf_size]();
-	int      utf32_length = 0;
-
-	u_strToUTF32(utf32_str, utf32_buf_size, &utf32_length, utf16_str, utf16_length, &err);
-	if (err != U_ZERO_ERROR) {
-		log(LL_DEBUG, "u_strToUTF32() failed: %s", u_errorName(err));
-
-		delete [] utf16_str;
-		delete [] utf32_str;
-
-		return { };
-	}
-
-	delete [] utf16_str;
-
-	return std::make_tuple(utf32_str, utf32_len);
+	return std::make_tuple(utf16_str, utf16_length);
 }
 
 std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string & input, const rgb_t & fg_color, const std::optional<rgb_t> & bg_color)
 {
 	auto utf_string = text_to_utf32(input);
-
 	if (!utf_string.has_value())
 		return { };
 
@@ -604,7 +529,7 @@ std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string
 			else if (escape == 'B') {  // background color
                                 std::string temp = substr(std::get<0>(utf_string.value()), i + 2, 6);
 				rgb_t       temp_color { 0 };
-                                hex_str_to_rgb(temp, &temp_color.r, &temp_color.g, &temp_color.b);
+				hex_str_to_rgb(temp, &temp_color.r, &temp_color.g, &temp_color.b);
 				cur_bg_color = temp_color;
 			}
 			else {
@@ -614,7 +539,7 @@ std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string
 			i = escape_end;
 		}
 		else {
-			out.push_back({ input.at(i), invert, underline, cur_fg_color, cur_bg_color });
+			out.push_back({ std::get<0>(utf_string.value())[i], invert, underline, cur_fg_color, cur_bg_color });
 		}
 	}
 
