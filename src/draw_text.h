@@ -22,6 +22,7 @@ typedef struct {
 	bool                 invert;
 	rgb_t                fg_color;
 	std::optional<rgb_t> bg_color;
+	bool                 italic;
 } text_with_attributes_t;
 
 #define DEFAULT_FONT_FILE "/usr/share/fonts/truetype/unifont/unifont.ttf"
@@ -33,6 +34,8 @@ typedef struct {
 	FT_Bitmap bitmap;
 	int       horiBearingX;
 	int       bitmap_top;
+	size_t    face;
+	FT_Glyph_Metrics metrics;
 } glyph_cache_entry_t;
 
 class draw_text
@@ -55,12 +58,13 @@ protected:
 
 	std::optional<std::tuple<int, int, int, int> > find_text_dimensions(const UChar32 c);
 
+	glyph_cache_entry_t * find_glyph_entry(const UChar utf_character, const bool italic);
 	void draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t & fg, const rgb_t & bg, const bool has_color, const intensity_t intensity, const bool invert, const bool underline, const bool strikethrough, uint8_t **const result, int *const result_width, int *const result_height);
 	void draw_glyph_bitmap(const glyph_cache_entry_t *const glyph, const FT_Int x, const FT_Int y, const rgb_t & fg, const rgb_t & bg, const bool has_color, const intensity_t i, const bool invert, const bool underline, const bool strikethrough, uint8_t *const dest, const int dest_width, const int dest_height);
 
 	int draw_glyph(const UChar32 utf_character, const intensity_t i, const bool invert, const bool underline, const bool strikethrough, const bool italic, const rgb_t & fg, const rgb_t & bg, const int x, const int y, uint8_t *const dest, const int dest_width, const int dest_height);
 
-	std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, int, int> > > find_text_dimensions(const FT_Face & face, const std::vector<text_with_attributes_t> & utf_string);
+	std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, int, int> > > find_text_dimensions(const std::vector<text_with_attributes_t> & utf_string);
 
 	std::optional<std::tuple<UChar *, int> > text_to_utf32(const std::string & text);
 
