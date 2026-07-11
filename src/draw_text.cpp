@@ -463,7 +463,6 @@ std::tuple<int, int, int, int, std::vector<std::tuple<text_with_attributes_t, in
 
 	int height = (max_ascender + max_descender) / 64;
 	width /= 64;
-	printf("%d %d\n", width, height);
 	return std::make_tuple(width, max_ascender, max_descender, height, what_and_where);
 }
 
@@ -516,7 +515,6 @@ std::vector<text_with_attributes_t> draw_text::preprocess_text(const std::string
 				break;
 
 			int escape = input.at(i + 1);
-			printf("escape '%c'\n", escape);
 
 			if (escape == '$') {  // $$ => $
 				out.push_back({ '$', invert, underline, cur_fg_color, cur_bg_color });

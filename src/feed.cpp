@@ -33,6 +33,5 @@ std::string feed::limit_value(const std::string & in)
 		return in;
 
 	double temp = std::stof(in);
-	printf("convert %f to %d digits\n", temp, digits.value());
 	return myformat("%.*f", digits.value(), temp);
 }
