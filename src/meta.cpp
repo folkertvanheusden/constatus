@@ -85,7 +85,7 @@ bool meta::get_string(const std::string & key, std::pair<uint64_t, std::string> 
 	std::shared_lock lck(m_string_lock);
 
 	bool rc = true;
-	if (auto it = m_string.find(key); it == m_string.end() || (it -> second.first < get_us() && it -> second.first != 0))
+	if (auto it = m_string.find(key); it == m_string.end())
 		rc = false;
 	else
 		*val = it -> second;

@@ -354,6 +354,15 @@ void motion_trigger_generic::operator()()
 
 					event_nr = get_db() -> register_event(id, EVT_MOTION, "motion start");
 
+					time_t t_now = time(nullptr);
+					tm tm { };
+					localtime_r(&t_now, &tm);
+					char buffer[64] { };
+					snprintf(buffer, sizeof buffer, "%04d-%02d-%02d %02d:%02d:%02d",
+							tm.tm_year + 1900, tm.tm_mon+1, tm.tm_mday,
+							tm.tm_hour, tm.tm_min, tm.tm_sec);
+					get_meta()->set_string("$motion-timestamp$", std::pair<uint64_t, std::string>(get_us(), buffer));
+
 					if (targets -> empty()) {
 						for(auto r : prerecord)
 							delete r;

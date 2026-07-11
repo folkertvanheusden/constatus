@@ -1515,6 +1515,12 @@ std::string unescape(const std::string & in, const uint64_t ts, instance *const 
 
 		if (s->get_class_type() == CT_VIEW)
 			work = search_replace(work, "$view-id$", ((view *)s)->get_current_source()->get_id());
+
+                std::pair<uint64_t, std::string> motion_ts;
+                if (m->get_string("$motion-timestamp$", &motion_ts))
+			work = search_replace(work, "$motion-timestamp$", motion_ts.second);
+		else
+			work = search_replace(work, "$motion-timestamp$", "-");
 	}
 	else if (i) {
 		work = search_replace(work, "$descr$", i -> name);

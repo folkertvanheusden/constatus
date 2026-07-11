@@ -195,15 +195,13 @@ void load_PBM_file(FILE *const fh, int *const w, int *const h, uint8_t **out)
 
 myjpeg::myjpeg()
 {
-	jpegCompressor = tjInitCompress();
-
+	jpegCompressor   = tjInitCompress();
 	jpegDecompressor = tjInitDecompress();
 }
 
 myjpeg::~myjpeg()
 {
 	tjDestroy(jpegDecompressor);
-
 	tjDestroy(jpegCompressor);
 }
 
