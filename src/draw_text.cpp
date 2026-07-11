@@ -29,10 +29,10 @@ draw_text::draw_text(const std::vector<std::string> & font_files, const int font
 
 void draw_text::init(const std::vector<std::string> & font_files)
 {
-	FT_Init_FreeType(&draw_text::library);
-
 	// freetype2 is not thread safe
 	const std::lock_guard<std::mutex> lock(freetype2_lock);
+
+	FT_Init_FreeType(&draw_text::library);
 
 	if (font_files.empty() == false && font_files.at(0).empty() == false) {
 		for(auto & cur_font_file : font_files) {
@@ -95,18 +95,14 @@ draw_text::~draw_text()
 
 	for(auto f : faces)
 		FT_Done_Face(f);
-
-	FT_Done_FreeType(draw_text::library);
 }
 
 void draw_text::init()
 {
-	FT_Init_FreeType(&draw_text::library);
 }
 
 void draw_text::uninit()
 {
-	FT_Done_FreeType(draw_text::library);
 }
 
 int draw_text::get_intensity_multiplier(const intensity_t i)
