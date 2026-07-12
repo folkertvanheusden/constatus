@@ -2,6 +2,9 @@
 #include "config.h"
 #include <assert.h>
 #include <atomic>
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
 #include <errno.h>
 #include <map>
 #include <stdio.h>
@@ -131,9 +134,42 @@ void calc_diff(uint8_t *const dest, const int n_pixels, const uint8_t *const a, 
 
 int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, const int n_pixels, const int threshold)
 {
-	int cnt = 0;
+	if (threshold > 255)
+		return 0;
+	if (threshold <= 0)
+		return n_pixels;
 
-	for(int i=0; i<n_pixels; i++)
+	int cnt = 0;
+	int i   = 0;
+
+#if defined(__AVX512BW__)
+	{
+		const __m512i thresh_vec = _mm512_set1_epi8(static_cast<uint8_t>(threshold));
+		for (; i <= n_pixels - 64; i += 64) {
+			__m512i a        = _mm512_loadu_si512(reinterpret_cast<const __m512i *>(cur  + i));
+			__m512i b        = _mm512_loadu_si512(reinterpret_cast<const __m512i *>(prev + i));
+			__m512i abs_diff = _mm512_add_epi8(_mm512_subs_epu8(a, b), _mm512_subs_epu8(b, a));
+			__mmask64 mask   = _mm512_cmpge_epu8_mask(abs_diff, thresh_vec);
+			cnt += __builtin_popcountll(mask);
+		}
+	}
+#endif
+#if defined(__AVX2__)
+	{
+		const __m256i thresh_vec = _mm256_set1_epi8(static_cast<uint8_t>(threshold));
+		for (; i <= n_pixels - 32; i += 32) {
+			__m256i a        = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(cur  + i));
+			__m256i b        = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(prev + i));
+			// abs diff for uint8: max(a,b) - min(a,b)
+			__m256i abs_diff = _mm256_sub_epi8(_mm256_max_epu8(a, b), _mm256_min_epu8(a, b));
+			// abs_diff >= threshold: max(abs_diff, thresh) == abs_diff
+			__m256i cmp      = _mm256_cmpeq_epi8(_mm256_max_epu8(abs_diff, thresh_vec), abs_diff);
+			cnt += __builtin_popcount(static_cast<uint32_t>(_mm256_movemask_epi8(cmp)));
+		}
+	}
+#endif
+
+	for (; i < n_pixels; i++)
 		cnt += abs(cur[i] - prev[i]) >= threshold;
 
 	return cnt;
