@@ -136,6 +136,8 @@ add_executable(constatus
 	src/ws_server_tls.cpp
 	)
 
+target_compile_options(constatus PRIVATE -march=native -Ofast -fomit-frame-pointer)
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
