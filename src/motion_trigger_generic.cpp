@@ -183,13 +183,12 @@ int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, co
 			uint8x16_t abs_diff = vabdq_u8(a, b);
 			uint8x16_t ge       = vcgeq_u8(abs_diff, thresh_vec);
 			uint8x16_t ones     = vshrq_n_u8(ge, 7);
+			uint16x8_t sum16    = vpaddlq_u8(ones);
+			uint32x4_t sum32    = vpaddlq_u16(sum16);
 #if defined(__aarch64__)
-			cnt += vaddvq_u8(ones);
+			cnt += static_cast<int>(vaddvq_u32(sum32));
 #else
-			uint16x8_t sum16 = vpaddlq_u8(ones);
-			uint32x4_t sum32 = vpaddlq_u16(sum16);
-			uint64x2_t sum64 = vpaddlq_u32(sum32);
-			cnt += static_cast<int>(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
+			cnt += static_cast<int>(vgetq_lane_u32(sum32, 0) + vgetq_lane_u32(sum32, 1) + vgetq_lane_u32(sum32, 2) + vgetq_lane_u32(sum32, 3));
 #endif
 		}
 	}
