@@ -2,10 +2,11 @@
 #include "config.h"
 #include <assert.h>
 #include <atomic>
-#ifdef __AVX2__
+#if defined(__AVX2__) || defined(__AVX512BW__)
 #include <immintrin.h>
-#elif defined(__AVX512BW__)
-#include <immintrin.h>
+#endif
+#if defined(__ARM_NEON) || defined(__aarch64__)
+#include <arm_neon.h>
 #endif
 #include <errno.h>
 #include <map>
@@ -144,9 +145,8 @@ int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, co
 	int cnt = 0;
 	int i   = 0;
 
-	// The two SIMD blocks below form a cascade: AVX-512BW processes 64-byte
-	// chunks first, then AVX2 handles any leftover 32-byte chunks, and the
-	// scalar loop finishes the tail. The shared index 'i' ensures no overlap.
+	// SIMD processing cascades from widest vectors down to scalar. Each block
+	// advances shared index 'i', so there is no overlap.
 #if defined(__AVX512BW__)
 	{
 		const __m512i thresh_vec = _mm512_set1_epi8(static_cast<uint8_t>(threshold));
@@ -171,6 +171,26 @@ int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, co
 			// abs_diff >= threshold: max(abs_diff, thresh) == abs_diff
 			__m256i cmp      = _mm256_cmpeq_epi8(_mm256_max_epu8(abs_diff, thresh_vec), abs_diff);
 			cnt += __builtin_popcount(static_cast<uint32_t>(_mm256_movemask_epi8(cmp)));
+		}
+	}
+#endif
+#if defined(__ARM_NEON) || defined(__aarch64__)
+	{
+		const uint8x16_t thresh_vec = vdupq_n_u8(static_cast<uint8_t>(threshold));
+		for (; i <= n_pixels - 16; i += 16) {
+			uint8x16_t a        = vld1q_u8(cur + i);
+			uint8x16_t b        = vld1q_u8(prev + i);
+			uint8x16_t abs_diff = vabdq_u8(a, b);
+			uint8x16_t ge       = vcgeq_u8(abs_diff, thresh_vec);
+			uint8x16_t ones     = vshrq_n_u8(ge, 7);
+#if defined(__aarch64__)
+			cnt += vaddvq_u8(ones);
+#else
+			uint16x8_t sum16 = vpaddlq_u8(ones);
+			uint32x4_t sum32 = vpaddlq_u16(sum16);
+			uint64x2_t sum64 = vpaddlq_u32(sum32);
+			cnt += static_cast<int>(vgetq_lane_u64(sum64, 0) + vgetq_lane_u64(sum64, 1));
+#endif
 		}
 	}
 #endif
