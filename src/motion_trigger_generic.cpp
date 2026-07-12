@@ -213,8 +213,9 @@ void motion_trigger_generic::operator()()
 	if (!despeckle_filter.empty())
 		log(id, LL_INFO, "Despeckle filter enabled (%s)", despeckle_filter.c_str());
 
-	uint8_t *gray_cur = (uint8_t *)malloc(n_pixels), *gray_prev = (uint8_t *)malloc(n_pixels);
-	uint8_t *scratch = (uint8_t *)malloc(n_pixels);
+	uint8_t *gray_cur  = (uint8_t *)malloc(n_pixels);
+	uint8_t *gray_prev = (uint8_t *)calloc(1, n_pixels);
+	uint8_t *scratch   = (uint8_t *)malloc(n_pixels);
 
 	unsigned long event_nr = -1;
 	int count_frames_changed = 0;
@@ -241,7 +242,6 @@ void motion_trigger_generic::operator()()
 			pvf = temp;
 		}
 
-		to_gray(pvf->get_data(E_RGB), n_pixels, gray_cur);
 		pvf->keep_only_format(E_RGB);
 
 		int cnt = 0, cx = 0, cy = 0;
@@ -272,6 +272,7 @@ void motion_trigger_generic::operator()()
 			prev_frame = pvf->duplicate(E_RGB);
 		}
 		else if (psb || pan_tilt || !despeckle_filter.empty()) {
+			to_gray(pvf->get_data(E_RGB), n_pixels, gray_cur);
 			calc_diff(scratch, n_pixels, gray_cur, gray_prev);
 
 			if (!despeckle_filter.empty())
@@ -314,10 +315,12 @@ void motion_trigger_generic::operator()()
 			}
 		}
 		else {
-			cnt = count_over_threshold(gray_cur, gray_prev, n_pixels, nl);
+			if (prev_frame) {
+				cnt = count_over_threshold(pvf->get_data(E_RGB), prev_frame->get_data(E_RGB), n_pixels * 3, nl);
 
-			double temp = cnt * 100.0 / n_pixels;
-			triggered = temp > parameter::get_value_double(parameters, "min-pixels-changed-percentage") && temp < parameter::get_value_double(parameters, "max-pixels-changed-percentage");
+				double temp = cnt * 100.0 / (n_pixels * 3);
+				triggered = temp > parameter::get_value_double(parameters, "min-pixels-changed-percentage") && temp < parameter::get_value_double(parameters, "max-pixels-changed-percentage");
+			}
 		}
 
 		get_meta() -> set_double("$pixels-changed$", std::pair<uint64_t, double>(0, cnt * 100.0 / n_pixels));
@@ -441,6 +444,7 @@ void motion_trigger_generic::operator()()
 
 		size_t pre_duration = parameter::get_value_int(parameters, "pre-motion-record-duration");
 
+		delete prev_frame;
 		if (pre_duration > 0) {
 			if (prerecord.size() >= pre_duration) {
 				delete prerecord.at(0);
@@ -449,9 +453,11 @@ void motion_trigger_generic::operator()()
 			}
 
 			prerecord.push_back(pvf);
+
+			prev_frame = pvf->duplicate(E_RGB);
 		}
 		else {
-			delete pvf;
+			prev_frame = pvf;
 		}
 
 		std::swap(gray_cur, gray_prev);
@@ -463,9 +469,10 @@ void motion_trigger_generic::operator()()
 			mysleep(1000000 / fps_temp, &local_stop_flag, s);
 	}
 
-	free(scratch);
 	free(gray_prev);
 	free(gray_cur);
+	free(scratch);
+	delete prev_frame;
 
 	while(!prerecord.empty()) {
 		delete prerecord.at(0);
