@@ -4,6 +4,8 @@
 #include <atomic>
 #ifdef __AVX2__
 #include <immintrin.h>
+#elif defined(__AVX512BW__)
+#include <immintrin.h>
 #endif
 #include <errno.h>
 #include <map>
@@ -142,6 +144,9 @@ int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, co
 	int cnt = 0;
 	int i   = 0;
 
+	// The two SIMD blocks below form a cascade: AVX-512BW processes 64-byte
+	// chunks first, then AVX2 handles any leftover 32-byte chunks, and the
+	// scalar loop finishes the tail. The shared index 'i' ensures no overlap.
 #if defined(__AVX512BW__)
 	{
 		const __m512i thresh_vec = _mm512_set1_epi8(static_cast<uint8_t>(threshold));
