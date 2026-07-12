@@ -148,7 +148,8 @@ int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, co
 		for (; i <= n_pixels - 64; i += 64) {
 			__m512i a        = _mm512_loadu_si512(reinterpret_cast<const __m512i *>(cur  + i));
 			__m512i b        = _mm512_loadu_si512(reinterpret_cast<const __m512i *>(prev + i));
-			__m512i abs_diff = _mm512_add_epi8(_mm512_subs_epu8(a, b), _mm512_subs_epu8(b, a));
+			// abs diff for uint8: max(a,b) - min(a,b)
+			__m512i abs_diff = _mm512_sub_epi8(_mm512_max_epu8(a, b), _mm512_min_epu8(a, b));
 			__mmask64 mask   = _mm512_cmpge_epu8_mask(abs_diff, thresh_vec);
 			cnt += __builtin_popcountll(mask);
 		}
