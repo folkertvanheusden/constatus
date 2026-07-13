@@ -1672,7 +1672,7 @@ void add_text(unsigned char *const img, const int width, const int height, const
 			if (realy >= height)
 				break;
 
-			const int y_offset = realy * width * 3;
+			const int y_offset = realy * width * 4;
 
 			for(int x=0; x<8; x++) {
 				int realx = xpos + x + 8 * cx;
@@ -1682,7 +1682,7 @@ void add_text(unsigned char *const img, const int width, const int height, const
 				if (realx >= width)
 					break;
 
-				int offset = y_offset + realx * 3;
+				int offset = y_offset + realx * 4;
 
 				img[offset + 0] = font[cur_char][y][x];
 				img[offset + 1] = font[cur_char][y][x];

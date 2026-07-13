@@ -63,10 +63,10 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 		auto it_bgr = data.find(E_BGR);
 
 		if (it_bgr != data.end()) {
-			size_t n_bytes = w * h * 3;
+			size_t n_bytes = w * h * 4;
 			uint8_t *frame_rgb = (uint8_t *)malloc(n_bytes);
 
-			for(int i=0; i<n_bytes; i += 3) {
+			for(int i=0; i<n_bytes; i += 4) {
 				frame_rgb[i + 0] = it_bgr->second.first[i + 2];
 				frame_rgb[i + 1] = it_bgr->second.first[i + 1];
 				frame_rgb[i + 2] = it_bgr->second.first[i + 0];
@@ -86,7 +86,7 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 			uint8_t *frame_rgb { nullptr };
 			yuy2_to_rgb(it_yuyv->second.first, w, h, &frame_rgb);
 
-			std::pair<uint8_t *, size_t> d { frame_rgb, w * h * 3 };
+			std::pair<uint8_t *, size_t> d { frame_rgb, w * h * 4 };
 			auto rc = data.emplace(E_RGB, d);
 			assert(rc.second);
 
@@ -124,7 +124,7 @@ std::map<encoding_t, std::pair<uint8_t *, size_t> >::iterator video_frame::gen_e
 			return data.end();
 		}
 
-		std::pair<uint8_t *, size_t> d { frame_rgb, w * h * 3 };
+		std::pair<uint8_t *, size_t> d { frame_rgb, w * h * 4 };
 		auto rc = data.emplace(E_RGB, d);
 		assert(rc.second);
 
@@ -151,7 +151,7 @@ std::tuple<uint8_t *, size_t> video_frame::get_data_and_len_internal(const encod
 			// this path is taken when e.g. a JPEG could not be decoded
 			log(LL_WARNING, "returning gray failure frame");
 
-			size_t n_pixels = w * h * 3;
+			size_t n_pixels = w * h * 4;
 			uint8_t *gray = (uint8_t *)malloc(n_pixels);
 
 			memset(gray, 0x80, n_pixels);
@@ -232,7 +232,7 @@ video_frame *video_frame::do_resize(resize *const r, const int new_w, const int 
 
 	lock.unlock();
 
-	return new video_frame(m_, jpeg_quality, ts, new_w, new_h, resized, IMS(new_w, new_h, 3), E_RGB);
+	return new video_frame(m_, jpeg_quality, ts, new_w, new_h, resized, IMS(new_w, new_h, 4), E_RGB);
 }
 
 video_frame *video_frame::duplicate(const std::optional<encoding_t> e)
@@ -295,21 +295,21 @@ video_frame *video_frame::do_rotate(const int angle)
 
 		for(int y=0; y<h; y++) {
 			for(int x=0; x<w; x++) {
-				new_[x * h * 3 + y * 3 + 0] = data[y * w * 3 + x * 3 + 0];
-				new_[x * h * 3 + y * 3 + 1] = data[y * w * 3 + x * 3 + 1];
-				new_[x * h * 3 + y * 3 + 2] = data[y * w * 3 + x * 3 + 2];
+				new_[x * h * 4 + y * 4 + 0] = data[y * w * 4 + x * 4 + 0];
+				new_[x * h * 4 + y * 4 + 1] = data[y * w * 4 + x * 4 + 1];
+				new_[x * h * 4 + y * 4 + 2] = data[y * w * 4 + x * 4 + 2];
 			}
 		}
 
-		return new video_frame(m_, jpeg_quality, ts, h, w, new_, IMS(h, w, 3), E_RGB);
+		return new video_frame(m_, jpeg_quality, ts, h, w, new_, IMS(h, w, 4), E_RGB);
 	}
 	else if (angle == 180) {
 		uint8_t *new_ = (uint8_t *)malloc(len);
 
 		for(int y=0; y<h; y++)
-			memcpy(&new_[y * w * 3], &data[(h - 1 - y) * w * 3], w * 3);
+			memcpy(&new_[y * w * 4], &data[(h - 1 - y) * w * 4], w * 4);
 
-		return new video_frame(m_, jpeg_quality, ts, w, h, new_, IMS(w, h, 3), E_RGB);
+		return new video_frame(m_, jpeg_quality, ts, w, h, new_, IMS(w, h, 4), E_RGB);
 	}
 	else if (angle == 270) {
 		uint8_t *new_ = (uint8_t *)malloc(len);
@@ -318,13 +318,13 @@ video_frame *video_frame::do_rotate(const int angle)
 			for(int x=0; x<w; x++) {
 				int mx = w - 1 - x;
 
-				new_[x * h * 3 + y * 3 + 0] = data[y * w * 3 + mx * 3 + 0];
-				new_[x * h * 3 + y * 3 + 1] = data[y * w * 3 + mx * 3 + 1];
-				new_[x * h * 3 + y * 3 + 2] = data[y * w * 3 + mx * 3 + 2];
+				new_[x * h * 4 + y * 4 + 0] = data[y * w * 4 + mx * 4 + 0];
+				new_[x * h * 4 + y * 4 + 1] = data[y * w * 4 + mx * 4 + 1];
+				new_[x * h * 4 + y * 4 + 2] = data[y * w * 4 + mx * 4 + 2];
 			}
 		}
 
-		return new video_frame(m_, jpeg_quality, ts, h, w, new_, IMS(h, w, 3), E_RGB);
+		return new video_frame(m_, jpeg_quality, ts, h, w, new_, IMS(h, w, 4), E_RGB);
 	}
 
 	return duplicate(E_RGB);

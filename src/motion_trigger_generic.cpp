@@ -117,7 +117,8 @@ static void to_gray(const uint8_t *const rgb_in, const int n_pixels, uint8_t *co
 	for(int i=0, o=0; o<n_pixels;) {
 		int r = rgb_in[i++];
 		int g = rgb_in[i++];
-		int b = rgb_in[i++];
+		int b = rgb_in[i];
+		i += 2;
 
 		gray_out[o++] = (r + g + b) / 3;
 	}
@@ -133,8 +134,14 @@ int count_over_threshold(const uint8_t *const cur, const uint8_t *const prev, co
 {
 	int cnt = 0;
 
-	for(int i=0; i<n_pixels; i++)
+	for(int i=0; i<n_pixels; i) {
 		cnt += abs(cur[i] - prev[i]) >= threshold;
+		i++;
+		cnt += abs(cur[i] - prev[i]) >= threshold;
+		i++;
+		cnt += abs(cur[i] - prev[i]) >= threshold;
+		i+=2;
+	}
 
 	return cnt;
 }
@@ -253,7 +260,7 @@ void motion_trigger_generic::operator()()
 		uint8_t *psb = pixel_select_bitmap ? pixel_select_bitmap -> get_mask(w, h) : nullptr;
 
 		const int nl = parameter::get_value_int(parameters, "noise-factor");
-		const int nl3 = nl * 3;
+		const int nl3 = nl * 4;
 
 		if (et) {
 			if (prev_frame) {
@@ -316,7 +323,7 @@ void motion_trigger_generic::operator()()
 		}
 		else {
 			if (prev_frame) {
-				cnt = count_over_threshold(pvf->get_data(E_RGB), prev_frame->get_data(E_RGB), n_pixels * 3, nl);
+				cnt = count_over_threshold(pvf->get_data(E_RGB), prev_frame->get_data(E_RGB), n_pixels, nl);
 
 				double temp = cnt * 100.0 / (n_pixels * 3);
 				triggered = temp > parameter::get_value_double(parameters, "min-pixels-changed-percentage") && temp < parameter::get_value_double(parameters, "max-pixels-changed-percentage");

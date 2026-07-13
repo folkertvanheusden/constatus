@@ -120,10 +120,10 @@ bool read_PNG_file_rgba(bool with_alpha, FILE *fh, int *w, int *h, uint8_t **pix
 			row_pointers[y] = &(*pixels)[y * *w * 4];
 	}
 	else {
-		*pixels = (uint8_t *)malloc(IMS(*w, *h, 3));
+		*pixels = (uint8_t *)malloc(IMS(*w, *h, 4));
 
 		for(int y = 0; y < *h; y++)
-			row_pointers[y] = &(*pixels)[y * *w * 3];
+			row_pointers[y] = &(*pixels)[y * *w * 4];
 	}
 
 	png_read_image(png, row_pointers);
@@ -141,7 +141,7 @@ void write_PNG_file(FILE *fh, int ncols, int nrows, unsigned char *pixels)
 	if (!row_pointers)
 		error_exit(true, "write_PNG_file error allocating row-pointers");
 	for(int y=0; y<nrows; y++)
-		row_pointers[y] = &pixels[y*ncols*3];
+		row_pointers[y] = &pixels[y*ncols*4];
 
 	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, libpng_error_handler, libpng_warning_handler);
 	if (!png)
@@ -212,7 +212,7 @@ bool myjpeg::write_JPEG_memory(const meta *const m, const int ncols, const int n
 
 	//// GENERATE JPEG ////
 	unsigned long int len = 0;
-	if (tjCompress2(jpegCompressor, pixels, ncols, 0, nrows, TJPF_RGB, &temp, &len, TJSAMP_444, quality, TJFLAG_FASTDCT) == -1) {
+	if (tjCompress2(jpegCompressor, pixels, ncols, 0, nrows, TJPF_RGBX, &temp, &len, TJSAMP_444, quality, TJFLAG_FASTDCT) == -1) {
 		log(LL_ERR, "Failed compressing frame: %s (%dx%d @ %d)", tjGetErrorStr(), ncols, nrows, quality);
 		return false;
 	}
@@ -285,8 +285,8 @@ bool myjpeg::read_JPEG_memory(unsigned char *in, int n_bytes_in, int *w, int *h,
 		return false;
 	}
 
-	*pixels = (unsigned char *)malloc(IMS(*w, *h, 3));
-	if (tjDecompress2(jpegDecompressor, in, n_bytes_in, *pixels, *w, 0/*pitch*/, *h, TJPF_RGB, TJFLAG_FASTDCT) == -1) {
+	*pixels = (unsigned char *)malloc(IMS(*w, *h, 4));
+	if (tjDecompress2(jpegDecompressor, in, n_bytes_in, *pixels, *w, 0/*pitch*/, *h, TJPF_RGBX, TJFLAG_FASTDCT) == -1) {
 		log(LL_ERR, "Failed decompressing frame: %s", tjGetErrorStr());
 		free(*pixels);
 		*pixels = nullptr;
@@ -323,9 +323,9 @@ void myjpeg::i420_to_rgb(tjhandle t, const uint8_t *const in, const int width, c
         const uint8_t *v_ptr = in + pos;
 	const uint8_t *srcPlanes[] = { y_ptr, u_ptr, v_ptr };
 
-	*out = (uint8_t *)malloc(IMS(width, height, 3));
+	*out = (uint8_t *)malloc(IMS(width, height, 4));
 
-	tjDecodeYUVPlanes(t, srcPlanes, nullptr, TJSAMP_420, *out, width, 0, height, TJPF_BGR, 0);
+	tjDecodeYUVPlanes(t, srcPlanes, nullptr, TJSAMP_420, *out, width, 0, height, TJPF_XBGR, 0);
 }
 
 tjhandle myjpeg::allocate_transformer()
@@ -357,6 +357,7 @@ bool read_bmp(unsigned char *in, int n_bytes_in, int *w, int *h, unsigned char *
 	if (!*pixels)
 		return false;
 
+	// FIXME for 4B
 	size_t offset   = 0;
         size_t n_pixels = *w * *h; 
         for(int y=*h - 1; y >= 0; y--) { 

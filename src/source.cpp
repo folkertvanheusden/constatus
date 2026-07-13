@@ -1,4 +1,4 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2026 by folkert van heusden, released under the MIT license
 #include "config.h"
 #include <errno.h>
 #include <inttypes.h>
@@ -144,7 +144,7 @@ void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const 
         uint8_t *out = nullptr;
 
 	if (keep_aspectratio) {
-		out = reinterpret_cast<uint8_t *>(malloc(target_w * target_h * 3));
+		out = reinterpret_cast<uint8_t *>(malloc(target_w * target_h * 4));
 
 		int perc = std::min(sourcew * 100 / resize_w, sourceh * 100 / resize_h);
 
@@ -159,7 +159,7 @@ void source::set_scaled_frame(const uint8_t *const in, const int sourcew, const 
 	std::unique_lock<std::mutex> lck(lock);
 
 	delete vf;
-	vf = new video_frame(get_meta(), jpeg_quality, use_ts, target_w, target_h, out, IMS(target_w, target_h, 3), E_RGB);
+	vf = new video_frame(get_meta(), jpeg_quality, use_ts, target_w, target_h, out, IMS(target_w, target_h, 4), E_RGB);
 
 	lck.unlock();
 
@@ -215,7 +215,7 @@ fail:
 		uint8_t *work = vf->get_data(E_RGB);
 		uint64_t vf_ts = vf->get_ts();
 
-		size_t n_bytes = IMS(vf->get_w(), vf->get_h(), 3);
+		size_t n_bytes = IMS(vf->get_w(), vf->get_h(), 4);
 
 		uint8_t *copy = (uint8_t *)duplicate(work, n_bytes);
 
@@ -275,7 +275,7 @@ video_frame * source::get_frame_to(const bool handle_failure, const uint64_t aft
 		uint8_t *work = vf->get_data(E_RGB);
 		uint64_t vf_ts = vf->get_ts();
 
-		size_t n_bytes = IMS(vf->get_w(), vf->get_h(), 3);
+		size_t n_bytes = IMS(vf->get_w(), vf->get_h(), 4);
 
 		uint8_t *copy = (uint8_t *)duplicate(work, n_bytes);
 
@@ -334,10 +334,10 @@ int btr(const int v, const int r)
 void draw_noise(uint8_t *const fail, const int width, const int height, const int x1, const int y1, const int x2, const int y2)
 {
 	for(int y=y1; y<y2; y++) {
-		int yo = y * width * 3;
+		int yo = y * width * 4;
 
 		for(int x=x1; x<x2; x++) {
-			int offset = yo + x * 3;
+			int offset = yo + x * 4;
 
 			fail[offset + 0] = fail[offset + 1] = fail[offset + 2] = rand();
 		}
@@ -355,7 +355,7 @@ video_frame * source::get_failure_frame()
 	if (lh == -1)
 		lh = 480;
 
-	int fail_len = lw * lh * 3;
+	int fail_len = lw * lh * 4;
 	uint8_t *fail = (uint8_t *)malloc(fail_len);
 
 	if (failure_bitmap) {
