@@ -136,7 +136,7 @@ add_executable(constatus
 	src/ws_server_tls.cpp
 	)
 
-target_compile_options(constatus PRIVATE -march=native -Ofast -fomit-frame-pointer -lcairo)
+target_compile_options(constatus PRIVATE -march=native -Ofast -fomit-frame-pointer)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -278,6 +278,11 @@ pkg_check_modules(LIBMOSQUITTO libmosquitto)
 target_link_libraries(constatus ${LIBMOSQUITTO_LIBRARIES})
 target_include_directories(constatus PUBLIC ${LIBMOSQUITTO_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${LIBMOSQUITTO_CFLAGS_OTHER})
+
+pkg_check_modules(LIBCAIRO2 cairo)
+target_link_libraries(constatus ${LIBCAIRO2_LIBRARIES})
+target_include_directories(constatus PUBLIC ${LIBCAIRO2_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${LIBCAIRO2_CFLAGS_OTHER})
 
 pkg_check_modules(LIBCAMERA libcamera)
 target_link_libraries(constatus ${LIBCAMERA_LIBRARIES})
