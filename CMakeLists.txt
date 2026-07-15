@@ -136,7 +136,7 @@ add_executable(constatus
 	src/ws_server_tls.cpp
 	)
 
-target_compile_options(constatus PRIVATE -march=native -Ofast -fomit-frame-pointer)
+target_compile_options(constatus PRIVATE -march=native -Ofast -fomit-frame-pointer -lcairo)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -325,6 +325,13 @@ if (LIBPAM)
 	set(LIBPAM_FOUND 1)
 else()
 	message(STATUS "No pam library")
+endif()
+
+CHECK_INCLUDE_FILE(libyuv.h LIBYUV)
+if (LIBYUV)
+	target_link_libraries(constatus yuv)
+else()
+	message(ERROR "No libyuv library")
 endif()
 
 include(CheckIncludeFileCXX)

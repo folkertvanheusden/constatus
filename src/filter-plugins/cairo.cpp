@@ -14,7 +14,8 @@ cairo_surface_t * rgb_to_cairo(const uint8_t *const in, const int w, const int h
 	for(size_t i=0; i<n; i++) {
 		uint8_t r = *win++;
 		uint8_t g = *win++;
-		uint8_t b = *win++;
+		uint8_t b = *win;
+		win += 2;
 		*wout++ = (255 << 24) | (r << 16) | (g << 8) | b;
 	}
 
@@ -31,6 +32,7 @@ void cairo_to_rgb(cairo_surface_t *const cs, const int w, const int h, uint8_t *
 		uint32_t temp = *in++;
 		*out++ = temp >> 16;
 		*out++ = temp >> 8;
-		*out++ = temp;
+		*out   = temp;
+		out += 2;
 	}
 }

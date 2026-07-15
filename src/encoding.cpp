@@ -1,40 +1,39 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2026 by folkert van heusden, released under the MIT license
 #include <algorithm>
+#include <libyuv.h>
 #include <stdint.h>
 
+
 // yuy2 aka uyvy
-// based on https://stackoverflow.com/questions/4491649/how-to-convert-yuy2-to-a-bitmap-in-c
 void yuy2_to_rgb(const uint8_t *const in, const int width, const int height, uint8_t **out)
 {
 	const uint8_t *in_work = in;
 	const int n_pixels = width * height;
 	const int n_bytes_out = n_pixels * 4;
 
+	uint8_t *temp = (uint8_t *)malloc(n_bytes_out);
 	uint8_t *out_work = *out = (uint8_t *)malloc(n_bytes_out);
 
-	const int n = height * width / 2;
-	for(int loop=0; loop<n; loop++) {
-		int y0 = *in_work++;
-		int u0 = *in_work++;
-		int y1 = *in_work++;
-		int v0 = *in_work++;
+	libyuv::YUY2ToARGB(in, width * 2,
+                   temp, width * 4,
+                   width, height);
 
-		int c = y0 - 16;
-		int d = u0 - 128;
-		int e = v0 - 128;
-		int c298 = c * 298;
-		*out_work++ = std::clamp((c298 + 409 * e + 128) >> 8, 0, 255); // red
-		*out_work++ = std::clamp((c298 - 100 * d - 208 * e + 128) >> 8, 0, 255); // green
-		*out_work   = std::clamp((c298 + 516 * d + 128) >> 8, 0, 255); // blue
-		out_work += 2;
-
-		c = y1 - 16;
-		c298 = c * 298;
-		*out_work++ = std::clamp((c298 + 409 * e + 128) >> 8, 0, 255); // red
-		*out_work++ = std::clamp((c298 - 100 * d - 208 * e + 128) >> 8, 0, 255); // green
-		*out_work   = std::clamp((c298 + 516 * d + 128) >> 8, 0, 255); // blue
-		out_work += 2;
+	uint8_t shuffler[16] { 2, 1, 0, 3 };
+	for(int i=0; i<3; i++) {
+		shuffler[4 + i * 4 + 0] = shuffler[0];
+		shuffler[4 + i * 4 + 1] = shuffler[1];
+		shuffler[4 + i * 4 + 2] = shuffler[2];
+		shuffler[4 + i * 4 + 3] = shuffler[3];
 	}
+	libyuv::ARGBShuffle(temp,
+			width * 4,
+			*out,
+			width * 4,
+			shuffler,
+			width,
+			height);
+
+	free(temp);
 }
 
 // RGB -> YUV

@@ -3,7 +3,7 @@ INSTALL_PREFIX=/usr/local
 
 CFLAGS=-fPIC -Wall -pedantic -ggdb3 `pkg-config --cflags opencv libmosquitto cairo`
 CXXFLAGS=-fPIC -Wall -pedantic -ggdb3 `pkg-config --cflags opencv libmosquitto cairo` -std=c++17
-LDFLAGS=-fPIC `pkg-config --cflags opencv libmosquitto cairo`
+LDFLAGS=-fPIC `pkg-config --cflags opencv libmosquitto cairo` -lcairo
 VERSION=0.2
 
 OBJSKA=keep-alive.o cairo.o

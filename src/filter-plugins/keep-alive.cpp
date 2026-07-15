@@ -1,4 +1,4 @@
-// (C) 2024 by folkert van heusden, this file is released in the public domain
+// (C) 2024-2026 by folkert van heusden, this file is released in the public domain
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

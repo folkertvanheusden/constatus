@@ -124,7 +124,7 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 
 	if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
 		*result_width = bitmap->width;
-		*result       = new uint8_t[*result_height * *result_width * 3]();
+		*result       = new uint8_t[*result_height * *result_width * 4]();
 
 		for(unsigned int glyph_y=0; glyph_y<bitmap->rows; glyph_y++) {
 			int screen_y = glyph_y;
@@ -134,7 +134,7 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 				int     io = glyph_y * bitmap->width / 8 + glyph_x;
 				uint8_t b  = bitmap->buffer[io];
 
-				int screen_buffer_offset = screen_y * *result_width * 3 + glyph_x * 3 + glyph_x * 8;
+				int screen_buffer_offset = screen_y * *result_width * 4 + glyph_x * 4 + glyph_x * 8;
 
 				for(int xbit=0; xbit < 8; xbit++) {
 					int pixel_v = b & 128 ? max : 0;
@@ -152,23 +152,23 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 						(*result)[screen_buffer_offset + 2] = (pixel_v * fg.b + sub * bg.b) >> 8;
 					}
 
-					screen_buffer_offset += 3;
+					screen_buffer_offset += 4;
 				}
 			}
 		}
 	}
 	else if (bitmap->pixel_mode == FT_PIXEL_MODE_GRAY) {
 		*result_width = bitmap->width;
-		*result       = new uint8_t[*result_height * *result_width * 3]();
+		*result       = new uint8_t[*result_height * *result_width * 4]();
 
 		for(int glyph_y=0; glyph_y<bitmap->rows; glyph_y++) {
 			int screen_y = glyph_y;
-			int screen_buffer_offset = screen_y * *result_width * 3;
+			int screen_buffer_offset = screen_y * *result_width * 4;
 			int io_base = glyph_y * bitmap->width;
 
 			for(int glyph_x=0; glyph_x<bitmap->width; glyph_x++) {
 				int screen_x = glyph_x;
-				int local_screen_buffer_offset = screen_buffer_offset + screen_x * 3;
+				int local_screen_buffer_offset = screen_buffer_offset + screen_x * 4;
 				int io = io_base + glyph_x;
 
 				int pixel_v = bitmap->buffer[io] * max / 255;
@@ -186,18 +186,18 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 	}
 	else if (bitmap->pixel_mode == FT_PIXEL_MODE_LCD) {
 		*result_width = bitmap->width / 3;
-		*result       = new uint8_t[*result_width * *result_height * 3]();
+		*result       = new uint8_t[*result_width * *result_height * 4]();
 
 		for(int glyph_y=0; glyph_y<bitmap->rows; glyph_y++) {
 			int screen_y = glyph_y;
-			int screen_buffer_offset = screen_y * *result_width * 3;
+			int screen_buffer_offset = screen_y * *result_width * 4;
 			int io_base = glyph_y * bitmap->pitch;
 
 			for(int glyph_x=0; glyph_x<*result_width; glyph_x++) {
 				int screen_x = glyph_x;
-				int local_screen_buffer_offset = screen_buffer_offset + screen_x * 3;
+				int local_screen_buffer_offset = screen_buffer_offset + screen_x * 4;
 
-				int io = io_base + glyph_x * 3;
+				int io = io_base + glyph_x * 4;
 
 				int pixel_vr = bitmap->buffer[io + 0] * max / 255;
 				int pixel_vg = bitmap->buffer[io + 1] * max / 255;
@@ -225,16 +225,16 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 	}
 	else if (bitmap->pixel_mode == FT_PIXEL_MODE_BGRA) {
 		*result_width = bitmap->width;
-		*result       = new uint8_t[*result_width * *result_height * 3]();
+		*result       = new uint8_t[*result_width * *result_height * 4]();
 
 		for(int glyph_y=0; glyph_y<bitmap->rows; glyph_y++) {
 			int screen_y = glyph_y;
-			int screen_buffer_offset = screen_y * *result_width * 3;
+			int screen_buffer_offset = screen_y * *result_width * 4;
 			int io_base = glyph_y * bitmap->pitch;
 
 			for(int glyph_x=0; glyph_x<*result_width; glyph_x++) {
 				int screen_x = glyph_x;
-				int local_screen_buffer_offset = screen_buffer_offset + screen_x * 3;
+				int local_screen_buffer_offset = screen_buffer_offset + screen_x * 4;
 
 				int io = io_base + glyph_x * 4;
 
@@ -271,10 +271,10 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 
 	if (strikethrough) {
 		const int middle_line = *result_height / 2;
-		const int offset      = middle_line * *result_width * 3;
+		const int offset      = middle_line * *result_width * 4;
 
 		for(unsigned glyph_x=0; glyph_x<*result_width; glyph_x++) {
-			int screen_buffer_offset = offset + glyph_x * 3;
+			int screen_buffer_offset = offset + glyph_x * 4;
 
 			if (screen_buffer_offset >= 0) {
 				(*result)[screen_buffer_offset + 0] = (max * fg.r) >> 8;
@@ -293,7 +293,7 @@ void draw_text::draw_glyph_bitmap_low(const FT_Bitmap *const bitmap, const rgb_t
 			if (screen_x >= *result_width)
 				break;
 
-			int screen_buffer_offset = (*result_height - 2) * *result_width * 3 + screen_x * 3;
+			int screen_buffer_offset = (*result_height - 2) * *result_width * 4 + screen_x * 4;
 
 			(*result)[screen_buffer_offset + 0] = (pixel_v * fg.r) >> 8;
 			(*result)[screen_buffer_offset + 1] = (pixel_v * fg.g) >> 8;
@@ -322,7 +322,7 @@ void draw_text::draw_glyph_bitmap(const glyph_cache_entry_t *const glyph, const 
 	for(int y=0; y<use_height; y++) {
 		int temp = work_dest_y + y;
 		if (temp >= 0)
-			memcpy(&dest[temp * dest_width * 3 + work_dest_x * 3], &result[result_width * y * 3], use_width * 3);
+			memcpy(&dest[temp * dest_width * 4 + work_dest_x * 4], &result[result_width * y * 4], use_width * 4);
 	}
 
 	delete [] result;
@@ -342,10 +342,10 @@ int draw_text::draw_glyph(const UChar32 utf_character, const intensity_t intensi
 		int work_width  = std::min(dest_width  - x, font_width );
 
 		for(int cy=0; cy<work_height; cy++) {
-			int offset_y = (y + cy) * dest_width * 3;
+			int offset_y = (y + cy) * dest_width * 4;
 
 			for(int cx=0; cx<work_width; cx++) {
-				int offset = offset_y + (x + cx) * 3;
+				int offset = offset_y + (x + cx) * 4;
 
 				dest[offset + 0] = bg_r;
 				dest[offset + 1] = bg_g;
@@ -558,7 +558,7 @@ void draw_text::draw_string(const std::string & input, const int height, uint8_t
 	int    ascender   = std::get<1>(dimensions) / 64;
 
 	*width          = std::get<0>(dimensions);
-	*rgb_pixels     = new uint8_t[3 * *width * height]();
+	*rgb_pixels     = new uint8_t[4 * *width * height]();
 
 	for(auto & c: std::get<4>(dimensions)) {
 		auto & utf_char = std::get<0>(c);
@@ -581,7 +581,7 @@ void draw_text_on_bitmap(draw_text *const font, const std::string & in, const in
 		rgb_t cbg = bg.value();
 
 		for(int cy=0; cy<text_height; cy++) {
-			int offset = (put_y + cy) * dest_bitmap_width * 3 + put_x * 3;
+			int offset = (put_y + cy) * dest_bitmap_width * 4 + put_x * 4;
 
 			if (put_y + cy >= dest_bitmap_height)
 				break;
@@ -590,8 +590,8 @@ void draw_text_on_bitmap(draw_text *const font, const std::string & in, const in
 				if (put_x + cx >= dest_bitmap_width)
 					break;
 
-				int     current_offset = offset + cx * 3;
-				int     bitmap_offset  = cy * bitmap_width * 3 + cx * 3;
+				int     current_offset = offset + cx * 4;
+				int     bitmap_offset  = cy * bitmap_width * 4 + cx * 4;
 				uint8_t pixel_value    = bitmap[bitmap_offset];
 				uint8_t inverted_pixel = 255 - pixel_value;
 
@@ -603,17 +603,16 @@ void draw_text_on_bitmap(draw_text *const font, const std::string & in, const in
 	}
 	else {
 		for(int cy=0; cy<text_height; cy++) {
-			int offset = (put_y + cy) * dest_bitmap_width * 3 + put_x * 3;
-
 			if (put_y + cy >= dest_bitmap_height)
 				break;
 
+			int offset = (put_y + cy) * dest_bitmap_width * 4 + put_x * 4;
 			for(int cx=0; cx<bitmap_width; cx++) {
 				if (put_x + cx >= dest_bitmap_width)
 					break;
 
-				int     current_offset = offset + cx * 3;
-				int     bitmap_offset  = cy * bitmap_width * 3 + cx * 3;
+				int     current_offset = offset + cx * 4;
+				int     bitmap_offset  = cy * bitmap_width * 4 + cx * 4;
 				uint8_t pixel_value    = bitmap[bitmap_offset];
 				uint8_t inverted_pixel = 255 - pixel_value;
 

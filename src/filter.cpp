@@ -14,7 +14,7 @@ void apply_filters(instance *const i, interface *const specific_int, const std::
 	if (!filters)
 		return;
 
-	const size_t bytes = IMS(w, h, 3);
+	const size_t bytes = IMS(w, h, 4);
 	uint8_t *temp = nullptr;
 
 	bool flag = false;
