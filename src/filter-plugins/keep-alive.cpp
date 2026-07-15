@@ -18,9 +18,9 @@ void * init_filter(const char *const parameter)
 
 void apply_filter(void *arg, const uint64_t ts, const int w, const int h, const uint8_t *const prev_frame, const uint8_t *const current_frame, uint8_t *const result)
 {
-	uint32_t *temp = NULL;
-	cairo_surface_t *const cs = rgb_to_cairo(current_frame, w, h, &temp);
-	cairo_t *const cr = cairo_create(cs);
+	uint8_t *temp = NULL;
+	auto cs = rgb_to_cairo((uint8_t *)current_frame, w, h);
+	cairo_t *const cr = cairo_create(cs.first);
 
 	uint64_t t_diff = ts - *reinterpret_cast<uint64_t *>(arg);
 	if (t_diff >= 500000) {
@@ -36,11 +36,11 @@ void apply_filter(void *arg, const uint64_t ts, const int w, const int h, const 
 			*reinterpret_cast<uint64_t *>(arg) = ts;
 	}
 
-	cairo_to_rgb(cs, w, h, result);
+	cairo_to_rgb(cs.first, w, h, result);
 
 	cairo_destroy(cr);
-	cairo_surface_destroy(cs);
-	free(temp);
+	cairo_surface_destroy(cs.first);
+	free(cs.second);
 }
 
 void uninit_filter(void *arg)
