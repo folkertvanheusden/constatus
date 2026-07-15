@@ -11,11 +11,10 @@ void yuy2_to_rgb(const uint8_t *const in, const int width, const int height, uin
 	const int n_pixels = width * height;
 	const int n_bytes_out = n_pixels * 4;
 
-	uint8_t *temp = (uint8_t *)malloc(n_bytes_out);
 	uint8_t *out_work = *out = (uint8_t *)malloc(n_bytes_out);
 
 	libyuv::YUY2ToARGB(in, width * 2,
-                   temp, width * 4,
+                   *out, width * 4,
                    width, height);
 
 	uint8_t shuffler[16] { 2, 1, 0, 3 };
@@ -25,15 +24,13 @@ void yuy2_to_rgb(const uint8_t *const in, const int width, const int height, uin
 		shuffler[4 + i * 4 + 2] = shuffler[2];
 		shuffler[4 + i * 4 + 3] = shuffler[3];
 	}
-	libyuv::ARGBShuffle(temp,
+	libyuv::ARGBShuffle(*out,
 			width * 4,
 			*out,
 			width * 4,
 			shuffler,
 			width,
 			height);
-
-	free(temp);
 }
 
 // RGB -> YUV
