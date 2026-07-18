@@ -78,3 +78,5 @@ void handle_fps(std::atomic_bool *stop_flag, const double fps, const uint64_t fr
 
 std::string substr(const UChar   *const utf_str,   const int idx, const int n);
 std::string substr(const UChar32 *const utf32_str, const int idx, const int n);
+
+std::pair<int, int> allocate_udp_listener();

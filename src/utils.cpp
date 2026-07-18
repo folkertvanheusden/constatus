@@ -932,3 +932,26 @@ std::string substr(const UChar32 *const utf32_str, const int idx, const int n)
                 out += utf32_str[i];
         return out;
 }
+
+// fd, port_nr
+std::pair<int, int> allocate_udp_listener()
+{
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd == -1)
+		return { -1, 0 };
+	sockaddr_in server_addr { };
+	server_addr.sin_family = AF_INET;
+	socklen_t server_addr_len = sizeof server_addr;
+	if (bind(fd, (sockaddr *)&server_addr, server_addr_len) == -1) {
+		close(fd);
+		return { -1, 0 };
+	}
+
+	server_addr_len = sizeof server_addr;
+	if (getsockname(fd, (sockaddr *)&server_addr, &server_addr_len) == -1) {
+		close(fd);
+		return { -1, 0 };
+	}
+
+	return { fd, server_addr.sin_port };
+}
