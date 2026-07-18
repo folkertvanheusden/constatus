@@ -51,6 +51,7 @@ void target_rtsp::rtsp_session(const int fd)
 
 	auto sport1 = allocate_udp_listener();  // fd, port nr
 	auto sport2 = allocate_udp_listener();
+	bool play   = false;
 
 	std::string session_buffer;
 	while(!local_stop_flag) {
@@ -104,6 +105,9 @@ void target_rtsp::rtsp_session(const int fd)
 			else if (line.substr(0, 10) == "Transport:") {
 				setup_transport = line.substr(11);
 			}
+			else if (line.substr(0, 4) == "PLAY") {
+				play = true;
+			}
 		}
 
 		if (setup) {
@@ -131,6 +135,10 @@ void target_rtsp::rtsp_session(const int fd)
 			reply = "RTSP/1.0 200 OK\r\nTransport: RTP/AVP;unicast;client_port=" + myformat("%d-%d", port1, port2) + ";server_port=" + myformat("%d-%d", sport1.second, sport2.second) + ";ssrc=" + myformat("%08x", ssrc) + "\r\nSession: " + session + "\r\n";
 		}
 
+		if (play) {
+			reply = "RTSP/1.0 200 OK\r\nSession: " + session + "\r\n";
+		}
+
 		if (reply.empty() == false) {
 			if (cseq.has_value())
 				reply += myformat("CSeq: %d\r\n", cseq.value());
@@ -145,6 +153,10 @@ void target_rtsp::rtsp_session(const int fd)
 		}
 
 		delete parts;
+	}
+
+	if (play) {
+		// RTP
 	}
 
 	close(sport2.first);
