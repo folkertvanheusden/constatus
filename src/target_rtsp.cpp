@@ -40,8 +40,15 @@ void target_rtsp::rtsp_session(const int fd)
 {
 	pollfd fds[] { { fd, POLLIN, 0 } };
 
-	std::string session;
-	std::string ssrc;
+	constexpr const size_t rnd_bin_len = 8;
+	uint8_t *rnd_bin = gen_random(rnd_bin_len);
+	std::string session = bin_to_hex(rnd_bin, rnd_bin_len);
+	free(rnd_bin);
+
+	uint8_t *ssrc_bin = gen_random(sizeof(uint32_t));
+	uint32_t ssrc = *reinterpret_cast<uint32_t *>(ssrc_bin);
+	free(ssrc_bin);
+
 	int sport1 = 7998;  // TODO
 	int sport2 = 7999;  // TODO
 
@@ -121,14 +128,10 @@ void target_rtsp::rtsp_session(const int fd)
 			if (port1 == 0 || port2 == 0)
 				break;
 
-			// TODO session=
-			session = "1234";
-			// TODO ssrc=
-			ssrc = "1234ABCD";
 			// sport1 = 
 			// sport2 = 
 
-			reply = "RTSP/1.0 200 OK\r\nTransport: RTP/AVP;unicast;client_port=" + myformat("%d-%d", port1, port2) + ";server_port=" + myformat("%d-%d", sport1, sport2) + ";ssrc=" + ssrc + "\r\nSession: " + session + "\r\n";
+			reply = "RTSP/1.0 200 OK\r\nTransport: RTP/AVP;unicast;client_port=" + myformat("%d-%d", port1, port2) + ";server_port=" + myformat("%d-%d", sport1, sport2) + ";ssrc=" + myformat("%08x", ssrc) + "\r\nSession: " + session + "\r\n";
 		}
 
 		if (reply.empty() == false) {
