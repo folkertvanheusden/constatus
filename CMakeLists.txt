@@ -121,6 +121,7 @@ add_executable(constatus
 	src/target_pipewire.cpp
 	src/target_pixelflood.cpp
 	src/target_plugin.cpp
+	src/target_rtsp.cpp
 	src/target_vnc.cpp
 	src/utils.cpp
 	src/v4l2_loopback.cpp

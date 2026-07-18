@@ -66,6 +66,7 @@ using namespace libconfig;
 #include "target_jpeg.h"
 #include "target_plugin.h"
 #include "target_extpipe.h"
+#include "target_rtsp.h"
 #include "target_vnc.h"
 #include "target_pixelflood.h"
 #include "target_new_source.h"
@@ -1327,9 +1328,9 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 	const std::string descr = cfg_str(in, "descr", "description: visible in e.g. the http server", true, "");
 
 #if HAVE_GSTREAMER == 1
-	std::string format = cfg_str(in, "format", "avi, extpipe, ffmpeg (for mp4, ogg, etc), jpeg, vnc, plugin, as-a-new-source or pixelflood", false, "");
+	std::string format = cfg_str(in, "format", "avi, extpipe, ffmpeg (for mp4, ogg, etc), jpeg, vnc, plugin, as-a-new-source, rtsp or pixelflood", false, "");
 #else
-	std::string format = cfg_str(in, "format", "extpipe, ffmpeg (for mp4, ogg, etc), jpeg, vnc, plugin, as-a-new-source or pixelflood", false, "");
+	std::string format = cfg_str(in, "format", "extpipe, ffmpeg (for mp4, ogg, etc), jpeg, vnc, plugin, as-a-new-source, rtsp or pixelflood", false, "");
 #endif
 
 	std::string path = cfg_str(in, "path", "directory to write to", format == "as-a-new-source" || format == "gstreamer" || format == "pixelflood" || format == "pipewire", "");
@@ -1417,6 +1418,12 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		int listen_port = cfg_int(in, "listen-port", "port to listen on", false, 5901);
 
 		t = new target_vnc(id, descr, s, { listen_adapter, listen_port, SOMAXCONN, false }, restart_interval, interval, filters, exec_start, exec_end, cfg, false, handle_failure, sched);
+	}
+	else if (format == "rtsp") {
+		printf("HALLO\n");
+		int listen_port = cfg_int(in, "listen-port", "port to listen on", false, 554);
+
+		t = new target_rtsp(id, descr, s, restart_interval, filters, override_fps, cfg, listen_port, jpeg_quality, handle_failure, sched);
 	}
 	else if (format == "pixelflood") {
 		std::string host = cfg_str(in, "host", "IPv4 address to send to", false, "");
