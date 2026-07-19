@@ -61,7 +61,7 @@ int start_listen(const listen_adapter_t & la)
 
 	server6_addr.sin6_port = htons(la.port);
 
-	if (la.adapter == "0.0.0.0" || la.adapter == "::1") {
+	if (la.adapter == "::1") {
 		server6_addr.sin6_addr = in6addr_any;
 		server6_addr.sin6_family = AF_INET6;
 	}
