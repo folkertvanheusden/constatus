@@ -30,11 +30,16 @@ target_rtsp::~target_rtsp()
 	stop();
 }
 
-std::string target_rtsp::gen_sdp_payload_string()
+std::string target_rtsp::gen_sdp_payload_string(const std::string & session, const std::string & local_ip_addr)
 {
-	return  "m=video 30000 RTP/AVP 112\r\n"
-		"a=rtpmap:112 raw/90000\r\n" +
-		myformat("a=fmtp:112 sampling=rgb; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height());
+	return  "v=0\r\n"
+		"s=" + session + "\r\n" +
+		"t=0 0\r\n" +
+		"o=constatus 0 0 IN IP4 " + local_ip_addr + "\r\n" +
+		"c=IN IP4 0.0.0.0\r\n" +
+		"m=video 30000 RTP/AVP 112\r\n" +
+		"a=rtpmap:112 RAW/90000\r\n" +
+		myformat("a=fmtp:112 sampling=rgb; colorimetry=BT709-2; interlace=0; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height());
 }
 
 bool target_rtsp::send_frame_via_rtp(video_frame *const pvf, const std::pair<int, int> local_fd_port, const sockaddr_in remote, const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp)
@@ -100,12 +105,15 @@ void target_rtsp::rtsp_session(const int fd)
 	int cport1 = 0;
 	int cport2 = 0;
 
+	// remote address
 	sockaddr_in remote_addr { };
         socklen_t remote_addr_len { sizeof remote_addr };
-        if (getsockname(fd, (sockaddr *)&remote_addr, &remote_addr_len) == -1) {
+        if (getpeername(fd, (sockaddr *)&remote_addr, &remote_addr_len) == -1) {
                 close(fd);
                 return;
         }
+
+	std::string local_name = "127.0.0.1";  // FIXME get_socket_name(sport1.first);
 
 	std::string session_buffer;
 	while(!local_stop_flag) {
@@ -150,7 +158,7 @@ void target_rtsp::rtsp_session(const int fd)
 				auto space = url.find(" ");
 				if (space != std::string::npos)
 					url = url.substr(0, space);
-				payload = gen_sdp_payload_string();
+				payload = gen_sdp_payload_string(session, local_name);
 				reply = "RTSP/1.0 200 OK\r\nContent-Base: " + url + "\r\nContent-Type: application/sdp\r\nContent-Length: " + std::to_string(payload.size()) + "\r\n";
 			}
 			else if (line.substr(0, 5) == "SETUP") {
@@ -217,7 +225,7 @@ void target_rtsp::rtsp_session(const int fd)
 
 		video_frame *prev_frame = nullptr;
 
-		remote_addr.sin_port = cport1;
+		remote_addr.sin_port = htons(cport1);
 
 		uint32_t seq_nr    = 0;
 		uint32_t timestamp = 0;

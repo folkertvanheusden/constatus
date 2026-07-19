@@ -120,6 +120,26 @@ std::string get_endpoint_name(int fd)
 	return std::string(host) + "." + std::string(serv);
 }
 
+std::string get_socket_name(int fd)
+{
+        sockaddr_in addr { };
+        socklen_t addr_len { sizeof addr };
+        if (getsockname(fd, (sockaddr *)&addr, &addr_len) == -1)
+                return "?";
+
+	printf("get_socket_name %d, size %d, family %d\n", fd, int(addr_len), addr.sin_family);
+	char *temp = inet_ntoa(addr.sin_addr);
+	/*
+	char name[INET6_ADDRSTRLEN] { };
+	char port[8] { };
+	int rc = getnameinfo((sockaddr *)&addr, addr_len, name, sizeof name, port, sizeof port, NI_NUMERICHOST | NI_NUMERICSERV);
+	if (rc != 0)
+		printf("GREP %d *****\n", rc);
+	return name;
+		*/
+	return temp;
+}
+
 ssize_t READ(int fd, char *whereto, size_t len)
 {
 	ssize_t cnt=0;
@@ -941,6 +961,7 @@ std::pair<int, int> allocate_udp_listener()
 		return { -1, 0 };
 	sockaddr_in server_addr { };
 	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = INADDR_ANY;
 	socklen_t server_addr_len = sizeof server_addr;
 	if (bind(fd, (sockaddr *)&server_addr, server_addr_len) == -1) {
 		close(fd);
@@ -953,5 +974,5 @@ std::pair<int, int> allocate_udp_listener()
 		return { -1, 0 };
 	}
 
-	return { fd, server_addr.sin_port };
+	return { fd, ntohs(server_addr.sin_port) };
 }
