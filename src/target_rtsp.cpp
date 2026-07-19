@@ -42,17 +42,17 @@ std::string target_rtsp::gen_sdp_payload_string(const std::string & session, con
 		myformat("a=fmtp:112 sampling=rgb; colorimetry=BT709-2; interlace=0; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height());
 }
 
-bool target_rtsp::send_frame_via_rtp(video_frame *const pvf, const std::pair<int, int> local_fd_port, const sockaddr_in remote, const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp)
+bool target_rtsp::send_frame_via_raw_rtp(video_frame *const pvf, const std::pair<int, int> local_fd_port, const sockaddr_in remote, const socklen_t remote_len, const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp)
 {
 	bool rc = true;
 	const uint8_t *const rgb = pvf->get_data(E_RGB);
 	const int h = pvf->get_h();
 	const int w = pvf->get_w();
 
-	uint8_t *const buffer = new uint8_t[w * 3 + 26];
+	uint8_t *const buffer = new uint8_t[w * 3 + 20];
+	memset(buffer, 0x00, 20);
 
 	buffer[0] = 128;  // v2
-	buffer[1] = 112;  // schema id
 	buffer[4] = *timestamp >> 24;
 	buffer[5] = *timestamp >> 16;
 	buffer[6] = *timestamp >>  8;
@@ -66,6 +66,7 @@ bool target_rtsp::send_frame_via_rtp(video_frame *const pvf, const std::pair<int
 	buffer[15] = bytes;
 
 	for(int y=0; y<h; y++) {
+		buffer[1] = 112 | (y == h - 1 ? 128 : 0);  // schema id
 		buffer[2] = *seq_nr >> 8;
 		buffer[3] = *seq_nr;
 		buffer[12] = *seq_nr >> 24;
@@ -73,20 +74,25 @@ bool target_rtsp::send_frame_via_rtp(video_frame *const pvf, const std::pair<int
 		buffer[16] = y >> 8;
 		buffer[17] = y;
 
-		memcpy(&buffer[26], &rgb[y * bytes], bytes);
+		memcpy(&buffer[20], &rgb[y * bytes], bytes);
 
-		if (sendto(local_fd_port.first, buffer, bytes + 26, 0, (sockaddr *)&remote, sizeof remote) != bytes + 26)
+		if (sendto(local_fd_port.first, buffer, bytes + 20, 0, (sockaddr *)&remote, remote_len) != bytes + 20) {
+			printf("%d %d | %d | %s\n", local_fd_port.first, local_fd_port.second, remote.sin_family, strerror(errno));
 			rc = false;
+			break;
+		}
 
 		(*seq_nr)++;
 	}
 
 	(*timestamp) += 90000 / interval;  // 90000 = clock
 
+	printf("frame sent: %d\n", rc);
+
 	return rc;
 }
 
-void target_rtsp::rtsp_session(const int fd)
+void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t remote_addr_len)
 {
 	pollfd fds[] { { fd, POLLIN, 0 } };
 
@@ -104,14 +110,6 @@ void target_rtsp::rtsp_session(const int fd)
 	bool play   = false;
 	int cport1 = 0;
 	int cport2 = 0;
-
-	// remote address
-	sockaddr_in remote_addr { };
-        socklen_t remote_addr_len { sizeof remote_addr };
-        if (getpeername(fd, (sockaddr *)&remote_addr, &remote_addr_len) == -1) {
-                close(fd);
-                return;
-        }
 
 	std::string local_name = "127.0.0.1";  // FIXME get_socket_name(sport1.first);
 
@@ -218,6 +216,7 @@ void target_rtsp::rtsp_session(const int fd)
 	}
 
 	if (play) {
+		printf("START RTP STREAM\n");
 		uint64_t prev_ts = 0;
 		const double fps = 1.0 / interval;
 
@@ -225,7 +224,7 @@ void target_rtsp::rtsp_session(const int fd)
 
 		video_frame *prev_frame = nullptr;
 
-		remote_addr.sin_port = htons(cport1);
+		((sockaddr_in *)&remote_addr)->sin_port = htons(cport1);
 
 		uint32_t seq_nr    = 0;
 		uint32_t timestamp = 0;
@@ -254,14 +253,10 @@ void target_rtsp::rtsp_session(const int fd)
 					prev_frame = temp->duplicate({ });
 				}
 
-				const bool allow_store = sched == nullptr || (sched && sched->is_on());
-
-				if (allow_store) {
-					// stream
-					if (send_frame_via_rtp(pvf, sport1, remote_addr, ssrc, &seq_nr, &timestamp) == false) {
-						delete pvf;
-						break;
-					}
+				// stream
+				if (send_frame_via_raw_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
+					delete pvf;
+					break;
 				}
 			}
 
@@ -303,12 +298,14 @@ void target_rtsp::operator()()
 		if (rc == 0)
 			continue;
 
-		int client_fd = accept(fd, nullptr, nullptr);
+		sockaddr addr { };
+		socklen_t addr_len { sizeof addr };
+		int client_fd = accept(fd, &addr, &addr_len);
 		if (client_fd == -1)
 			continue;
 
 		std::thread th([&] { 
-				rtsp_session(client_fd);
+				rtsp_session(client_fd, addr, addr_len);
 				close(client_fd);
 				});
 		th.detach();

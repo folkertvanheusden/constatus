@@ -15,11 +15,11 @@ private:
 	const int quality {  85 };
 	const int port    { 554 };
 
-	bool        send_frame_via_rtp(video_frame *const pvf,
-			const std::pair<int, int> local_fd_port, const sockaddr_in remote,
+	bool        send_frame_via_raw_rtp(video_frame *const pvf,
+			const std::pair<int, int> local_fd_port, const sockaddr_in remote, const socklen_t remote_len,
 			const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp);
 	std::string gen_sdp_payload_string(const std::string & session, const std::string & local_ip_addr);
-	void        rtsp_session(const int fd);
+	void        rtsp_session(const int fd, sockaddr remote_addr, socklen_t remote_addr_len);
 
 public:
 	target_rtsp(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int port, const int quality, const bool handle_failure, schedule *const sched);
