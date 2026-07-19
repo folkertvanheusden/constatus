@@ -30,10 +30,11 @@ target_rtsp::~target_rtsp()
 	stop();
 }
 
-std::string target_rtsp::gen_payload_string()
+std::string target_rtsp::gen_sdp_payload_string()
 {
-	return  "m=video 0 RTP/AVP 96\r\n"
-		"a=rtpmap:96 JPEG/90000\r\n";
+	return  "m=video 30000 RTP/AVP 112\r\n"
+		"a=rtpmap:112 raw/90000\r\n" +
+		myformat("a=fmtp:112 sampling=rgb; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height());
 }
 
 void target_rtsp::rtsp_session(const int fd)
@@ -52,6 +53,8 @@ void target_rtsp::rtsp_session(const int fd)
 	auto sport1 = allocate_udp_listener();  // fd, port nr
 	auto sport2 = allocate_udp_listener();
 	bool play   = false;
+	int cport1 = 0;
+	int cport2 = 0;
 
 	std::string session_buffer;
 	while(!local_stop_flag) {
@@ -96,7 +99,7 @@ void target_rtsp::rtsp_session(const int fd)
 				auto space = url.find(" ");
 				if (space != std::string::npos)
 					url = url.substr(0, space);
-				payload = gen_payload_string();
+				payload = gen_sdp_payload_string();
 				reply = "RTSP/1.0 200 OK\r\nContent-Base: " + url + "\r\nContent-Type: application/sdp\r\nContent-Length: " + std::to_string(payload.size()) + "\r\n";
 			}
 			else if (line.substr(0, 5) == "SETUP") {
@@ -114,25 +117,22 @@ void target_rtsp::rtsp_session(const int fd)
 			if (setup_transport.empty())
 				break;
 
-			int port1 = 0;
-			int port2 = 0;
-
 			auto parts = split(setup_transport, ";");
 			for(auto & str : *parts) {
 				if (str.substr(0, 12) == "client_port=") {
 					auto dash = str.find("-", 12);
 					if (dash == std::string::npos)
 						break;
-					port1 = std::stoi(str.substr(12, dash));
-					port2 = std::stoi(str.substr(dash + 1));
+					cport1 = std::stoi(str.substr(12, dash));
+					cport2 = std::stoi(str.substr(dash + 1));
 				}
 			}
 			delete parts;
 
-			if (port1 == 0 || port2 == 0)
+			if (cport1 == 0 || cport2 == 0)
 				break;
 
-			reply = "RTSP/1.0 200 OK\r\nTransport: RTP/AVP;unicast;client_port=" + myformat("%d-%d", port1, port2) + ";server_port=" + myformat("%d-%d", sport1.second, sport2.second) + ";ssrc=" + myformat("%08x", ssrc) + "\r\nSession: " + session + "\r\n";
+			reply = "RTSP/1.0 200 OK\r\nTransport: RTP/AVP;unicast;client_port=" + myformat("%d-%d", cport1, cport2) + ";server_port=" + myformat("%d-%d", sport1.second, sport2.second) + ";ssrc=" + myformat("%08x", ssrc) + "\r\nSession: " + session + "\r\n";
 		}
 
 		if (play) {
@@ -153,14 +153,61 @@ void target_rtsp::rtsp_session(const int fd)
 		}
 
 		delete parts;
+
+		if (play)
+			break;
 	}
 
 	if (play) {
+		uint64_t prev_ts = 0;
+		const double fps = 1.0 / interval;
+
+		s -> start();
+
+		video_frame *prev_frame = nullptr;
+
 		// RTP
+		while(!local_stop_flag) {
+			pauseCheck();
+			st->track_fps();
+
+			uint64_t before_ts = get_us();
+
+			video_frame *pvf = s -> get_frame(handle_failure, prev_ts);
+
+			if (pvf) {
+				prev_ts = pvf->get_ts();
+
+				if (filters && filters->empty() == false) {
+					source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
+					instance *inst = find_instance_by_interface(cfg, cur_s);
+
+					video_frame *temp = pvf->apply_filtering(inst, cur_s, prev_frame, filters, nullptr);
+					delete pvf;
+					pvf = temp;
+
+					delete prev_frame;
+					prev_frame = temp->duplicate({ });
+				}
+
+				const bool allow_store = sched == nullptr || (sched && sched->is_on());
+
+				if (allow_store) {
+					// stream TODO
+				}
+			}
+
+			st->track_cpu_usage();
+
+			handle_fps(&local_stop_flag, fps, before_ts);
+		}
+
+		s->stop();
 	}
 
 	close(sport2.first);
 	close(sport1.first);
+	close(fd);
 }
 
 void target_rtsp::operator()()

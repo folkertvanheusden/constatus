@@ -15,7 +15,7 @@ private:
 	const int quality {  85 };
 	const int port    { 554 };
 
-	std::string gen_payload_string();
+	std::string gen_sdp_payload_string();
 	void        rtsp_session(const int fd);
 
 public:
