@@ -15,6 +15,9 @@ private:
 	const int quality {  85 };
 	const int port    { 554 };
 
+	bool        send_frame_via_rtp(video_frame *const pvf,
+			const std::pair<int, int> local_fd_port, const sockaddr_in remote,
+			const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp);
 	std::string gen_sdp_payload_string();
 	void        rtsp_session(const int fd);
 

@@ -37,6 +37,50 @@ std::string target_rtsp::gen_sdp_payload_string()
 		myformat("a=fmtp:112 sampling=rgb; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height());
 }
 
+bool target_rtsp::send_frame_via_rtp(video_frame *const pvf, const std::pair<int, int> local_fd_port, const sockaddr_in remote, const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp)
+{
+	bool rc = true;
+	const uint8_t *const rgb = pvf->get_data(E_RGB);
+	const int h = pvf->get_h();
+	const int w = pvf->get_w();
+
+	uint8_t *const buffer = new uint8_t[w * 3 + 26];
+
+	buffer[0] = 128;  // v2
+	buffer[1] = 112;  // schema id
+	buffer[4] = *timestamp >> 24;
+	buffer[5] = *timestamp >> 16;
+	buffer[6] = *timestamp >>  8;
+	buffer[7] = *timestamp;
+	buffer[8] = ssrc >> 24;
+	buffer[9] = ssrc >> 16;
+	buffer[10] = ssrc >>  8;
+	buffer[11] = ssrc;
+	int bytes = w * 3;
+	buffer[14] = bytes >> 8;
+	buffer[15] = bytes;
+
+	for(int y=0; y<h; y++) {
+		buffer[2] = *seq_nr >> 8;
+		buffer[3] = *seq_nr;
+		buffer[12] = *seq_nr >> 24;
+		buffer[13] = *seq_nr >> 16;
+		buffer[16] = y >> 8;
+		buffer[17] = y;
+
+		memcpy(&buffer[26], &rgb[y * bytes], bytes);
+
+		if (sendto(local_fd_port.first, buffer, bytes + 26, 0, (sockaddr *)&remote, sizeof remote) != bytes + 26)
+			rc = false;
+
+		(*seq_nr)++;
+	}
+
+	(*timestamp) += 90000 / interval;  // 90000 = clock
+
+	return rc;
+}
+
 void target_rtsp::rtsp_session(const int fd)
 {
 	pollfd fds[] { { fd, POLLIN, 0 } };
@@ -55,6 +99,13 @@ void target_rtsp::rtsp_session(const int fd)
 	bool play   = false;
 	int cport1 = 0;
 	int cport2 = 0;
+
+	sockaddr_in remote_addr { };
+        socklen_t remote_addr_len { sizeof remote_addr };
+        if (getsockname(fd, (sockaddr *)&remote_addr, &remote_addr_len) == -1) {
+                close(fd);
+                return;
+        }
 
 	std::string session_buffer;
 	while(!local_stop_flag) {
@@ -166,6 +217,11 @@ void target_rtsp::rtsp_session(const int fd)
 
 		video_frame *prev_frame = nullptr;
 
+		remote_addr.sin_port = cport1;
+
+		uint32_t seq_nr    = 0;
+		uint32_t timestamp = 0;
+
 		// RTP
 		while(!local_stop_flag) {
 			pauseCheck();
@@ -193,14 +249,22 @@ void target_rtsp::rtsp_session(const int fd)
 				const bool allow_store = sched == nullptr || (sched && sched->is_on());
 
 				if (allow_store) {
-					// stream TODO
+					// stream
+					if (send_frame_via_rtp(pvf, sport1, remote_addr, ssrc, &seq_nr, &timestamp) == false) {
+						delete pvf;
+						break;
+					}
 				}
 			}
+
+			delete pvf;
 
 			st->track_cpu_usage();
 
 			handle_fps(&local_stop_flag, fps, before_ts);
 		}
+
+		delete prev_frame;
 
 		s->stop();
 	}
