@@ -1,4 +1,4 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2026 by folkert van heusden, released under the MIT license
 #pragma once
 
 #include <string>

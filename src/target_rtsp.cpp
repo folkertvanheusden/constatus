@@ -25,7 +25,6 @@ target_rtsp::target_rtsp(const std::string & id, const std::string & descr, sour
 	is_jpeg(is_jpeg),
 	follow_rfc(follow_rfc)
 {
-	printf("HIER %f\n", interval);
 }
 
 target_rtsp::~target_rtsp()
@@ -404,7 +403,6 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 
 void target_rtsp::operator()()
 {
-	printf("DAAR\n");
 	set_thread_name("rtsp_" + prefix);
 
 	listen_adapter_t la { };

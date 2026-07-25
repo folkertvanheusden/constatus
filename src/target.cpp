@@ -1,4 +1,4 @@
-// (C) 2017-2023 by folkert van heusden, released under the MIT license
+// (C) 2017-2026 by folkert van heusden, released under the MIT license
 #include "config.h"
 #include <cstring>
 #include <unistd.h>
@@ -81,10 +81,13 @@ std::string gen_filename(source *const s, const std::string & fmt, const std::st
 	return fname;
 }
 
-target::target(const std::string & id, const std::string & descr, source *const s, const std::string & store_path, const std::string & prefix, const std::string & fmt, const int max_time, const double interval, const std::vector<filter *> *const filters, const std::string & exec_start, const std::string & exec_cycle, const std::string & exec_end, const double override_fps, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, schedule *const sched) : interface(id, descr), s(s), cfg(cfg), store_path(store_path), prefix(prefix), fmt(fmt), max_time(max_time), interval(interval), filters(filters), exec_start(exec_start), exec_cycle(exec_cycle), exec_end(exec_end), override_fps(override_fps), is_view_proxy(is_view_proxy), handle_failure(handle_failure), sched(sched)
+target::target(const std::string & id, const std::string & descr, source *const s, const std::string & store_path, const std::string & prefix, const std::string & fmt, const int max_time, const double interval, const std::vector<filter *> *const filters, const std::string & exec_start, const std::string & exec_cycle, const std::string & exec_end, const double override_fps, configuration_t *const cfg, const bool is_view_proxy, const bool handle_failure, schedule *const sched) :
+	interface(id, descr), s(s), cfg(cfg), store_path(store_path), prefix(prefix), fmt(fmt), max_time(max_time),
+	interval(interval), filters(filters), exec_start(exec_start), exec_cycle(exec_cycle), exec_end(exec_end),
+	override_fps(override_fps), is_view_proxy(is_view_proxy), handle_failure(handle_failure), sched(sched)
 {
-	local_stop_flag = false;
-	ct = CT_TARGET;
+	local_stop_flag  = false;
+	ct               = CT_TARGET;
 	current_event_nr = 0;
 }
 
