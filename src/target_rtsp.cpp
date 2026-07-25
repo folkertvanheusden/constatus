@@ -17,6 +17,7 @@
 #include "resize.h"
 #include "schedule.h"
 
+
 target_rtsp::target_rtsp(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int port, const int quality, const bool handle_failure, schedule *const sched, const bool is_jpeg, const bool follow_rfc) :
 	target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched),
 	quality(quality),
@@ -38,7 +39,6 @@ std::string target_rtsp::gen_sdp_payload_string(const std::string & session, con
 		"s=" + session + "\r\n" +
 		"t=0 0\r\n" +
 		"o=constatus 0 0 IN IP4 " + local_ip_addr + "\r\n" +
-		"c=IN IP4 0.0.0.0\r\n" +
 		(is_jpeg ? "m=video 0 RTP/AVP 26\r\n" : "m=video 30000 RTP/AVP 112\r\n") +
 		(is_jpeg ? "a=rtpmap:26 JPEG/90000\r\n" : "a=rtpmap:112 RAW/90000\r\n") +
 		(is_jpeg ? "" : myformat("a=fmtp:112 sampling=rgb; colorimetry=BT709-2; interlace=0; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height()));
@@ -249,20 +249,20 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 	pollfd fds[] { { fd, POLLIN, 0 } };
 
 	constexpr const size_t rnd_bin_len = 8;
-	uint8_t *rnd_bin = gen_random(rnd_bin_len);
+	uint8_t    *rnd_bin = gen_random(rnd_bin_len);
 	std::string session = bin_to_hex(rnd_bin, rnd_bin_len);
 	free(rnd_bin);
 
 	uint8_t *ssrc_bin = gen_random(sizeof(uint32_t));
-	uint32_t ssrc = *reinterpret_cast<uint32_t *>(ssrc_bin);
+	uint32_t ssrc     = *reinterpret_cast<uint32_t *>(ssrc_bin);
 	free(ssrc_bin);
 
 	auto sport1 = allocate_udp_listener();  // fd, port nr
 	auto sport2 = allocate_udp_listener();
-	int cport1 = 0;
-	int cport2 = 0;
+	int  cport1 = 0;
+	int  cport2 = 0;
 
-	std::string local_name = "127.0.0.1";  // FIXME get_socket_name(sport1.first);
+	std::string local_name = get_socket_name(fd);
 
 	std::thread     *rtp_play_thread    = nullptr;
 	std::atomic_bool stop_flag_rtp_play = false;

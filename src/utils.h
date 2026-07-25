@@ -20,7 +20,7 @@ typedef struct {
 void set_no_delay(int fd, bool use_no_delay);
 int start_listen(const listen_adapter_t & la);
 std::string get_endpoint_name(int fd);
-std::string get_socket_name(int fd);
+std::string get_socket_name(const int fd);
 ssize_t READ(int fd, char *whereto, size_t len);
 ssize_t WRITE(int fd, const char *whereto, size_t len);
 uint64_t get_us();
