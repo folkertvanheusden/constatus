@@ -53,25 +53,32 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 	constexpr const size_t max_pl_len = 1300;
 	uint8_t *const buffer = new uint8_t[16 + 8 + max_pl_len];
 
-	std::optional<size_t> marker;
+	// find sos marker
+	std::optional<size_t> sos_marker;
 	for(size_t i=0; i<std::get<1>(rgb) - 1; i++) {
-		if (std::get<0>(rgb)[i] == 0xff && std::get<0>(rgb)[i + 1] == 0xd8) {
-			marker = i;
+		if (std::get<0>(rgb)[i] == 0xff && std::get<0>(rgb)[i + 1] == 0xda) {
+			sos_marker = i;
 			break;
 		}
 	}
-
-	if (marker.has_value() == false) {
-		printf("JPEG has no marker\n");
+	if (sos_marker.has_value() == false) {
+		printf("JPEG has no SOS-marker\n");
 		return false;
 	}
 
-	size_t offset = marker.value();
+	size_t sos_offset    = sos_marker.value();
+	size_t sos_length    = (std::get<0>(rgb)[sos_offset + 2] << 8) | std::get<0>(rgb)[sos_offset + 3];
+	size_t entropy_start = sos_offset + sos_length;
+	size_t entropy_len   = std::get<1>(rgb) - entropy_start;
+	size_t offset        = entropy_start;
+
 	while(offset < std::get<1>(rgb)) {
-		size_t cur_len = std::min(max_pl_len, std::get<1>(rgb) - offset);
+		size_t cur_len         = std::min(max_pl_len, std::get<1>(rgb) - offset);
+		size_t fragment_offset = offset - entropy_start;
+		bool   end_of_frame    = fragment_offset + cur_len == entropy_len;
 
 		buffer[0] = 128;  // v2
-		buffer[1] = 112 | (offset + cur_len == std::get<1>(rgb) ? 128 : 0);  // schema id
+		buffer[1] = 112 | (end_of_frame ? 128 : 0);  // schema id
 		buffer[2] = *seq_nr >> 8;
 		buffer[3] = *seq_nr;
 		buffer[4] = *timestamp >> 24;
@@ -82,21 +89,18 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 		buffer[9] = ssrc >> 16;
 		buffer[10] = ssrc >>  8;
 		buffer[11] = ssrc;
-		buffer[12] = *seq_nr >> 24;
-		buffer[13] = *seq_nr >> 16;
-		buffer[14] = 0;  // ?
-		size_t fragment_offset = offset - marker.value();
-		buffer[15] = fragment_offset >> 16;
-		buffer[16] = fragment_offset >>  8;
-		buffer[17] = fragment_offset;
-		buffer[18] = 0;  // ?
-		buffer[19] = 0;  // ?
-		buffer[20] = (w + 7) / 8;
-		buffer[21] = (h + 7) / 8;
+		buffer[12] = 0;  // ?
+		buffer[13] = fragment_offset >> 16;
+		buffer[14] = fragment_offset >>  8;
+		buffer[15] = fragment_offset;
+		buffer[16] = 1;  // 4:2:0 jpeg, see picio.cpp
+		buffer[17] = quality;  // should be 0...127, so this is probably not correct FIXME
+		buffer[18] = (w + 7) / 8;
+		buffer[19] = (h + 7) / 8;
 
-		memcpy(&buffer[22], &std::get<0>(rgb)[offset], cur_len);
+		memcpy(&buffer[20], &std::get<0>(rgb)[offset], cur_len);
 
-		if (sendto(local_fd_port.first, buffer, cur_len + 22, 0, (sockaddr *)&remote, remote_len) != cur_len + 22) {
+		if (sendto(local_fd_port.first, buffer, cur_len + 20, 0, (sockaddr *)&remote, remote_len) != cur_len + 20) {
 			printf("%d %d | %d | %s\n", local_fd_port.first, local_fd_port.second, remote.sin_family, strerror(errno));
 			rc = false;
 			break;
@@ -108,7 +112,8 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 
 	(*timestamp) += 90000 / interval;  // 90000 = clock
 
-	printf("frame sent: %d\n", rc);
+	if (!rc)
+		printf("frame NOT sent!\n");
 
 	return rc;
 }
