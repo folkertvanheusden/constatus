@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
 
 # set the project name
-project(constatus VERSION 5.0)
+project(constatus VERSION 6.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
