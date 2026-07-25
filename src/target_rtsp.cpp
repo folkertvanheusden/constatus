@@ -175,6 +175,75 @@ bool target_rtsp::send_frame_via_raw_rtp(video_frame *const pvf, const std::pair
 	return rc;
 }
 
+void target_rtsp::rtp_stream(const std::pair<int, int> & sport1, const int cport1, const uint32_t ssrc, sockaddr remote_addr, socklen_t remote_addr_len, std::atomic_bool *const rtp_stop_flag)
+{
+	printf("START RTP STREAM\n");
+
+	uint64_t     prev_ts = 0;
+	const double fps     = 1.0 / interval;
+
+	s -> start();
+
+	video_frame *prev_frame = nullptr;
+
+	((sockaddr_in *)&remote_addr)->sin_port = htons(cport1);
+
+	connect(sport1.first, &remote_addr, sizeof remote_addr);
+
+	uint32_t seq_nr    = 0;
+	uint32_t timestamp = 0;
+
+	// RTP
+	while(!local_stop_flag && !*rtp_stop_flag) {
+		pauseCheck();
+		st->track_fps();
+
+		uint64_t before_ts = get_us();
+
+		video_frame *pvf = s -> get_frame(handle_failure, prev_ts);
+
+		if (pvf) {
+			prev_ts = pvf->get_ts();
+
+			if (filters && filters->empty() == false) {
+				source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
+				instance *inst = find_instance_by_interface(cfg, cur_s);
+
+				video_frame *temp = pvf->apply_filtering(inst, cur_s, prev_frame, filters, nullptr);
+				delete pvf;
+				pvf = temp;
+
+				delete prev_frame;
+				prev_frame = temp->duplicate({ });
+			}
+
+			// stream
+			if (is_jpeg) {
+				if (send_frame_via_jpeg_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
+					delete pvf;
+					break;
+				}
+			}
+			else {
+				if (send_frame_via_raw_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
+					delete pvf;
+					break;
+				}
+			}
+		}
+
+		delete pvf;
+
+		st->track_cpu_usage();
+
+		handle_fps(&local_stop_flag, fps, before_ts);
+	}
+
+	delete prev_frame;
+
+	s->stop();
+}
+
 void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t remote_addr_len)
 {
 	pollfd fds[] { { fd, POLLIN, 0 } };
@@ -190,11 +259,13 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 
 	auto sport1 = allocate_udp_listener();  // fd, port nr
 	auto sport2 = allocate_udp_listener();
-	bool play   = false;
 	int cport1 = 0;
 	int cport2 = 0;
 
 	std::string local_name = "127.0.0.1";  // FIXME get_socket_name(sport1.first);
+
+	std::thread     *rtp_play_thread    = nullptr;
+	std::atomic_bool stop_flag_rtp_play = false;
 
 	std::string session_buffer;
 	while(!local_stop_flag) {
@@ -226,7 +297,7 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 		std::optional<int> cseq;
 		std::string reply;
 		std::string payload;
-		bool setup = false;
+		enum { a_setup, a_play, a_pause, a_teardown, a_generic } action = a_generic;
 		std::string setup_transport;
 		auto parts = split(current_request, "\r\n");
 		for(auto & line: *parts) {
@@ -243,17 +314,23 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 				reply = "RTSP/1.0 200 OK\r\nContent-Base: " + url + "\r\nContent-Type: application/sdp\r\nContent-Length: " + std::to_string(payload.size()) + "\r\n";
 			}
 			else if (line.substr(0, 5) == "SETUP") {
-				setup = true;
+				action = a_setup;
 			}
 			else if (line.substr(0, 10) == "Transport:") {
 				setup_transport = line.substr(11);
 			}
 			else if (line.substr(0, 4) == "PLAY") {
-				play = true;
+				action = a_play;
+			}
+			else if (line.substr(0, 5) == "PAUSE") {
+				action = a_pause;
+			}
+			else if (line.substr(0, 8) == "TEARDOWN") {
+				action = a_teardown;
 			}
 		}
 
-		if (setup) {
+		if (action == a_setup) {
 			if (setup_transport.empty())
 				break;
 
@@ -274,8 +351,7 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 
 			reply = "RTSP/1.0 200 OK\r\nTransport: RTP/AVP;unicast;client_port=" + myformat("%d-%d", cport1, cport2) + ";server_port=" + myformat("%d-%d", sport1.second, sport2.second) + ";ssrc=" + myformat("%08x", ssrc) + "\r\nSession: " + session + "\r\n";
 		}
-
-		if (play) {
+		else if (action == a_play) {
 			reply = "RTSP/1.0 200 OK\r\nSession: " + session + "\r\n";
 		}
 
@@ -294,76 +370,31 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 
 		delete parts;
 
-		if (play)
-			break;
-	}
-
-	// TODO still listen for e.g. STOP(?)
-	if (play) {
-		printf("START RTP STREAM\n");
-		uint64_t prev_ts = 0;
-		const double fps = 1.0 / interval;
-
-		s -> start();
-
-		video_frame *prev_frame = nullptr;
-
-		((sockaddr_in *)&remote_addr)->sin_port = htons(cport1);
-
-		connect(sport1.first, &remote_addr, sizeof remote_addr);
-
-		uint32_t seq_nr    = 0;
-		uint32_t timestamp = 0;
-
-		// RTP
-		while(!local_stop_flag) {
-			pauseCheck();
-			st->track_fps();
-
-			uint64_t before_ts = get_us();
-
-			video_frame *pvf = s -> get_frame(handle_failure, prev_ts);
-
-			if (pvf) {
-				prev_ts = pvf->get_ts();
-
-				if (filters && filters->empty() == false) {
-					source *cur_s = is_view_proxy ? ((view *)s) -> get_current_source() : s;
-					instance *inst = find_instance_by_interface(cfg, cur_s);
-
-					video_frame *temp = pvf->apply_filtering(inst, cur_s, prev_frame, filters, nullptr);
-					delete pvf;
-					pvf = temp;
-
-					delete prev_frame;
-					prev_frame = temp->duplicate({ });
-				}
-
-				// stream
-				if (is_jpeg) {
-					if (send_frame_via_jpeg_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
-						delete pvf;
-						break;
-					}
-				}
-				else {
-					if (send_frame_via_raw_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
-						delete pvf;
-						break;
-					}
-				}
+		if (action == a_play) {
+			if (rtp_play_thread == nullptr) {
+				rtp_play_thread = new std::thread([&] {
+							rtp_stream(sport1, cport1, ssrc, remote_addr, remote_addr_len, &stop_flag_rtp_play);
+						});
+			}
+		}
+		else if (action == a_pause || action == a_teardown) {
+			if (rtp_play_thread) {
+				stop_flag_rtp_play = true;
+				rtp_play_thread->join();
+				stop_flag_rtp_play = false;
+				delete rtp_play_thread;
+				rtp_play_thread = nullptr;
 			}
 
-			delete pvf;
-
-			st->track_cpu_usage();
-
-			handle_fps(&local_stop_flag, fps, before_ts);
+			if (action == a_teardown)
+				break;
 		}
+	}
 
-		delete prev_frame;
-
-		s->stop();
+	if (rtp_play_thread) {
+		stop_flag_rtp_play = true;
+		rtp_play_thread->join();
+		delete rtp_play_thread;
 	}
 
 	close(sport2.first);

@@ -24,6 +24,8 @@ private:
 			const std::pair<int, int> local_fd_port, const sockaddr_in remote, const socklen_t remote_len,
 			const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp);
 	std::string gen_sdp_payload_string(const std::string & session, const std::string & local_ip_addr);
+	void        rtp_stream  (const std::pair<int, int> & sport1, const int cport1, const uint32_t ssrc,
+			sockaddr remote_addr, socklen_t remote_addr_len, std::atomic_bool *const rtp_stop_flag);
 	void        rtsp_session(const int fd, sockaddr remote_addr, socklen_t remote_addr_len);
 
 public:
