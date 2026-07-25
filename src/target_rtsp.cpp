@@ -298,6 +298,7 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 			break;
 	}
 
+	// TODO still listen for e.g. STOP(?)
 	if (play) {
 		printf("START RTP STREAM\n");
 		uint64_t prev_ts = 0;
@@ -308,6 +309,8 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 		video_frame *prev_frame = nullptr;
 
 		((sockaddr_in *)&remote_addr)->sin_port = htons(cport1);
+
+		connect(sport1.first, &remote_addr, sizeof remote_addr);
 
 		uint32_t seq_nr    = 0;
 		uint32_t timestamp = 0;
