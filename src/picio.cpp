@@ -212,7 +212,7 @@ bool myjpeg::write_JPEG_memory(const meta *const m, const int ncols, const int n
 
 	//// GENERATE JPEG ////
 	unsigned long int len = 0;
-	if (tjCompress2(jpegCompressor, pixels, ncols, 0, nrows, TJPF_RGB, &temp, &len, TJSAMP_420, quality, TJFLAG_FASTDCT) == -1) {
+	if (tjCompress2(jpegCompressor, pixels, ncols, 0, nrows, TJPF_RGB, &temp, &len, TJSAMP_422, quality, TJFLAG_FASTDCT) == -1) {
 		log(LL_ERR, "Failed compressing frame: %s (%dx%d @ %d)", tjGetErrorStr(), ncols, nrows, quality);
 		return false;
 	}

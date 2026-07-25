@@ -100,8 +100,8 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 		buffer[13] = fragment_offset >> 16;
 		buffer[14] = fragment_offset >>  8;
 		buffer[15] = fragment_offset;
-		buffer[16] = 1;  // 4:2:0 jpeg, see picio.cpp
-		buffer[17] = quality;  // should be 0...127, so this is probably not correct FIXME
+		buffer[16] = 0;  // 4:2:2 jpeg, see picio.cpp
+		buffer[17] = quality;
 		buffer[18] = (w + 7) / 8;
 		buffer[19] = (h + 7) / 8;
 
