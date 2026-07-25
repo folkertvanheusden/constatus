@@ -17,12 +17,13 @@
 #include "resize.h"
 #include "schedule.h"
 
-target_rtsp::target_rtsp(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int port, const int quality, const bool handle_failure, schedule *const sched) :
+target_rtsp::target_rtsp(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int port, const int quality, const bool handle_failure, schedule *const sched, const bool is_jpeg) :
 	target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched),
 	quality(quality),
-	port(port)
+	port(port),
+	is_jpeg(is_jpeg)
 {
-	printf("HIER\n");
+	printf("HIER %f\n", interval);
 }
 
 target_rtsp::~target_rtsp()
@@ -38,8 +39,78 @@ std::string target_rtsp::gen_sdp_payload_string(const std::string & session, con
 		"o=constatus 0 0 IN IP4 " + local_ip_addr + "\r\n" +
 		"c=IN IP4 0.0.0.0\r\n" +
 		"m=video 30000 RTP/AVP 112\r\n" +
-		"a=rtpmap:112 RAW/90000\r\n" +
-		myformat("a=fmtp:112 sampling=rgb; colorimetry=BT709-2; interlace=0; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height());
+		(is_jpeg ? "a=rtpmap:112 JPEG/90000\r\n" : "a=rtpmap:112 RAW/90000\r\n") +
+		(is_jpeg ? "" : myformat("a=fmtp:112 sampling=rgb; colorimetry=BT709-2; interlace=0; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height()));
+}
+
+bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pair<int, int> local_fd_port, const sockaddr_in remote, const socklen_t remote_len, const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp)
+{
+	bool rc = true;
+	const auto rgb = pvf->get_data_and_len(E_JPEG);
+	const int h = pvf->get_h();
+	const int w = pvf->get_w();
+
+	constexpr const size_t max_pl_len = 1300;
+	uint8_t *const buffer = new uint8_t[16 + 8 + max_pl_len];
+
+	std::optional<size_t> marker;
+	for(size_t i=0; i<std::get<1>(rgb) - 1; i++) {
+		if (std::get<0>(rgb)[i] == 0xff && std::get<0>(rgb)[i + 1] == 0xd8) {
+			marker = i;
+			break;
+		}
+	}
+
+	if (marker.has_value() == false) {
+		printf("JPEG has no marker\n");
+		return false;
+	}
+
+	size_t offset = marker.value();
+	while(offset < std::get<1>(rgb)) {
+		size_t cur_len = std::min(max_pl_len, std::get<1>(rgb) - offset);
+
+		buffer[0] = 128;  // v2
+		buffer[1] = 112 | (offset + cur_len == std::get<1>(rgb) ? 128 : 0);  // schema id
+		buffer[2] = *seq_nr >> 8;
+		buffer[3] = *seq_nr;
+		buffer[4] = *timestamp >> 24;
+		buffer[5] = *timestamp >> 16;
+		buffer[6] = *timestamp >>  8;
+		buffer[7] = *timestamp;
+		buffer[8] = ssrc >> 24;
+		buffer[9] = ssrc >> 16;
+		buffer[10] = ssrc >>  8;
+		buffer[11] = ssrc;
+		buffer[12] = *seq_nr >> 24;
+		buffer[13] = *seq_nr >> 16;
+		buffer[14] = 0;  // ?
+		size_t fragment_offset = offset - marker.value();
+		buffer[15] = fragment_offset >> 16;
+		buffer[16] = fragment_offset >>  8;
+		buffer[17] = fragment_offset;
+		buffer[18] = 0;  // ?
+		buffer[19] = 0;  // ?
+		buffer[20] = (w + 7) / 8;
+		buffer[21] = (h + 7) / 8;
+
+		memcpy(&buffer[22], &std::get<0>(rgb)[offset], cur_len);
+
+		if (sendto(local_fd_port.first, buffer, cur_len + 22, 0, (sockaddr *)&remote, remote_len) != cur_len + 22) {
+			printf("%d %d | %d | %s\n", local_fd_port.first, local_fd_port.second, remote.sin_family, strerror(errno));
+			rc = false;
+			break;
+		}
+
+		(*seq_nr)++;
+		offset += cur_len;
+	}
+
+	(*timestamp) += 90000 / interval;  // 90000 = clock
+
+	printf("frame sent: %d\n", rc);
+
+	return rc;
 }
 
 bool target_rtsp::send_frame_via_raw_rtp(video_frame *const pvf, const std::pair<int, int> local_fd_port, const sockaddr_in remote, const socklen_t remote_len, const uint32_t ssrc, uint32_t *const seq_nr, uint32_t *const timestamp)
@@ -254,9 +325,17 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 				}
 
 				// stream
-				if (send_frame_via_raw_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
-					delete pvf;
-					break;
+				if (is_jpeg) {
+					if (send_frame_via_jpeg_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
+						delete pvf;
+						break;
+					}
+				}
+				else {
+					if (send_frame_via_raw_rtp(pvf, sport1, *(sockaddr_in *)&remote_addr, sizeof remote_addr, ssrc, &seq_nr, &timestamp) == false) {
+						delete pvf;
+						break;
+					}
 				}
 			}
 
