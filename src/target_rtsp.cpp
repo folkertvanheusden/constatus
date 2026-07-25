@@ -169,35 +169,47 @@ bool target_rtsp::send_frame_via_raw_rtp(video_frame *const pvf, const std::pair
 
 	(*timestamp) += 90000 / interval;  // 90000 = clock
 
-	printf("frame sent: %d\n", rc);
+	if (!rc)
+		printf("frame NOT sent!\n");
 
 	return rc;
 }
 
 void target_rtsp::rtp_stream(const std::pair<int, int> & sport1, const int cport1, const uint32_t ssrc, sockaddr remote_addr, socklen_t remote_addr_len, std::atomic_bool *const rtp_stop_flag)
 {
-	printf("START RTP STREAM\n");
-
-	uint64_t     prev_ts = 0;
-	const double fps     = 1.0 / interval;
+	uint64_t     prev_ts    = 0;
+	video_frame *prev_frame = nullptr;
 
 	s -> start();
 
-	video_frame *prev_frame = nullptr;
-
 	((sockaddr_in *)&remote_addr)->sin_port = htons(cport1);
-
 	connect(sport1.first, &remote_addr, sizeof remote_addr);
 
 	uint32_t seq_nr    = 0;
 	uint32_t timestamp = 0;
 
+        timespec next { };
+        clock_gettime(CLOCK_REALTIME, &next);
+
 	// RTP
 	while(!local_stop_flag && !*rtp_stop_flag) {
 		pauseCheck();
-		st->track_fps();
 
-		uint64_t before_ts = get_us();
+		next.tv_sec  += interval;
+                next.tv_nsec += (interval - int(interval)) * 1'000'000'000;
+                while (next.tv_nsec >= 1'000'000'000) {
+                        next.tv_nsec -= 1'000'000'000;
+                        next.tv_sec++;
+                }
+
+                if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &next, nullptr) == -1) {
+                        if (errno == EINTR)
+                                continue;  // FIXME retry the sleep, do not increase the 'next'
+//                        DOLOG(log_ss::LS_GENERIC, "clock_nanosleep failed: %s", strerror(errno));
+                        break;
+                }
+
+		st->track_fps();
 
 		video_frame *pvf = s -> get_frame(handle_failure, prev_ts);
 
@@ -234,8 +246,6 @@ void target_rtsp::rtp_stream(const std::pair<int, int> & sport1, const int cport
 		delete pvf;
 
 		st->track_cpu_usage();
-
-		handle_fps(&local_stop_flag, fps, before_ts);
 	}
 
 	delete prev_frame;
