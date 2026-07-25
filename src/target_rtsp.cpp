@@ -69,7 +69,7 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 
 	size_t sos_offset    = sos_marker.value();
 	size_t sos_length    = (std::get<0>(rgb)[sos_offset + 2] << 8) | std::get<0>(rgb)[sos_offset + 3];
-	size_t entropy_start = sos_offset + sos_length;
+	size_t entropy_start = sos_offset + sos_length + 2;
 	size_t entropy_len   = std::get<1>(rgb) - entropy_start;
 	size_t offset        = entropy_start;
 
