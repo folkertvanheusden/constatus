@@ -17,11 +17,12 @@
 #include "resize.h"
 #include "schedule.h"
 
-target_rtsp::target_rtsp(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int port, const int quality, const bool handle_failure, schedule *const sched, const bool is_jpeg) :
+target_rtsp::target_rtsp(const std::string & id, const std::string & descr, source *const s, const double interval, const std::vector<filter *> *const filters, const double override_fps, configuration_t *const cfg, const int port, const int quality, const bool handle_failure, schedule *const sched, const bool is_jpeg, const bool follow_rfc) :
 	target(id, descr, s, "", "", "", max_time, interval, filters, "", "", "", override_fps, cfg, false, handle_failure, sched),
 	quality(quality),
 	port(port),
-	is_jpeg(is_jpeg)
+	is_jpeg(is_jpeg),
+	follow_rfc(follow_rfc)
 {
 	printf("HIER %f\n", interval);
 }
@@ -71,6 +72,12 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 	size_t entropy_start = sos_offset + sos_length;
 	size_t entropy_len   = std::get<1>(rgb) - entropy_start;
 	size_t offset        = entropy_start;
+
+	if (follow_rfc == false) {
+		offset        = 0;
+		entropy_start = 0;  // uggly hack
+		entropy_len   = std::get<1>(rgb);  // also uggly hack
+	}
 
 	while(offset < std::get<1>(rgb)) {
 		size_t cur_len         = std::min(max_pl_len, std::get<1>(rgb) - offset);

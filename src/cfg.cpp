@@ -1423,8 +1423,9 @@ target * load_target(const Setting & in, source *const s, meta *const m, configu
 		printf("HALLO %f\n", fps);
 		int  listen_port = cfg_int (in, "listen-port", "port to listen on", false, 554);
 		bool use_jpeg    = cfg_bool(in, "use-jpeg",    "use jpeg instead of raw", false, true);
+		bool follow_rfc  = cfg_bool(in, "compatible",  "compatible mode", true, true);
 
-		t = new target_rtsp(id, descr, s, restart_interval, filters, fps, cfg, listen_port, jpeg_quality, handle_failure, sched, use_jpeg);
+		t = new target_rtsp(id, descr, s, restart_interval, filters, fps, cfg, listen_port, jpeg_quality, handle_failure, sched, use_jpeg, follow_rfc);
 	}
 	else if (format == "pixelflood") {
 		std::string host = cfg_str(in, "host", "IPv4 address to send to", false, "");
