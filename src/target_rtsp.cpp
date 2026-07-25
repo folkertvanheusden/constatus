@@ -39,8 +39,8 @@ std::string target_rtsp::gen_sdp_payload_string(const std::string & session, con
 		"t=0 0\r\n" +
 		"o=constatus 0 0 IN IP4 " + local_ip_addr + "\r\n" +
 		"c=IN IP4 0.0.0.0\r\n" +
-		"m=video 30000 RTP/AVP 112\r\n" +
-		(is_jpeg ? "a=rtpmap:112 JPEG/90000\r\n" : "a=rtpmap:112 RAW/90000\r\n") +
+		(is_jpeg ? "m=video 0 RTP/AVP 26\r\n" : "m=video 30000 RTP/AVP 112\r\n") +
+		(is_jpeg ? "a=rtpmap:26 JPEG/90000\r\n" : "a=rtpmap:112 RAW/90000\r\n") +
 		(is_jpeg ? "" : myformat("a=fmtp:112 sampling=rgb; colorimetry=BT709-2; interlace=0; width=%d; height=%d; depth=8;\r\n", s->get_width(), s->get_height()));
 }
 
@@ -85,7 +85,7 @@ bool target_rtsp::send_frame_via_jpeg_rtp(video_frame *const pvf, const std::pai
 		bool   end_of_frame    = fragment_offset + cur_len == entropy_len;
 
 		buffer[0] = 128;  // v2
-		buffer[1] = 112 | (end_of_frame ? 128 : 0);  // schema id
+		buffer[1] = 26 | (end_of_frame ? 128 : 0);  // schema id
 		buffer[2] = *seq_nr >> 8;
 		buffer[3] = *seq_nr;
 		buffer[4] = *timestamp >> 24;
