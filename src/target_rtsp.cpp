@@ -301,7 +301,7 @@ void target_rtsp::rtsp_session(const int fd, sockaddr remote_addr, socklen_t rem
 		auto parts = split(current_request, "\r\n");
 		for(auto & line: *parts) {
 			if (line.substr(0, 7) == "OPTIONS")
-				reply = "RTSP/1.0 200 OK\r\nPublic: DESCRIBE, SETUP, PLAY\r\n";
+				reply = "RTSP/1.0 200 OK\r\nPublic: OPTIONS, DESCRIBE, SETUP, PLAY, PAUSE, TEARDOWN\r\n";
 			else if (line.substr(0, 5) == "CSeq:")
 				cseq = std::stoi(line.substr(6));
 			else if (line.substr(0, 8) == "DESCRIBE") {
