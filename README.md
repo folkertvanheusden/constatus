@@ -74,6 +74,7 @@ It is an NVR (network video recorder) with special features.
   - libjansson-dev
   - libssl-dev
   - libboost-system-dev
+  - libcairo2-dev
 
 You may need libboost-system-dev, see the 'FAQ' section at the bottom.
 
