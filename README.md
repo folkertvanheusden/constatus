@@ -63,18 +63,10 @@ It is an NVR (network video recorder) with special features.
 ### Debian/Ubuntu
 
 - Required:
-  - cmake
-  - libconfig++-dev
-  - libfontconfig1-dev
-  - libfreetype6-dev
-  - libicu-dev
-  - libturbojpeg0-dev
-  - libpng-dev
-  - libcurl-dev e.g. libcurl4-openssl-dev
-  - libjansson-dev
-  - libssl-dev
-  - libboost-system-dev
-  - libcairo2-dev
+   - apt install cmake libconfig++-dev libfontconfig1-dev libfreetype6-dev libicu-dev \
+         libturbojpeg0-dev libpng-dev libjansson-dev libssl-dev libboost-system-dev \
+         libcairo2-dev
+   - and: libcurl-dev e.g. libcurl4-openssl-dev or libcurl4-gnutls-dev
 
 You may need libboost-system-dev, see the 'FAQ' section at the bottom.
 
