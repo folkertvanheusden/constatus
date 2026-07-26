@@ -11,7 +11,7 @@
 }
 
 body {
-    background: var(--fierman-green) url(https://vanheusden.com/constatus/fierman-logo.jpg) no-repeat center center;
+    background: var(--fierman-green) url(https://vanheusden.com/constatus/pantheon-by-llm.jpg) no-repeat center center;
     background-blend-mode: overlay;
     background-size: cover;
     color: var(--text-color);
