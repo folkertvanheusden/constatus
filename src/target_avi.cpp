@@ -149,6 +149,8 @@ void target_avi::operator()()
 	s -> start();
 
 	int fps = interval > 0 ? 1.0 / interval : 25;
+        timespec next { };
+        clock_gettime(CLOCK_REALTIME, &next);
 
 	time_t next_file = max_time > 0 ? time(nullptr) + max_time : 0;
 
@@ -156,7 +158,19 @@ void target_avi::operator()()
                 pauseCheck();
 		st->track_fps();
 
-                uint64_t before_ts = get_us();
+		next.tv_sec  += interval;
+                next.tv_nsec += (interval - int(interval)) * 1'000'000'000;
+                while (next.tv_nsec >= 1'000'000'000) {
+                        next.tv_nsec -= 1'000'000'000;
+                        next.tv_sec++;
+                }
+
+                if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &next, nullptr) == -1) {
+                        if (errno == EINTR)
+                                continue;  // FIXME retry the sleep, do not increase the 'next'
+//                        DOLOG(log_ss::LS_GENERIC, "clock_nanosleep failed: %s", strerror(errno));
+                        break;
+                }
 
 		const bool allow_store = sched == nullptr || (sched && sched->is_on());
 
@@ -199,8 +213,6 @@ void target_avi::operator()()
 		}
 
 		st->track_cpu_usage();
-
-		handle_fps(&local_stop_flag, fps, before_ts);
 	}
 
 	delete prev_frame;
