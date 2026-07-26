@@ -35,10 +35,38 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 	bool sc = resize_h != -1 || resize_w != -1;
 	bool nf = filters == nullptr || filters -> empty();
 
+        timespec next { };
+        clock_gettime(CLOCK_REALTIME, &next);
+	double interval = 1. / fps;
+	int    dropped  = 0;
+
 	uint64_t prev = 0;
-	time_t end = time(nullptr) + time_limit;
-	for(;(time_limit <= 0 || time(nullptr) < end) && !local_stop_flag;) {
-		uint64_t before_ts = get_us();
+	time_t   end  = time(nullptr) + time_limit;
+	while((time_limit <= 0 || time(nullptr) < end) && !local_stop_flag) {
+		next.tv_sec  += interval;
+                next.tv_nsec += (interval - int(interval)) * 1'000'000'000;
+                while (next.tv_nsec >= 1'000'000'000) {
+                        next.tv_nsec -= 1'000'000'000;
+                        next.tv_sec++;
+                }
+
+		timespec now { };
+		clock_gettime(CLOCK_REALTIME, &now);
+		uint64_t next_ts = next.tv_sec * 1'000'000 + next.tv_nsec / 1000;
+		uint64_t now_ts  = now.tv_sec  * 1'000'000 + now.tv_nsec  / 1000;
+
+		if (now_ts > next_ts) {
+			dropped++;
+			printf("frames dropped: %d\n", dropped);
+			continue;
+		}
+
+                if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &next, nullptr) == -1) {
+                        if (errno == EINTR)
+                                continue;  // FIXME retry the sleep, do not increase the 'next'
+//                        DOLOG(log_ss::LS_GENERIC, "clock_nanosleep failed: %s", strerror(errno));
+                        break;
+                }
 
 		video_frame *pvf = fps > 0 && acc_fps ? s->get_frame_to(handle_failure, prev, 1000000 / fps) : s->get_frame(handle_failure, prev);
 
@@ -160,8 +188,6 @@ void http_server::send_mjpeg_stream(h_handle_t & hh, source *s, double fps, int 
 		}
 
 		st->track_cpu_usage();
-
-		handle_fps(&local_stop_flag, fps, before_ts);
 	}
 
 	delete prev_frame;
