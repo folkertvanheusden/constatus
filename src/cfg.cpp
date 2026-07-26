@@ -88,6 +88,7 @@ using namespace libconfig;
 #include "filter_copy.h"
 #include "filter_despeckle.h"
 #include "filter_lcdproc.h"
+#include "filter_keep_alive.h"
 #if HAVE_FREI0R == 1
 #include "filter_plugin_frei0r.h"
 #endif
@@ -790,6 +791,9 @@ std::vector<filter *> *load_filters(configuration_t *const cfg, const Setting & 
 #else
 			error_exit(false, "'fre0ir' support was not compiled in");
 #endif
+		}
+		else if (s_type == "keep-alive") {
+			filters -> push_back(new filter_keep_alive());
 		}
 		else if (s_type == "marker") {
 			std::string motion_source = cfg_str(ae, "motion-source", "source to monitor, leave empty for monitoring by itself (less efficient)", true, "");

@@ -20,6 +20,7 @@ add_executable(constatus
 	src/audio.cpp
 	src/audio_alsa.cpp
 	src/audio_trigger.cpp
+	src/cairo.cpp
 	src/cfg.cpp
 	src/cleaner.cpp
 	src/controls.cpp
@@ -50,6 +51,7 @@ add_executable(constatus
 	src/filter_despeckle.cpp
 	src/filter_draw.cpp
 	src/filter_grayscale.cpp
+	src/filter_keep_alive.cpp
 	src/filter_lcdproc.cpp
 	src/filter_marker_simple.cpp
 	src/filter_median.cpp
@@ -264,6 +266,11 @@ pkg_check_modules(ALSA alsa)
 target_link_libraries(constatus ${ALSA_LIBRARIES})
 target_include_directories(constatus PUBLIC ${ALSA_INCLUDE_DIRS})
 target_compile_options(constatus PUBLIC ${ALSA_CFLAGS_OTHER})
+
+pkg_check_modules(CAIRO REQUIRED cairo)
+target_link_libraries(constatus ${CAIRO_LIBRARIES})
+target_include_directories(constatus PUBLIC ${CAIRO_INCLUDE_DIRS})
+target_compile_options(constatus PUBLIC ${CAIRO_CFLAGS_OTHER})
 
 pkg_check_modules(IMAGICK ImageMagick++)
 target_link_libraries(constatus ${IMAGICK_LIBRARIES})
