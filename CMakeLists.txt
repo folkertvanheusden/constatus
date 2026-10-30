@@ -369,7 +369,7 @@ install(FILES README.md DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)
 install(FILES README.rest DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/constatus)
 
-target_link_libraries(constatus -lboost_system)
+#target_link_libraries(constatus -lboost_system)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 set(CMAKE_CXX_FLAGS "-Ofast -ffast-math")
